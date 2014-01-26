@@ -1,0 +1,2 @@
+cc qos0pub.c -I ../src ../src/MQTTConnectClient.c ../src/MQTTSerializePublish.c ../src/MQTTPacket.c -o qos0pub -Os -s
+gcc pub0sub1.c -I ../src ../src/MQTTConnectClient.c ../src/MQTTSerializePublish.c ../src/MQTTPacket.c ../src/MQTTSubscribeClient.c -o pub0sub1 ../src/MQTTDeserializePublish.c -Os -s

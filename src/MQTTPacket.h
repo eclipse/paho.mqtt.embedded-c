@@ -61,20 +61,38 @@ typedef union
 typedef struct
 {
 	int len;
-	char [];
+	char* data;
+} MQTTLenString;
+
+typedef struct
+{
+	char* cstring;
+	MQTTLenString lenstring;
 } MQTTString;
 
-#include "MQTTConnect.h"
+#define MQTTString_initializer {NULL, {0, NULL}}
 
+int MQTTstrlen(MQTTString mqttstring);
+
+#include "MQTTConnect.h"
+#include "MQTTPublish.h"
+#include "MQTTSubscribe.h"
+#include "MQTTUnsubscribe.h"
+
+int MQTTDeserialize_ack(int* type, int* dup, int* msgid, char* buf, int buflen);
+
+int MQTTPacket_len(int rem_len);
 
 int MQTTPacket_encode(char* buf, int length);
-int MQTTPacket_decode(int (*getcharfn)(), int* value);
+int MQTTPacket_decode(int (*getcharfn)(char*, int), int* value);
+int MQTTPacket_decodeBuf(char* buf, int* value);
 
 int readInt(char** pptr);
-char* readUTF(char** pptr, char* enddata);
 char readChar(char** pptr);
 void writeChar(char** pptr, char c);
 void writeInt(char** pptr, int anInt);
-void writeUTF(char** pptr, char* string);
+int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata);
+void writeCString(char** pptr, char* string);
+void writeMQTTString(char** pptr, MQTTString mqttstring);
 
 #endif /* MQTTPACKET_H_ */

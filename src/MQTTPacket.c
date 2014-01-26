@@ -15,6 +15,10 @@
  *******************************************************************************/
 
 #include "StackTrace.h"
+#include "MQTTPacket.h"
+
+#include <malloc.h>
+#include <string.h>
 
 /**
  * Encodes the message length according to the MQTT algorithm
@@ -47,9 +51,8 @@ int MQTTPacket_encode(char* buf, int length)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_decode(int (*getcharfn)(), int* value)
+int MQTTPacket_decode(int (*getcharfn)(char*, int), int* value)
 {
-	int rc = MQTTPACKET_READ_ERROR;
 	char c;
 	int multiplier = 1;
 	int len = 0;
@@ -59,70 +62,72 @@ int MQTTPacket_decode(int (*getcharfn)(), int* value)
 	*value = 0;
 	do
 	{
+		int rc = MQTTPACKET_READ_ERROR;
+
 		if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES)
 		{
 			rc = MQTTPACKET_READ_ERROR;	/* bad data */
 			goto exit;
 		}
-		rc = (*getchar)();
-		if (rc != MQTTPACKET_READ_COMPLETE)
-				goto exit;
+		rc = (*getcharfn)(&c, 1);
+		if (rc != 1)
+			goto exit;
 		*value += (c & 127) * multiplier;
 		multiplier *= 128;
 	} while ((c & 128) != 0);
 exit:
-	FUNC_EXIT_RC(rc);
-	return rc;
+	FUNC_EXIT_RC(len);
+	return len;
+}
+
+
+int MQTTPacket_len(int rem_len)
+{
+	rem_len += 1; /* header byte */
+
+	/* now remaining_length field */
+	if (rem_len < 128)
+		rem_len += 1;
+	else if (rem_len < 16384)
+		rem_len += 2;
+	else if (rem_len < 2097151)
+		rem_len += 3;
+	else
+		rem_len += 4;
+	return rem_len;
+}
+
+
+static char* bufptr;
+
+int bufchar(char* c, int count)
+{
+	int i;
+
+	for (i = 0; i < count; ++i)
+		*c = *bufptr++;
+	return count;
+}
+
+
+int MQTTPacket_decodeBuf(char* buf, int* value)
+{
+	bufptr = buf;
+	return MQTTPacket_decode(bufchar, value);
 }
 
 
 /**
- * Reads a "UTF" string from the input buffer.  UTF as in the MQTT v3 spec which really means
- * a length delimited string.  So it reads the two byte length then the data according to
- * that length.  The end of the buffer is provided too, so we can prevent buffer overruns caused
- * by an incorrect length.
+ * Calculates an integer from two bytes read from the input buffer
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @param enddata pointer to the end of the buffer not to be read beyond
- * @param len returns the calculcated value of the length bytes read
- * @return an allocated C string holding the characters read, or NULL if the length read would
- * have caused an overrun.
- *
+ * @return the integer value calculated
  */
-char* readUTFlen(char** pptr, char* enddata, int* len)
+int readInt(char** pptr)
 {
-	char* string = NULL;
-
-	FUNC_ENTRY;
-	if (enddata - (*pptr) > 1) /* enough length to read the integer? */
-	{
-		*len = readInt(pptr);
-		if (&(*pptr)[*len] <= enddata)
-		{
-			string = malloc(*len+1);
-			memcpy(string, *pptr, *len);
-			string[*len] = '\0';
-			*pptr += *len;
-		}
-	}
-	FUNC_EXIT;
-	return string;
-}
-
-
-/**
- * Reads a "UTF" string from the input buffer.  UTF as in the MQTT v3 spec which really means
- * a length delimited string.  So it reads the two byte length then the data according to
- * that length.  The end of the buffer is provided too, so we can prevent buffer overruns caused
- * by an incorrect length.
- * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
- * @param enddata pointer to the end of the buffer not to be read beyond
- * @return an allocated C string holding the characters read, or NULL if the length read would
- * have caused an overrun.
- */
-char* readUTF(char** pptr, char* enddata)
-{
-	int len;
-	return readUTFlen(pptr, enddata, &len);
+	char* ptr = *pptr;
+	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
+	*pptr += 2;
+	return len;
 }
 
 
@@ -170,12 +175,101 @@ void writeInt(char** pptr, int anInt)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param string the C string to write
  */
-void writeUTF(char** pptr, char* string)
+void writeCString(char** pptr, char* string)
 {
 	int len = strlen(string);
 	writeInt(pptr, len);
 	memcpy(*pptr, string, len);
 	*pptr += len;
+}
+
+
+int getLenStringLen(char* ptr)
+{
+	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
+	return len;
+}
+
+
+void writeMQTTString(char** pptr, MQTTString mqttstring)
+{
+	if (mqttstring.lenstring.len > 0)
+	{
+		writeInt(pptr, mqttstring.lenstring.len);
+		memcpy(*pptr, mqttstring.lenstring.data, mqttstring.lenstring.len);
+		*pptr += mqttstring.lenstring.len;
+	}
+	else if (mqttstring.cstring)
+		writeCString(pptr, mqttstring.cstring);
+}
+
+
+/**
+ * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
+ * @param mqttstring the MQTTString structure into which the data is to be read
+ * @param enddata pointer to the end of the data: do not read beyond
+ * @return 1 if successful, 0 if not
+ */
+int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata)
+{
+	int rc = 0;
+
+	FUNC_ENTRY;
+	/* the first two bytes are the length of the string */
+	if (enddata - (*pptr) > 1) /* enough length to read the integer? */
+	{
+		mqttstring->lenstring.len = readInt(pptr); /* increments pptr to point past length */
+		if (&(*pptr)[mqttstring->lenstring.len] <= enddata)
+		{
+			mqttstring->lenstring.data = *pptr;
+			*pptr += mqttstring->lenstring.len;
+			rc = 1;
+		}
+	}
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+
+
+int MQTTstrlen(MQTTString mqttstring)
+{
+	int rc = 0;
+
+	if (mqttstring.cstring)
+		rc = strlen(mqttstring.cstring);
+	else
+		rc = mqttstring.lenstring.len;
+	return rc;
+}
+
+
+/**
+ * Helper function to read packet data from some source into a buffer
+ */
+int MQTTPacket_read(char* buf, int buflen, int (*getfn)(char*, int))
+{
+	int rc = -1;
+	MQTTHeader header;
+	int len = 0;
+	int rem_len = 0;
+
+	/* 1. read the header byte.  This has the packet type in it */
+	if ((*getfn)(buf, 1) != 1)
+		goto exit;
+
+	len = 1;
+	/* 2. read the remaining length.  This is variable in itself */
+	MQTTPacket_decode(getfn, &rem_len);
+	len += MQTTPacket_encode(buf + 1, rem_len); /* put the original remaining length back into the buffer */
+
+	/* 3. read the rest of the buffer using a callback to supply the rest of the data */
+	if ((*getfn)(buf + len, rem_len) != rem_len)
+		goto exit;
+
+	header.byte = buf[0];
+	rc = header.bits.type;
+exit:
+	return rc;
 }
 
 
