@@ -158,8 +158,8 @@ int main()
 	data.password.cstring = "testpassword";
 
 	struct timeval tv;
-	tv.tv_sec = 1;  /* 30 Secs Timeout */
-	tv.tv_usec = 0;  // Not init'ing this can cause strange errors
+	tv.tv_sec = 1;  /* 1 second Timeout */
+	tv.tv_usec = 0;  
 	setsockopt(mysock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
 
 	len = MQTTSerialize_connect(buf, buflen, &data);
