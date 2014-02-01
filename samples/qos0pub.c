@@ -123,7 +123,7 @@ int main()
 	char buf[200];
 	int buflen = sizeof(buf);
 	int mysock = 0;
-	MQTTString topicString;
+	MQTTString topicString = MQTTString_initializer;
 	char* payload = "mypayload";
 	int payloadlen = strlen(payload);
 	int len = 0;
