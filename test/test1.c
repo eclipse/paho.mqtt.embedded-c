@@ -355,7 +355,7 @@ int test1(struct Options options)
 	rc = checkConnectPackets(&data, &data_after);
 	assert("packets should be the same",  rc == 1, "packets were different\n", rc);
 
-exit:
+/* exit: */
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -414,7 +414,7 @@ int test2(struct Options options)
 	assert("payloads should be the same",
 						memcmp(payload, payload2, payloadlen) == 0, "payloads were different %s\n", "");
 
-exit:
+/*exit:*/
 	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -470,7 +470,7 @@ int test3(struct Options options)
 		assert("qoss should be the same", req_qoss[i] == req_qoss2[i], "qoss were different %d\n", req_qoss2[i]);
 	}
 
-exit:
+/*exit:*/
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -513,7 +513,7 @@ int test4(struct Options options)
 	for (i = 0; i < count2; ++i)
 		assert("qoss should be the same", granted_qoss[i] == granted_qoss2[i], "qoss were different %d\n", granted_qoss2[i]);
 
-exit:
+/* exit: */
 	MyLog(LOGA_INFO, "TEST4: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -562,7 +562,7 @@ int test5(struct Options options)
 		assert("topics should be the same",
 					checkMQTTStrings(topicStrings[i], topicStrings2[i]), "topics were different %s\n", "");
 
-exit:
+/* exit: */
 	MyLog(LOGA_INFO, "TEST5: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -594,7 +594,7 @@ int test6(struct Options options)
 	/* data after should be the same as data before */
 	assert("dups should be the same", connack_rc == connack_rc2, "dups were different %d\n", connack_rc2);
 
-exit:
+/* exit: */
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
