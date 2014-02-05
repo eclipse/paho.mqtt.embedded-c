@@ -19,30 +19,48 @@
 
 #include <string.h>
 
+
 /**
- * @return the remaining length size
- */
-int MQTTSerialize_publishLength(int qos, MQTTString topicString, int payloadlen)
+  * Determines the length of the MQTT publish packet that would be produced using the supplied parameters
+  * @param qos the MQTT QoS of the publish (packetid is omitted for QoS 0)
+  * @param topicName the topic name to be used in the publish  
+  * @param payloadlen the length of the payload to be sent
+  * @return the length of buffer needed to contain the serialized version of the packet
+  */
+int MQTTSerialize_publishLength(int qos, MQTTString topicName, int payloadlen)
 {
 	int len = 0;
 
-	len += 2 + MQTTstrlen(topicString) + payloadlen;
+	len += 2 + MQTTstrlen(topicName) + payloadlen;
 	if (qos > 0)
-		len += 2; /* msgid */
+		len += 2; /* packetid */
 	return len;
 }
 
 
-int MQTTSerialize_publish(char* buf, int buflen, int dup, int qos, int retained, int msgid, MQTTString topicString,
+/**
+  * Serializes the supplied publish data into the supplied buffer, ready for sending
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param dup integer - the MQTT dup flag
+  * @param qos integer - the MQTT QoS value
+  * @param retained integer - the MQTT retained flag
+  * @param packetid integer - the MQTT packet identifier
+  * @param topicName MQTTString - the MQTT topic in the publish
+  * @param payload byte buffer - the MQTT publish payload
+  * @param payloadlen integer - the length of the MQTT payload
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTSerialize_publish(char* buf, int buflen, int dup, int qos, int retained, int packetid, MQTTString topicName,
 		char* payload, int payloadlen)
 {
 	char *ptr = buf;
 	MQTTHeader header;
 	int rem_len = 0;
-	int rc = -1;
+	int rc = 0;
 
 	FUNC_ENTRY;
-	if (MQTTPacket_len(rem_len = MQTTSerialize_publishLength(qos, topicString, payloadlen)) > buflen)
+	if (MQTTPacket_len(rem_len = MQTTSerialize_publishLength(qos, topicName, payloadlen)) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -56,10 +74,10 @@ int MQTTSerialize_publish(char* buf, int buflen, int dup, int qos, int retained,
 
 	ptr += MQTTPacket_encode(ptr, rem_len); /* write remaining length */;
 
-	writeMQTTString(&ptr, topicString);
+	writeMQTTString(&ptr, topicName);
 
 	if (qos > 0)
-		writeInt(&ptr, msgid);
+		writeInt(&ptr, packetid);
 
 	memcpy(ptr, payload, payloadlen);
 	ptr += payloadlen;
@@ -72,10 +90,20 @@ exit:
 }
 
 
-int MQTTSerialize_ack(char* buf, int buflen, int type, int msgid, int dup)
+
+/**
+  * Serializes the ack packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param type integer - the MQTT packet type
+  * @param dup integer - the MQTT dup flag
+  * @param packetid integer - the MQTT packet identifier
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_ack(char* buf, int buflen, int type, int dup, int packetid)
 {
 	MQTTHeader header;
-	int rc = -1;
+	int rc = 0;
 	char *ptr = buf;
 
 	FUNC_ENTRY;
@@ -90,7 +118,7 @@ int MQTTSerialize_ack(char* buf, int buflen, int type, int msgid, int dup)
 	writeChar(&ptr, header.byte); /* write header */
 
 	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
-	writeInt(&ptr, msgid);
+	writeInt(&ptr, packetid);
 	rc = ptr - buf;
 exit:
 	FUNC_EXIT_RC(rc);
@@ -98,21 +126,43 @@ exit:
 }
 
 
-int MQTTSerialize_puback(char* buf, int buflen, int msgid)
+/**
+  * Serializes a puback packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param packetid integer - the MQTT packet identifier
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_puback(char* buf, int buflen, int packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBACK, msgid, 0);
+	return MQTTSerialize_ack(buf, buflen, PUBACK, packetid, 0);
 }
 
 
-int MQTTSerialize_pubrel(char* buf, int buflen, int msgid, int dup)
+/**
+  * Serializes a pubrel packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param dup integer - the MQTT dup flag
+  * @param packetid integer - the MQTT packet identifier
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_pubrel(char* buf, int buflen,  int dup, int packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBREL, msgid, dup);
+	return MQTTSerialize_ack(buf, buflen, PUBREL, packetid, dup);
 }
 
 
-int MQTTSerialize_pubcomp(char* buf, int buflen, int msgid)
+/**
+  * Serializes a pubrel packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param packetid integer - the MQTT packet identifier
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_pubcomp(char* buf, int buflen, int packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBCOMP, msgid, 0);
+	return MQTTSerialize_ack(buf, buflen, PUBCOMP, packetid, 0);
 }
 
 

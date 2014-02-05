@@ -17,7 +17,6 @@
 #include "StackTrace.h"
 #include "MQTTPacket.h"
 
-#include <malloc.h>
 #include <string.h>
 
 /**
@@ -205,8 +204,8 @@ void writeMQTTString(char** pptr, MQTTString mqttstring)
 
 
 /**
- * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param mqttstring the MQTTString structure into which the data is to be read
+ * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param enddata pointer to the end of the data: do not read beyond
  * @return 1 if successful, 0 if not
  */
@@ -231,6 +230,11 @@ int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata)
 }
 
 
+/**
+ * Return the length of the MQTTstring - C string if there is one, otherwise the length delimited string
+ * @param mqttstring the string to return the length of
+ * @return the length of the string
+ */
 int MQTTstrlen(MQTTString mqttstring)
 {
 	int rc = 0;
@@ -245,6 +249,10 @@ int MQTTstrlen(MQTTString mqttstring)
 
 /**
  * Helper function to read packet data from some source into a buffer
+ * @param buf the buffer into which the packet will be serialized
+ * @param buflen the length in bytes of the supplied buffer
+ * @param getfn pointer to a function which will read any number of bytes from the needed source
+ * @return integer MQTT packet type, or -1 on error
  */
 int MQTTPacket_read(char* buf, int buflen, int (*getfn)(char*, int))
 {

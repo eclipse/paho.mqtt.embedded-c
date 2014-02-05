@@ -23,24 +23,24 @@
 #if defined(REVERSED)
 		struct
 		{
-			bool username : 1;			/**< 3.1 user name */
-			bool password : 1; 			/**< 3.1 password */
-			bool willRetain : 1;		/**< will retain setting */
-			unsigned int willQoS : 2;	/**< will QoS value */
-			bool will : 1;			    /**< will flag */
-			bool cleansession : 1;	    /**< clean session flag */
-			int : 1;	                /**< unused */
+			unsigned int username : 1;			/**< 3.1 user name */
+			unsigned int password : 1; 			/**< 3.1 password */
+			unsigned int willRetain : 1;		/**< will retain setting */
+			unsigned int willQoS : 2;				/**< will QoS value */
+			unsigned int will : 1;			    /**< will flag */
+			unsigned int cleansession : 1;	  /**< clean session flag */
+			unsigned int : 1;	  	          /**< unused */
 		} bits;
 #else
 		struct
 		{
-			int : 1;	                /**< unused */
-			bool cleansession : 1;	    /**< cleansession flag */
-			bool will : 1;			    /**< will flag */
-			unsigned int willQoS : 2;	/**< will QoS value */
-			bool willRetain : 1;		/**< will retain setting */
-			bool password : 1; 			/**< 3.1 password */
-			bool username : 1;			/**< 3.1 user name */
+			unsigned int : 1;	     					/**< unused */
+			unsigned int cleansession : 1;	  /**< cleansession flag */
+			unsigned int will : 1;			    /**< will flag */
+			unsigned int willQoS : 2;				/**< will QoS value */
+			unsigned int willRetain : 1;		/**< will retain setting */
+			unsigned int password : 1; 			/**< 3.1 password */
+			unsigned int username : 1;			/**< 3.1 user name */
 		} bits;
 #endif
 	} MQTTConnectFlags;	/**< connect flags byte */
@@ -54,7 +54,7 @@
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
@@ -79,7 +79,7 @@ typedef struct
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
-	const char struct_id[4];
+	char struct_id[4];
 	/** The version number of this structure.  Must be 0, 1 or 2.
 	  * 0 signifies no SSL options and no serverURIs
 	  * 1 signifies no serverURIs

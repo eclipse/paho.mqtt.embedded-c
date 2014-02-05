@@ -135,6 +135,7 @@ int main()
 	data.cleansession = 1;
 	data.username.cstring = "testuser";
 	data.password.cstring = "testpassword";
+	data.MQTTVersion = 4;
 
 	len = MQTTSerialize_connect(buf, buflen, &data);
 

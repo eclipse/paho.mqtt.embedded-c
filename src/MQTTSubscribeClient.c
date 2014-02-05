@@ -20,29 +20,43 @@
 #include <string.h>
 
 /**
- * @return the remaining length
- */
-int MQTTSerialize_subscribeLength(int count, MQTTString topicString[])
+  * Determines the length of the MQTT subscribe packet that would be produced using the supplied parameters
+  * @param count the number of topic filter strings in topicFilters
+  * @param topicFilters the array of topic filter strings to be used in the publish
+  * @return the length of buffer needed to contain the serialized version of the packet
+  */
+int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
 {
 	int i;
-	int len = 2; /* msgid */
+	int len = 2; /* packetid */
 
 	for (i = 0; i < count; ++i)
-		len += 2 + MQTTstrlen(topicString[i]) + 1; /* length + topic + req_qos */
+		len += 2 + MQTTstrlen(topicFilters[i]) + 1; /* length + topic + req_qos */
 	return len;
 }
 
 
-int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int msgid, int count, MQTTString topicString[], int reqQos[])
+/**
+  * Serializes the supplied subscribe data into the supplied buffer, ready for sending
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied bufferr
+  * @param dup integer - the MQTT dup flag
+  * @param packetid integer - the MQTT packet identifier
+  * @param count - number of members in the topicFilters and reqQos arrays
+  * @param topicFilters - array of topic filter names
+  * @param requestedQoSs - array of requested QoS
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[], int requestedQoSs[])
 {
 	char *ptr = buf;
 	MQTTHeader header;
 	int rem_len = 0;
-	int rc = -1;
+	int rc = 0;
 	int i = 0;
 
 	FUNC_ENTRY;
-	if (MQTTPacket_len(rem_len = MQTTSerialize_subscribeLength(count, topicString)) > buflen)
+	if (MQTTPacket_len(rem_len = MQTTSerialize_subscribeLength(count, topicFilters)) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -56,12 +70,12 @@ int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int msgid, int count
 
 	ptr += MQTTPacket_encode(ptr, rem_len); /* write remaining length */;
 
-	writeInt(&ptr, msgid);
+	writeInt(&ptr, packetid);
 
 	for (i = 0; i < count; ++i)
 	{
-		writeMQTTString(&ptr, topicString[i]);
-		writeChar(&ptr, reqQos[i]);
+		writeMQTTString(&ptr, topicFilters[i]);
+		writeChar(&ptr, requestedQoSs[i]);
 	}
 
 	rc = ptr - buf;
@@ -72,12 +86,22 @@ exit:
 
 
 
-int MQTTDeserialize_suback(int* msgid, int max_count, int* count, int granted_qos[], char* buf, int buflen)
+/**
+  * Deserializes the supplied (wire) buffer into suback data
+  * @param packetid returned integer - the MQTT packet identifier
+  * @param maxcount - the maximum number of members allowed in the grantedQoSs array
+  * @param count returned integer - number of members in the grantedQoSs array
+  * @param grantedQoSs returned array of integers - the granted qualities of service
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param buflen the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+int MQTTDeserialize_suback(int* packetid, int maxcount, int* count, int grantedQoSs[], char* buf, int buflen)
 {
 	MQTTHeader header;
 	char* curdata = buf;
 	char* enddata = NULL;
-	int rc = -1;
+	int rc = 0;
 	int mylen;
 
 	FUNC_ENTRY;
@@ -88,17 +112,17 @@ int MQTTDeserialize_suback(int* msgid, int max_count, int* count, int granted_qo
 	if (enddata - curdata < 2)
 		goto exit;
 
-	*msgid = readInt(&curdata);
+	*packetid = readInt(&curdata);
 
 	*count = 0;
 	while (curdata < enddata)
 	{
-		if (*count > max_count)
+		if (*count > maxcount)
 		{
 			rc = -1;
 			goto exit;
 		}
-		granted_qos[(*count)++] = readChar(&curdata);
+		grantedQoSs[(*count)++] = readChar(&curdata);
 	}
 
 	rc = 1;

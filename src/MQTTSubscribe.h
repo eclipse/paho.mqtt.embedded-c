@@ -17,13 +17,13 @@
 #ifndef MQTTSUBSCRIBE_H_
 #define MQTTSUBSCRIBE_H_
 
-int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int msgid, int count, MQTTString topicString[], int reqQos[]);
+int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[], int requestedQoSs[]);
 
-int MQTTDeserialize_subscribe(int* dup, int* msgid, int max_count, int* count, MQTTString topicString[], int reqQos[], char* buf, int len);
+int MQTTDeserialize_subscribe(int* dup, int* packetid, int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], char* buf, int len);
 
-int MQTTSerialize_suback(char* buf, int buflen, int msgid, int count, int* granted_qos);
+int MQTTSerialize_suback(char* buf, int buflen, int packetid, int count, int* grantedQoSs);
 
-int MQTTDeserialize_suback(int* msgid, int max_count, int* count, int granted_qos[], char* buf, int len);
+int MQTTDeserialize_suback(int* packetid, int maxcount, int* count, int grantedQoSs[], char* buf, int len);
 
 
 #endif /* MQTTSUBSCRIBE_H_ */

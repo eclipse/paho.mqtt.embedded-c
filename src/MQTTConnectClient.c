@@ -20,8 +20,7 @@
 #include <string.h>
 
 /**
-  * Determines the length of the MQTT connect packet that would be produced using the supplied
-  * connect options.
+  * Determines the length of the MQTT connect packet that would be produced using the supplied connect options.
   * @param options the options to be used to build the connect packet
   * @return the length of buffer needed to contain the serialized version of the packet
   */
@@ -122,12 +121,19 @@ int MQTTSerialize_connect(char* buf, int buflen, MQTTPacket_connectData* options
 }
 
 
+/**
+  * Deserializes the supplied (wire) buffer into connack data - return code
+  * @param connack_rc returned integer value of the connack return code
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
 int MQTTDeserialize_connack(int* connack_rc, char* buf, int buflen)
 {
 	MQTTHeader header;
 	char* curdata = buf;
 	char* enddata = NULL;
-	int rc = -1;
+	int rc = 0;
 	int mylen;
 	int compression;
 
@@ -151,7 +157,12 @@ exit:
 }
 
 
-
+/**
+  * Serializes a disconnect packet into the supplied buffer, ready for writing to a socket
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer, to avoid overruns
+  * @return serialized length, or error if 0
+  */
 int MQTTSerialize_disconnect(char* buf, int buflen)
 {
 	MQTTHeader header;

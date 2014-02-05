@@ -17,12 +17,12 @@
 #ifndef MQTTUNSUBSCRIBE_H_
 #define MQTTUNSUBSCRIBE_H_
 
-int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int msgid, int count, MQTTString topicString[]);
+int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[]);
 
-int MQTTDeserialize_unsubscribe(int* dup, int* msgid, int max_count, int* count, MQTTString topicString[], char* buf, int len);
+int MQTTDeserialize_unsubscribe(int* dup, int* packetid, int max_count, int* count, MQTTString topicFilters[], char* buf, int len);
 
-int MQTTSerialize_unsuback(char* buf, int buflen, int msgid);
+int MQTTSerialize_unsuback(char* buf, int buflen, int packetid);
 
-int MQTTDeserialize_unsuback(int* msgid, char* buf, int len);
+int MQTTDeserialize_unsuback(int* packetid, char* buf, int len);
 
 #endif /* MQTTUNSUBSCRIBE_H_ */

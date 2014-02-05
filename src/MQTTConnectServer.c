@@ -20,6 +20,13 @@
 
 #define min(a, b) ((a < b) ? 1 : 0)
 
+
+/**
+  * Validates MQTT protocol name and version combinations
+  * @param protocol the MQTT protocol name as an MQTTString
+  * @param version the MQTT protocol version number, as in the connect packet
+  * @return correct MQTT combination?  1 is true, 0 is false
+  */
 int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 {
 	int rc = 0;
@@ -40,7 +47,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @param data the connect data structure to be filled out
   * @param buf the raw buffer data, of the correct length determined by the remaining length field
   * @param len the length in bytes of the data in the supplied buffer
-  * @return error code.  1 is success
+  * @return error code.  1 is success, 0 is failure
   */
 int MQTTDeserialize_connect(MQTTPacket_connectData* data, char* buf, int len)
 {
@@ -100,10 +107,17 @@ exit:
 }
 
 
+/**
+  * Serializes the connack packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param connack_rc the integer connack return code to be used 
+  * @return serialized length, or error if 0
+  */
 int MQTTSerialize_connack(char* buf, int buflen, int connack_rc)
 {
 	MQTTHeader header;
-	int rc = -1;
+	int rc = 0;
 	char *ptr = buf;
 
 	FUNC_ENTRY;

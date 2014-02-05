@@ -21,14 +21,20 @@
 #define min(a, b) ((a < b) ? 1 : 0)
 
 /**
-  * Deserializes the supplied (wire) buffer into connect data structure
-  * @param data the connect data structure to be filled out
+  * Deserializes the supplied (wire) buffer into publish data
+  * @param dup returned integer - the MQTT dup flag
+  * @param qos returned integer - the MQTT QoS value
+  * @param retained returned integer - the MQTT retained flag
+  * @param packetid returned integer - the MQTT packet identifier
+  * @param topicName returned MQTTString - the MQTT topic in the publish
+  * @param payload returned byte buffer - the MQTT publish payload
+  * @param payloadlen returned integer - the length of the MQTT payload
   * @param buf the raw buffer data, of the correct length determined by the remaining length field
-  * @param len the length in bytes of the data in the supplied buffer
+  * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success
   */
-int MQTTDeserialize_publish(int* dup, int* qos, int* retained, int* msgid, MQTTString* topicString,
-		char** payload, int* payloadlen, char* buf, int len)
+int MQTTDeserialize_publish(int* dup, int* qos, int* retained, int* packetid, MQTTString* topicName,
+		char** payload, int* payloadlen, char* buf, int buflen)
 {
 	MQTTHeader header;
 	char* curdata = buf;
@@ -45,12 +51,12 @@ int MQTTDeserialize_publish(int* dup, int* qos, int* retained, int* msgid, MQTTS
 	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
 	enddata = curdata + mylen;
 
-	if (!readMQTTLenString(topicString, &curdata, enddata) ||
+	if (!readMQTTLenString(topicName, &curdata, enddata) ||
 		enddata - curdata < 0) /* do we have enough data to read the protocol version byte? */
 		goto exit;
 
 	if (*qos > 0)
-		*msgid = readInt(&curdata);
+		*packetid = readInt(&curdata);
 
 	*payloadlen = enddata - curdata;
 	*payload = curdata;
@@ -61,12 +67,22 @@ exit:
 }
 
 
-int MQTTDeserialize_ack(int* type, int* dup, int* msgid, char* buf, int buflen)
+
+/**
+  * Deserializes the supplied (wire) buffer into an ack
+  * @param type returned integer - the MQTT packet type
+  * @param dup returned integer - the MQTT dup flag
+  * @param packetid returned integer - the MQTT packet identifier
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param buflen the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+int MQTTDeserialize_ack(int* type, int* dup, int* packetid, char* buf, int buflen)
 {
 	MQTTHeader header;
 	char* curdata = buf;
 	char* enddata = NULL;
-	int rc = -1;
+	int rc = 0;
 	int mylen;
 
 	FUNC_ENTRY;
@@ -79,7 +95,7 @@ int MQTTDeserialize_ack(int* type, int* dup, int* msgid, char* buf, int buflen)
 
 	if (enddata - curdata < 2)
 		goto exit;
-	*msgid = readInt(&curdata);
+	*packetid = readInt(&curdata);
 
 	rc = 1;
 exit:

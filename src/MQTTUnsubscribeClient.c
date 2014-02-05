@@ -20,20 +20,33 @@
 #include <string.h>
 
 /**
- * @return the remaining length
- */
-int MQTTSerialize_unsubscribeLength(int count, MQTTString topicString[])
+  * Determines the length of the MQTT unsubscribe packet that would be produced using the supplied parameters
+  * @param count the number of topic filter strings in topicFilters
+  * @param topicFilters the array of topic filter strings to be used in the publish
+  * @return the length of buffer needed to contain the serialized version of the packet
+  */
+int MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[])
 {
 	int i;
-	int len = 2; /* msgid */
+	int len = 2; /* packetid */
 
 	for (i = 0; i < count; ++i)
-		len += 2 + MQTTstrlen(topicString[i]); /* length + topic*/
+		len += 2 + MQTTstrlen(topicFilters[i]); /* length + topic*/
 	return len;
 }
 
 
-int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int msgid, int count, MQTTString topicString[])
+/**
+  * Serializes the supplied unsubscribe data into the supplied buffer, ready for sending
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param buflen the length in bytes of the data in the supplied buffer
+  * @param dup integer - the MQTT dup flag
+  * @param packetid integer - the MQTT packet identifier
+  * @param count - number of members in the topicFilters array
+  * @param topicFilters - array of topic filter names
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[])
 {
 	char *ptr = buf;
 	MQTTHeader header;
@@ -42,7 +55,7 @@ int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int msgid, int cou
 	int i = 0;
 
 	FUNC_ENTRY;
-	if (MQTTPacket_len(rem_len = MQTTSerialize_unsubscribeLength(count, topicString)) > buflen)
+	if (MQTTPacket_len(rem_len = MQTTSerialize_unsubscribeLength(count, topicFilters)) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -56,10 +69,10 @@ int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int msgid, int cou
 
 	ptr += MQTTPacket_encode(ptr, rem_len); /* write remaining length */;
 
-	writeInt(&ptr, msgid);
+	writeInt(&ptr, packetid);
 
 	for (i = 0; i < count; ++i)
-		writeMQTTString(&ptr, topicString[i]);
+		writeMQTTString(&ptr, topicFilters[i]);
 
 	rc = ptr - buf;
 exit:
@@ -68,14 +81,21 @@ exit:
 }
 
 
-int MQTTDeserialize_unsuback(int* msgid, char* buf, int buflen)
+/**
+  * Deserializes the supplied (wire) buffer into unsuback data
+  * @param packetid returned integer - the MQTT packet identifier
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param buflen the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+int MQTTDeserialize_unsuback(int* packetid, char* buf, int buflen)
 {
 	int type = 0;
 	int dup = 0;
-	int rc = -1;
+	int rc = 0;
 
 	FUNC_ENTRY;
-	rc = MQTTDeserialize_ack(&type, &dup, msgid, buf, buflen);
+	rc = MQTTDeserialize_ack(&type, &dup, packetid, buf, buflen);
 	if (type == UNSUBACK)
 		rc = 1;
 	FUNC_EXIT_RC(rc);

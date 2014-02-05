@@ -17,7 +17,9 @@
 #ifndef MQTTPACKET_H_
 #define MQTTPACKET_H_
 
-typedef unsigned int bool;
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
 
 enum errors
 {
@@ -42,18 +44,18 @@ typedef union
 #if defined(REVERSED)
 	struct
 	{
-		unsigned int type : 4;	/**< message type nibble */
-		bool dup : 1;			/**< DUP flag bit */
-		unsigned int qos : 2;	/**< QoS value, 0, 1 or 2 */
-		bool retain : 1;		/**< retained flag bit */
+		unsigned int type : 4;			/**< message type nibble */
+		unsigned int dup : 1;				/**< DUP flag bit */
+		unsigned int qos : 2;				/**< QoS value, 0, 1 or 2 */
+		unsigned int retain : 1;		/**< retained flag bit */
 	} bits;
 #else
 	struct
 	{
-		bool retain : 1;		/**< retained flag bit */
-		unsigned int qos : 2;	/**< QoS value, 0, 1 or 2 */
-		bool dup : 1;			/**< DUP flag bit */
-		unsigned int type : 4;	/**< message type nibble */
+		unsigned int retain : 1;		/**< retained flag bit */
+		unsigned int qos : 2;				/**< QoS value, 0, 1 or 2 */
+		unsigned int dup : 1;				/**< DUP flag bit */
+		unsigned int type : 4;			/**< message type nibble */
 	} bits;
 #endif
 } MQTTHeader;
@@ -79,7 +81,7 @@ int MQTTstrlen(MQTTString mqttstring);
 #include "MQTTSubscribe.h"
 #include "MQTTUnsubscribe.h"
 
-int MQTTDeserialize_ack(int* type, int* dup, int* msgid, char* buf, int buflen);
+int MQTTDeserialize_ack(int* type, int* dup, int* packetid, char* buf, int buflen);
 
 int MQTTPacket_len(int rem_len);
 
@@ -94,5 +96,10 @@ void writeInt(char** pptr, int anInt);
 int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata);
 void writeCString(char** pptr, char* string);
 void writeMQTTString(char** pptr, MQTTString mqttstring);
+
+#ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
+}
+#endif
+
 
 #endif /* MQTTPACKET_H_ */

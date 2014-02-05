@@ -19,12 +19,24 @@
 
 #include <string.h>
 
-int MQTTDeserialize_unsubscribe(int* dup, int* msgid, int max_count, int* count, MQTTString topicStrings[], char* buf, int len)
+
+/**
+  * Deserializes the supplied (wire) buffer into unsubscribe data
+  * @param dup integer returned - the MQTT dup flag
+  * @param packetid integer returned - the MQTT packet identifier
+  * @param maxcount - the maximum number of members allowed in the topicFilters and requestedQoSs arrays
+  * @param count - number of members in the topicFilters and requestedQoSs arrays
+  * @param topicFilters - array of topic filter names
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param buflen the length in bytes of the data in the supplied buffer
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTDeserialize_unsubscribe(int* dup, int* packetid, int maxcount, int* count, MQTTString topicFilters[], char* buf, int len)
 {
 	MQTTHeader header;
 	char* curdata = buf;
 	char* enddata = NULL;
-	int rc = -1;
+	int rc = 0;
 	int mylen = 0;
 
 	FUNC_ENTRY;
@@ -34,12 +46,12 @@ int MQTTDeserialize_unsubscribe(int* dup, int* msgid, int max_count, int* count,
 	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
 	enddata = curdata + mylen;
 
-	*msgid = readInt(&curdata);
+	*packetid = readInt(&curdata);
 
 	*count = 0;
 	while (curdata < enddata)
 	{
-		if (!readMQTTLenString(&topicStrings[*count], &curdata, enddata))
+		if (!readMQTTLenString(&topicFilters[*count], &curdata, enddata))
 			goto exit;
 		(*count)++;
 	}
@@ -51,10 +63,17 @@ exit:
 }
 
 
-int MQTTSerialize_unsuback(char* buf, int buflen, int msgid)
+/**
+  * Serializes the supplied unsuback data into the supplied buffer, ready for sending
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param packetid integer - the MQTT packet identifier
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTSerialize_unsuback(char* buf, int buflen, int packetid)
 {
 	MQTTHeader header;
-	int rc = -1;
+	int rc = 0;
 	char *ptr = buf;
 
 	FUNC_ENTRY;
@@ -69,7 +88,7 @@ int MQTTSerialize_unsuback(char* buf, int buflen, int msgid)
 
 	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
 
-	writeInt(&ptr, msgid);
+	writeInt(&ptr, packetid);
 
 	rc = ptr - buf;
 exit:
