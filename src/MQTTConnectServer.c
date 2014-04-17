@@ -38,7 +38,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 			min(4, protocol->lenstring.len)))
 		rc = 1;
 
-	return 1;
+	return rc;
 }
 
 

@@ -80,10 +80,7 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0, 1 or 2.
-	  * 0 signifies no SSL options and no serverURIs
-	  * 1 signifies no serverURIs
-	  */
+	/** The version number of this structure.  Must be 0 */
 	int struct_version;
 	/** Version of MQTT to be used.  3 = 3.1 4 = 3.1.1
 	  */
@@ -97,7 +94,7 @@ typedef struct
 	MQTTString password;
 } MQTTPacket_connectData;
 
-#define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'W'}, 0, 3, {NULL, {0, NULL}}, 0, 1, 0, \
+#define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
 int MQTTSerialize_connect(char* buf, int buflen, MQTTPacket_connectData* options);
@@ -107,5 +104,6 @@ int MQTTSerialize_connack(char* buf, int buflen, int connack_rc);
 int MQTTDeserialize_connack(int* connack_rc, char* buf, int buflen);
 
 int MQTTSerialize_disconnect(char* buf, int buflen);
+int MQTTSerialize_pingreq(char* buf, int buflen);
 
 #endif /* MQTTCONNECT_H_ */

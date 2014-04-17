@@ -1,1 +1,0 @@
-gcc ../test/test1.c -I. MQTTConnectClient.c MQTTConnectServer.c MQTTPacket.c MQTTSerializePublish.c  MQTTDeserializePublish.c -Wall MQTTSubscribeServer.c MQTTSubscribeClient.c MQTTUnsubscribeServer.c MQTTUnsubscribeClient.c

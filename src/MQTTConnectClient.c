@@ -157,13 +157,15 @@ exit:
 }
 
 
+
 /**
-  * Serializes a disconnect packet into the supplied buffer, ready for writing to a socket
+  * Serializes a 0-length packet into the supplied buffer, ready for writing to a socket
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
+  * @param type the message type
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_disconnect(char* buf, int buflen)
+int MQTTSerialize_zero(char* buf, int buflen, int type)
 {
 	MQTTHeader header;
 	int rc = -1;
@@ -176,7 +178,7 @@ int MQTTSerialize_disconnect(char* buf, int buflen)
 		goto exit;
 	}
 	header.byte = 0;
-	header.bits.type = DISCONNECT;
+	header.bits.type = type;
 	writeChar(&ptr, header.byte); /* write header */
 
 	ptr += MQTTPacket_encode(ptr, 0); /* write remaining length */
@@ -184,4 +186,28 @@ int MQTTSerialize_disconnect(char* buf, int buflen)
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+
+
+/**
+  * Serializes a disconnect packet into the supplied buffer, ready for writing to a socket
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer, to avoid overruns
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_disconnect(char* buf, int buflen)
+{
+	return MQTTSerialize_zero(buf, buflen, DISCONNECT);
+}
+
+
+/**
+  * Serializes a disconnect packet into the supplied buffer, ready for writing to a socket
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer, to avoid overruns
+  * @return serialized length, or error if 0
+  */
+int MQTTSerialize_pingreq(char* buf, int buflen)
+{
+	return MQTTSerialize_zero(buf, buflen, PINGREQ);
 }

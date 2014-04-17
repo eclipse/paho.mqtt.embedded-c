@@ -174,7 +174,7 @@ void writeInt(char** pptr, int anInt)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param string the C string to write
  */
-void writeCString(char** pptr, char* string)
+void writeCString(char** pptr, const char* string)
 {
 	int len = strlen(string);
 	writeInt(pptr, len);
@@ -200,6 +200,8 @@ void writeMQTTString(char** pptr, MQTTString mqttstring)
 	}
 	else if (mqttstring.cstring)
 		writeCString(pptr, mqttstring.cstring);
+	else
+		writeInt(pptr, 0);
 }
 
 
@@ -225,6 +227,7 @@ int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata)
 			rc = 1;
 		}
 	}
+	mqttstring->cstring = NULL;
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
@@ -244,6 +247,34 @@ int MQTTstrlen(MQTTString mqttstring)
 	else
 		rc = mqttstring.lenstring.len;
 	return rc;
+}
+
+
+/**
+ * Compares an MQTTString to a C string
+ * @param a the MQTTString to compare
+ * @param bptr the C string to compare
+ * @return boolean - equal or not
+ */
+int MQTTPacket_equals(MQTTString* a, char* bptr)
+{
+	int alen = 0,
+		blen = 0;
+	char *aptr;
+	
+	if (a->cstring)
+	{
+		aptr = a->cstring;
+		alen = strlen(a->cstring);
+	}
+	else
+	{
+		aptr = a->lenstring.data;
+		alen = a->lenstring.len;
+	}
+	blen = strlen(bptr);
+	
+	return (alen == blen) && (strncmp(aptr, bptr, alen) == 0);
 }
 
 
@@ -279,5 +310,4 @@ int MQTTPacket_read(char* buf, int buflen, int (*getfn)(char*, int))
 exit:
 	return rc;
 }
-
 
