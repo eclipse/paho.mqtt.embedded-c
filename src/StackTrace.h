@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix for bug #434081
  *******************************************************************************/
 
 #ifndef STACKTRACE_H_
@@ -32,7 +33,9 @@
 #define FUNC_EXIT_RC(x)
 #define FUNC_EXIT_MED_RC(x)
 #define FUNC_EXIT_MAX_RC(x)
+
 #else
+
 #if defined(WIN32)
 #define inline __inline
 #define FUNC_ENTRY StackTrace_entry(__FUNCTION__, __LINE__, TRACE_MINIMUM)
@@ -58,14 +61,18 @@
 #define FUNC_EXIT_RC(x) StackTrace_exit(__func__, __LINE__, &x, TRACE_MINIMUM)
 #define FUNC_EXIT_MED_RC(x) StackTrace_exit(__func__, __LINE__, &x, TRACE_MEDIUM)
 #define FUNC_EXIT_MAX_RC(x) StackTrace_exit(__func__, __LINE__, &x, TRACE_MAXIMUM)
-#endif
-#endif
 
 void StackTrace_entry(const char* name, int line, int trace);
 void StackTrace_exit(const char* name, int line, void* return_value, int trace);
 
 void StackTrace_printStack(FILE* dest);
 char* StackTrace_get(unsigned long);
+
+#endif
+
+#endif
+
+
 
 
 #endif /* STACKTRACE_H_ */
