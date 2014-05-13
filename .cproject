@@ -33,7 +33,7 @@
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.so.debug.option.optimization.level.1025282191" name="Optimization Level" superClass="gnu.c.compiler.so.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.so.debug.option.debugging.level.1611217070" name="Debug Level" superClass="gnu.c.compiler.so.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1830522647" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/embedded-C/src}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/embedded-C/MQTTPacket/src}&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.103641925" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
@@ -48,34 +48,29 @@
 								<option defaultValue="true" id="gnu.cpp.link.so.debug.option.shared.2029194272" name="Shared (-shared)" superClass="gnu.cpp.link.so.debug.option.shared" valueType="boolean"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.so.debug.65794919" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.debug">
-								<option id="gnu.both.asm.option.include.paths.624151837" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/embedded-C/src}&quot;"/>
-								</option>
+								<option id="gnu.both.asm.option.include.paths.624151837" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.544886244" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
-					<folderInfo id="cdt.managedbuild.config.gnu.so.debug.1049786922.229614809" name="/" resourcePath="src">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.so.debug.1928971075" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.so.debug" unusedChildren="">
-							<targetPlatform id="cdt.managedbuild.target.gnu.platform.so.debug" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.so.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1977786693" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1945555299"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.1791121928" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.531983260"/>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.debug.1513892573" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.debug.908163257">
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1177303845" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+					<folderInfo id="cdt.managedbuild.config.gnu.so.debug.1049786922.2012134380" name="/" resourcePath="MQTTPacket/src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.so.debug.373936532" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.so.debug" unusedChildren="">
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.826338972" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1945555299"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.162520987" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.debug.531983260"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.debug.411531358" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.debug.908163257">
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1008566315" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.linker.so.debug.1938669683" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.so.debug.1517956238"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.406722453" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.1821422645"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.so.debug.1728943173" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.debug.65794919">
-								<option id="gnu.both.asm.option.include.paths.599424569" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/embedded-C/src}&quot;"/>
-								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.184866373" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.so.debug.1559782853" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.so.debug.1517956238"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.550864828" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.so.debug.1821422645"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.so.debug.580263878" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.debug.65794919">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1150650244" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="samples" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="samples"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MQTTClient/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MQTTPacket/samples"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="MQTTPacket/src"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -136,9 +131,28 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.so.release.374902706.734460083" name="/" resourcePath="MQTTPacket/src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.so.release.1128610593" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.so.release" unusedChildren="">
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1066241773" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1822133490"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.so.release.771591369" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.so.release.482703733"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.so.release.1125066379" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.so.release.1838975818">
+								<option id="gnu.c.compiler.option.include.paths.271775004" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/embedded-C/MQTTPacket/src}&quot;"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.995178283" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.so.release.1173497209" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.so.release.1807144456"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.so.release.2074144887" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.so.release.395214940"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.so.release.239315112" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.so.release.2061779220">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2006922113" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
 					<sourceEntries>
-						<entry excluding="samples" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="samples"/>
+						<entry excluding="src|MQTTClient|MQTTPacket/samples|samples" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="src" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MQTTClient"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MQTTClient/src"/>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="MQTTPacket/samples"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

@@ -1,6 +1,12 @@
-# Eclipse Paho MQTT C client for Embedded platforms
+# Eclipse Paho MQTT C/C++ client for Embedded platforms
 
-This repository contains the source code for the [Eclipse Paho](http://eclipse.org/paho) MQTT C client library for Embedded platorms. 
+This repository contains the source code for the [Eclipse Paho](http://eclipse.org/paho) MQTT C/C++ client library for Embedded platorms. 
+
+The MQTTPacket directory contains the lowest level C library with the smallest requirements.  This supplies simple serialization 
+and deserialization routines.  It is mainly up to you to write and read to and from the network.
+
+The MQTTClient directory contains the next level C++ library.  This still avoids most networking code so that you can plugin the
+network of your choice.
 
 ## Build requirements / compilation
 
@@ -18,7 +24,7 @@ As yet, there is no tracing.  For the smallest client, should we have tracing?
 
 ## Reporting bugs
 
-Please report bugs under the "MQTT-C" Component in [Eclipse Bugzilla](http://bugs.eclipse.org/bugs/) for the Paho Technology project.
+Please report bugs under the "MQTT-Embedded-C" Component in [Eclipse Bugzilla](http://bugs.eclipse.org/bugs/) for the Paho Technology project.
 
 ## More information
 

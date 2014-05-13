@@ -34,7 +34,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 	if (version == 3 && memcmp(protocol->lenstring.data, "MQIdsp",
 			min(6, protocol->lenstring.len)))
 		rc = 1;
-	else if (version == 3 && memcmp(protocol->lenstring.data, "MQTT",
+	else if (version == 4 && memcmp(protocol->lenstring.data, "MQTT",
 			min(4, protocol->lenstring.len)))
 		rc = 1;
 
