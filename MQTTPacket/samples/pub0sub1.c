@@ -118,9 +118,9 @@ int Socket_new(char* addr, int port, int* sock)
 
 int mysock = 0;
 
-int getdata(char* buf, size_t count)
+int getdata(char* buf, int count)
 {
-	return recv(mysock, buf, (size_t)count, 0);
+	return recv(mysock, buf, count, 0);
 }
 
 
@@ -230,7 +230,7 @@ int main()
 
 exit:
 	rc = shutdown(mysock, SHUT_WR);
-	rc = recv(mysock, NULL, (size_t)0, 0);
+	rc = recv(mysock, NULL, 0, 0);
 	rc = close(mysock);
 
 	return 0;
