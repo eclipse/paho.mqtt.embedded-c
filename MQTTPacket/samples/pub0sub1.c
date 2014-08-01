@@ -149,7 +149,7 @@ int main()
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	rc = Socket_new("127.0.0.1", 1883, &mysock);
+	rc = Socket_new("127.0.0.1", 1884, &mysock);
 
 	data.clientID.cstring = "me";
 	data.keepAliveInterval = 20;
@@ -205,9 +205,9 @@ int main()
 	{
 		if (MQTTPacket_read(buf, buflen, getdata) == PUBLISH)
 		{
-			int dup;
+			unsigned char dup;
 			int qos;
-			int retained;
+			unsigned char retained;
 			int msgid;
 			int payloadlen_in;
 			char* payload_in;
