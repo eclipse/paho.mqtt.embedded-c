@@ -55,9 +55,9 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
   * @param options the options to be used to build the connect packet
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_connect(char* buf, int buflen, MQTTPacket_connectData* options)
+int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options)
 {
-	char *ptr = buf;
+	unsigned char *ptr = buf;
 	MQTTHeader header;
 	MQTTConnectFlags flags;
 	int len = 0;
@@ -128,11 +128,11 @@ int MQTTSerialize_connect(char* buf, int buflen, MQTTPacket_connectData* options
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_connack(int* connack_rc, char* buf, int buflen)
+int MQTTDeserialize_connack(unsigned char* connack_rc, unsigned char* buf, int buflen)
 {
 	MQTTHeader header;
-	char* curdata = buf;
-	char* enddata = NULL;
+	unsigned char* curdata = buf;
+	unsigned char* enddata = NULL;
 	int rc = 0;
 	int mylen;
 	int compression;
@@ -162,14 +162,14 @@ exit:
   * Serializes a 0-length packet into the supplied buffer, ready for writing to a socket
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
-  * @param type the message type
+  * @param packettype the message type
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_zero(char* buf, int buflen, int type)
+int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 {
 	MQTTHeader header;
 	int rc = -1;
-	char *ptr = buf;
+	unsigned char *ptr = buf;
 
 	FUNC_ENTRY;
 	if (buflen < 2)
@@ -178,7 +178,7 @@ int MQTTSerialize_zero(char* buf, int buflen, int type)
 		goto exit;
 	}
 	header.byte = 0;
-	header.bits.type = type;
+	header.bits.type = packettype;
 	writeChar(&ptr, header.byte); /* write header */
 
 	ptr += MQTTPacket_encode(ptr, 0); /* write remaining length */
@@ -195,7 +195,7 @@ exit:
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_disconnect(char* buf, int buflen)
+int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
 {
 	return MQTTSerialize_zero(buf, buflen, DISCONNECT);
 }
@@ -207,7 +207,7 @@ int MQTTSerialize_disconnect(char* buf, int buflen)
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_pingreq(char* buf, int buflen)
+int MQTTSerialize_pingreq(unsigned char* buf, int buflen)
 {
 	return MQTTSerialize_zero(buf, buflen, PINGREQ);
 }

@@ -25,7 +25,7 @@
  * @param length the length to be encoded
  * @return the number of bytes written to buffer
  */
-int MQTTPacket_encode(char* buf, int length)
+int MQTTPacket_encode(unsigned char* buf, int length)
 {
 	int rc = 0;
 
@@ -50,9 +50,9 @@ int MQTTPacket_encode(char* buf, int length)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_decode(int (*getcharfn)(char*, int), int* value)
+int MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int* value)
 {
-	char c;
+	unsigned char c;
 	int multiplier = 1;
 	int len = 0;
 #define MAX_NO_OF_REMAINING_LENGTH_BYTES 4
@@ -97,9 +97,9 @@ int MQTTPacket_len(int rem_len)
 }
 
 
-static char* bufptr;
+static unsigned char* bufptr;
 
-int bufchar(char* c, int count)
+int bufchar(unsigned char* c, int count)
 {
 	int i;
 
@@ -109,7 +109,7 @@ int bufchar(char* c, int count)
 }
 
 
-int MQTTPacket_decodeBuf(char* buf, int* value)
+int MQTTPacket_decodeBuf(unsigned char* buf, int* value)
 {
 	bufptr = buf;
 	return MQTTPacket_decode(bufchar, value);
@@ -121,10 +121,10 @@ int MQTTPacket_decodeBuf(char* buf, int* value)
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the integer value calculated
  */
-int readInt(char** pptr)
+int readInt(unsigned char** pptr)
 {
-	char* ptr = *pptr;
-	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
+	unsigned char* ptr = *pptr;
+	int len = 256*(*ptr) + (*(ptr+1));
 	*pptr += 2;
 	return len;
 }
@@ -135,7 +135,7 @@ int readInt(char** pptr)
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the character read
  */
-char readChar(char** pptr)
+char readChar(unsigned char** pptr)
 {
 	char c = **pptr;
 	(*pptr)++;
@@ -148,7 +148,7 @@ char readChar(char** pptr)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param c the character to write
  */
-void writeChar(char** pptr, char c)
+void writeChar(unsigned char** pptr, char c)
 {
 	**pptr = c;
 	(*pptr)++;
@@ -160,11 +160,11 @@ void writeChar(char** pptr, char c)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param anInt the integer to write
  */
-void writeInt(char** pptr, int anInt)
+void writeInt(unsigned char** pptr, int anInt)
 {
-	**pptr = (char)(anInt / 256);
+	**pptr = (unsigned char)(anInt / 256);
 	(*pptr)++;
-	**pptr = (char)(anInt % 256);
+	**pptr = (unsigned char)(anInt % 256);
 	(*pptr)++;
 }
 
@@ -174,7 +174,7 @@ void writeInt(char** pptr, int anInt)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param string the C string to write
  */
-void writeCString(char** pptr, const char* string)
+void writeCString(unsigned char** pptr, const char* string)
 {
 	int len = strlen(string);
 	writeInt(pptr, len);
@@ -190,7 +190,7 @@ int getLenStringLen(char* ptr)
 }
 
 
-void writeMQTTString(char** pptr, MQTTString mqttstring)
+void writeMQTTString(unsigned char** pptr, MQTTString mqttstring)
 {
 	if (mqttstring.lenstring.len > 0)
 	{
@@ -211,7 +211,7 @@ void writeMQTTString(char** pptr, MQTTString mqttstring)
  * @param enddata pointer to the end of the data: do not read beyond
  * @return 1 if successful, 0 if not
  */
-int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata)
+int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned char* enddata)
 {
 	int rc = 0;
 
@@ -222,7 +222,7 @@ int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata)
 		mqttstring->lenstring.len = readInt(pptr); /* increments pptr to point past length */
 		if (&(*pptr)[mqttstring->lenstring.len] <= enddata)
 		{
-			mqttstring->lenstring.data = *pptr;
+			mqttstring->lenstring.data = (char*)*pptr;
 			*pptr += mqttstring->lenstring.len;
 			rc = 1;
 		}
@@ -285,7 +285,7 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
  * @param getfn pointer to a function which will read any number of bytes from the needed source
  * @return integer MQTT packet type, or -1 on error
  */
-int MQTTPacket_read(char* buf, int buflen, int (*getfn)(char*, int))
+int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int))
 {
 	int rc = -1;
 	MQTTHeader header;

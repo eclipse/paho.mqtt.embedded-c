@@ -81,25 +81,25 @@ int MQTTstrlen(MQTTString mqttstring);
 #include "MQTTSubscribe.h"
 #include "MQTTUnsubscribe.h"
 
-int MQTTSerialize_ack(char* buf, int buflen, int type, unsigned char dup, int packetid);
-int MQTTDeserialize_ack(int* type, unsigned char* dup, int* packetid, char* buf, int buflen);
+int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char type, unsigned char dup, unsigned short packetid);
+int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen);
 
 int MQTTPacket_len(int rem_len);
 int MQTTPacket_equals(MQTTString* a, char* b);
 
-int MQTTPacket_encode(char* buf, int length);
-int MQTTPacket_decode(int (*getcharfn)(char*, int), int* value);
-int MQTTPacket_decodeBuf(char* buf, int* value);
+int MQTTPacket_encode(unsigned char* buf, int length);
+int MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int* value);
+int MQTTPacket_decodeBuf(unsigned char* buf, int* value);
 
-int readInt(char** pptr);
-char readChar(char** pptr);
-void writeChar(char** pptr, char c);
-void writeInt(char** pptr, int anInt);
-int readMQTTLenString(MQTTString* mqttstring, char** pptr, char* enddata);
-void writeCString(char** pptr, const char* string);
-void writeMQTTString(char** pptr, MQTTString mqttstring);
+int readInt(unsigned char** pptr);
+char readChar(unsigned char** pptr);
+void writeChar(unsigned char** pptr, char c);
+void writeInt(unsigned char** pptr, int anInt);
+int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned char* enddata);
+void writeCString(unsigned char** pptr, const char* string);
+void writeMQTTString(unsigned char** pptr, MQTTString mqttstring);
 
-int MQTTPacket_read(char* buf, int buflen, int (*getfn)(char*, int));
+int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int));
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }

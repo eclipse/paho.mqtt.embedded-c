@@ -1,0 +1,18 @@
+<testsuite name="test1" tests="6">
+<testcase classname="test1" name="de/serialization" time="0.000" >
+<failure type="keepAliveIntervals should be the same">file ../test/test1.c, line 286 </failure>
+<failure type="willFlags should be the same">file ../test/test1.c, line 292 </failure>
+<failure type="will qos should be the same">file ../test/test1.c, line 312 </failure>
+<failure type="packets should be the same">file ../test/test1.c, line 356 </failure>
+</testcase>
+<testcase classname="test1" name="de/serialization" time="0.000" >
+</testcase>
+<testcase classname="test1" name="de/serialization" time="0.000" >
+</testcase>
+<testcase classname="test1" name="de/serialization" time="0.000" >
+</testcase>
+<testcase classname="test1" name="de/serialization" time="0.000" >
+</testcase>
+<testcase classname="test1" name="de/serialization" time="0.000" >
+</testcase>
+</testsuite>

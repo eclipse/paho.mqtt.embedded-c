@@ -48,12 +48,12 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, char* buf, int len)
+int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
 {
 	MQTTHeader header;
 	MQTTConnectFlags flags;
-	char* curdata = buf;
-	char* enddata = &buf[len];
+	unsigned char* curdata = buf;
+	unsigned char* enddata = &buf[len];
 	int rc = 0;
 	MQTTString Protocol;
 	int version;
@@ -113,11 +113,11 @@ exit:
   * @param connack_rc the integer connack return code to be used 
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_connack(char* buf, int buflen, int connack_rc)
+int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc)
 {
 	MQTTHeader header;
 	int rc = 0;
-	char *ptr = buf;
+	unsigned char *ptr = buf;
 
 	FUNC_ENTRY;
 	if (buflen < 2)

@@ -69,7 +69,7 @@ typedef struct
       * The quality of service setting for the LWT message (see
       * MQTTAsync_message.qos and @ref qos).
       */
-	int qos;
+	char qos;
 } MQTTPacket_willOptions;
 
 
@@ -84,9 +84,9 @@ typedef struct
 	int struct_version;
 	/** Version of MQTT to be used.  3 = 3.1 4 = 3.1.1
 	  */
-	int MQTTVersion;
+	unsigned char MQTTVersion;
 	MQTTString clientID;
-	int keepAliveInterval;
+	unsigned short keepAliveInterval;
 	unsigned char cleansession;
 	unsigned char willFlag;
 	MQTTPacket_willOptions will;
@@ -97,13 +97,13 @@ typedef struct
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
-int MQTTSerialize_connect(char* buf, int buflen, MQTTPacket_connectData* options);
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, char* buf, int len);
+int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
+int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
 
-int MQTTSerialize_connack(char* buf, int buflen, int connack_rc);
-int MQTTDeserialize_connack(int* connack_rc, char* buf, int buflen);
+int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc);
+int MQTTDeserialize_connack(unsigned char* connack_rc, unsigned char* buf, int buflen);
 
-int MQTTSerialize_disconnect(char* buf, int buflen);
-int MQTTSerialize_pingreq(char* buf, int buflen);
+int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
+int MQTTSerialize_pingreq(unsigned char* buf, int buflen);
 
 #endif /* MQTTCONNECT_H_ */

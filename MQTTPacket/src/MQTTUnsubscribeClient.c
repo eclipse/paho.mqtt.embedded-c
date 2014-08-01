@@ -46,9 +46,10 @@ int MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[])
   * @param topicFilters - array of topic filter names
   * @return the length of the serialized data.  <= 0 indicates error
   */
-int MQTTSerialize_unsubscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[])
+int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+		int count, MQTTString topicFilters[])
 {
-	char *ptr = buf;
+	unsigned char *ptr = buf;
 	MQTTHeader header;
 	int rem_len = 0;
 	int rc = -1;
@@ -88,9 +89,9 @@ exit:
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_unsuback(int* packetid, char* buf, int buflen)
+int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int buflen)
 {
-	int type = 0;
+	unsigned char type = 0;
 	unsigned char dup = 0;
 	int rc = 0;
 

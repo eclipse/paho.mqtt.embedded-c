@@ -324,7 +324,7 @@ int test1(struct Options options)
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	MQTTPacket_connectData data_after = MQTTPacket_connectData_initializer;
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
@@ -366,23 +366,23 @@ int test1(struct Options options)
 int test2(struct Options options)
 {
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 
 	unsigned char dup = 0;
 	int qos = 2;
 	unsigned char retained = 0;
-	int msgid = 23;
+	unsigned short msgid = 23;
 	MQTTString topicString = MQTTString_initializer;
-	char *payload = "kkhkhkjkj jkjjk jk jk ";
-	int payloadlen = strlen(payload);
+	unsigned char *payload = (unsigned char*)"kkhkhkjkj jkjjk jk jk ";
+	int payloadlen = strlen((char*)payload);
 
 	unsigned char dup2 = 1;
 	int qos2 = 1;
 	unsigned char retained2 = 1;
-	int msgid2 = 3243;
+	unsigned short msgid2 = 3243;
 	MQTTString topicString2 = MQTTString_initializer;
-	char *payload2 = NULL;
+	unsigned char *payload2 = NULL;
 	int payloadlen2 = 0;
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
@@ -427,18 +427,18 @@ int test3(struct Options options)
 {
 	int i = 0;
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 #define TOPIC_COUNT 2
 
-	int dup = 0;
-	int msgid = 23;
+	unsigned char dup = 0;
+	unsigned short msgid = 23;
 	int count = TOPIC_COUNT;
 	MQTTString topicStrings[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 	int req_qoss[TOPIC_COUNT] = {2, 1};
 
-	int dup2 = 1;
-	int msgid2 = 2223;
+	unsigned char dup2 = 1;
+	unsigned short msgid2 = 2223;
 	int count2 = 0;
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 	int req_qoss2[TOPIC_COUNT] = {0, 0};
@@ -482,15 +482,15 @@ int test4(struct Options options)
 {
 	int i = 0;
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 #define TOPIC_COUNT 2
 
 	int msgid = 23;
 	int count = TOPIC_COUNT;
 	int granted_qoss[TOPIC_COUNT] = {2, 1};
-;
-	int msgid2 = 2223;
+
+	unsigned short msgid2 = 2223;
 	int count2 = 0;
 	int granted_qoss2[TOPIC_COUNT] = {0, 0};
 
@@ -525,17 +525,17 @@ int test5(struct Options options)
 {
 	int i = 0;
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 #define TOPIC_COUNT 2
 
-	int dup = 0;
-	int msgid = 23;
+	unsigned char dup = 0;
+	unsigned short msgid = 23;
 	int count = TOPIC_COUNT;
 	MQTTString topicStrings[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 
-	int dup2 = 1;
-	int msgid2 = 2223;
+	unsigned char dup2 = 1;
+	unsigned short msgid2 = 2223;
 	int count2 = 0;
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 
@@ -573,12 +573,12 @@ int test5(struct Options options)
 int test6(struct Options options)
 {
 	int rc = 0;
-	char buf[100];
+	unsigned char buf[100];
 	int buflen = sizeof(buf);
 
-	int connack_rc = 77;
+	unsigned char connack_rc = 77;
 
-	int connack_rc2 = 0;
+	unsigned char connack_rc2 = 0;
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();

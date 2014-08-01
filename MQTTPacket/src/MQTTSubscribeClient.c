@@ -47,9 +47,10 @@ int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
   * @param requestedQoSs - array of requested QoS
   * @return the length of the serialized data.  <= 0 indicates error
   */
-int MQTTSerialize_subscribe(char* buf, int buflen, int dup, int packetid, int count, MQTTString topicFilters[], int requestedQoSs[])
+int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid, int count,
+		MQTTString topicFilters[], int requestedQoSs[])
 {
-	char *ptr = buf;
+	unsigned char *ptr = buf;
 	MQTTHeader header;
 	int rem_len = 0;
 	int rc = 0;
@@ -96,11 +97,11 @@ exit:
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_suback(int* packetid, int maxcount, int* count, int grantedQoSs[], char* buf, int buflen)
+int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int buflen)
 {
 	MQTTHeader header;
-	char* curdata = buf;
-	char* enddata = NULL;
+	unsigned char* curdata = buf;
+	unsigned char* enddata = NULL;
 	int rc = 0;
 	int mylen;
 
