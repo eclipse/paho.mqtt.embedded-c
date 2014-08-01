@@ -283,7 +283,7 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 			checkMQTTStrings(before->clientID, after->clientID), "ClientIDs were different\n", rc);
 
 	assert("keepAliveIntervals should be the same",
-			before->keepAliveInterval == after->keepAliveInterval, "keepAliveIntervals were different\n", rc);
+			before->keepAliveInterval == after->keepAliveInterval, "keepAliveIntervals were different %d\n", after->keepAliveInterval);
 
 	assert("cleansessions should be the same",
 			before->cleansession == after->cleansession, "cleansessions were different\n", rc);
@@ -369,17 +369,17 @@ int test2(struct Options options)
 	char buf[100];
 	int buflen = sizeof(buf);
 
-	int dup = 0;
+	unsigned char dup = 0;
 	int qos = 2;
-	int retained = 0;
+	unsigned char retained = 0;
 	int msgid = 23;
 	MQTTString topicString = MQTTString_initializer;
 	char *payload = "kkhkhkjkj jkjjk jk jk ";
 	int payloadlen = strlen(payload);
 
-	int dup2 = 1;
+	unsigned char dup2 = 1;
 	int qos2 = 1;
-	int retained2 = 1;
+	unsigned char retained2 = 1;
 	int msgid2 = 3243;
 	MQTTString topicString2 = MQTTString_initializer;
 	char *payload2 = NULL;

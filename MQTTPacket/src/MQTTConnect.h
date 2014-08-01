@@ -64,7 +64,7 @@ typedef struct
 	/**
       * The retained flag for the LWT message (see MQTTAsync_message.retained).
       */
-	int retained;
+	unsigned char retained;
 	/**
       * The quality of service setting for the LWT message (see
       * MQTTAsync_message.qos and @ref qos).
@@ -87,8 +87,8 @@ typedef struct
 	int MQTTVersion;
 	MQTTString clientID;
 	int keepAliveInterval;
-	int cleansession;
-	int willFlag;
+	unsigned char cleansession;
+	unsigned char willFlag;
 	MQTTPacket_willOptions will;
 	MQTTString username;
 	MQTTString password;

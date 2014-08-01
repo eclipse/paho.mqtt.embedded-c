@@ -51,8 +51,8 @@ int MQTTSerialize_publishLength(int qos, MQTTString topicName, int payloadlen)
   * @param payloadlen integer - the length of the MQTT payload
   * @return the length of the serialized data.  <= 0 indicates error
   */
-int MQTTSerialize_publish(char* buf, int buflen, int dup, int qos, int retained, int packetid, MQTTString topicName,
-		char* payload, int payloadlen)
+int MQTTSerialize_publish(char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, int packetid,
+		MQTTString topicName, char* payload, int payloadlen)
 {
 	char *ptr = buf;
 	MQTTHeader header;
@@ -100,7 +100,7 @@ exit:
   * @param packetid integer - the MQTT packet identifier
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_ack(char* buf, int buflen, int type, int dup, int packetid)
+int MQTTSerialize_ack(char* buf, int buflen, int type, unsigned char dup, int packetid)
 {
 	MQTTHeader header;
 	int rc = 0;
@@ -147,7 +147,7 @@ int MQTTSerialize_puback(char* buf, int buflen, int packetid)
   * @param packetid integer - the MQTT packet identifier
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_pubrel(char* buf, int buflen,  int dup, int packetid)
+int MQTTSerialize_pubrel(char* buf, int buflen, unsigned char dup, int packetid)
 {
 	return MQTTSerialize_ack(buf, buflen, PUBREL, packetid, dup);
 }

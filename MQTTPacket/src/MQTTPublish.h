@@ -17,14 +17,14 @@
 #ifndef MQTTPUBLISH_H_
 #define MQTTPUBLISH_H_
 
-int MQTTSerialize_publish(char* buf, int buflen, int dup, int qos, int retained, int packetid, MQTTString topicName,
+int MQTTSerialize_publish(char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, int packetid, MQTTString topicName,
 		char* payload, int payloadlen);
 
-int MQTTDeserialize_publish(int* dup, int* qos, int* retained, int* packetid, MQTTString* topicName,
+int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, int* packetid, MQTTString* topicName,
 		char** payload, int* payloadlen, char* buf, int len);
 
 int MQTTSerialize_puback(char* buf, int buflen, int packetid);
-int MQTTSerialize_pubrel(char* buf, int buflen, int packetid, int dup);
+int MQTTSerialize_pubrel(char* buf, int buflen, unsigned char dup, int packetid);
 int MQTTSerialize_pubcomp(char* buf, int buflen, int packetid);
 
 #endif /* MQTTPUBLISH_H_ */

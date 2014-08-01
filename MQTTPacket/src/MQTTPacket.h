@@ -40,7 +40,7 @@ enum msgTypes
  */
 typedef union
 {
-	/*unsigned*/ char byte;	/**< the whole byte */
+	unsigned char byte;	                /**< the whole byte */
 #if defined(REVERSED)
 	struct
 	{
@@ -81,8 +81,8 @@ int MQTTstrlen(MQTTString mqttstring);
 #include "MQTTSubscribe.h"
 #include "MQTTUnsubscribe.h"
 
-int MQTTSerialize_ack(char* buf, int buflen, int type, int dup, int packetid);
-int MQTTDeserialize_ack(int* type, int* dup, int* packetid, char* buf, int buflen);
+int MQTTSerialize_ack(char* buf, int buflen, int type, unsigned char dup, int packetid);
+int MQTTDeserialize_ack(int* type, unsigned char* dup, int* packetid, char* buf, int buflen);
 
 int MQTTPacket_len(int rem_len);
 int MQTTPacket_equals(MQTTString* a, char* b);

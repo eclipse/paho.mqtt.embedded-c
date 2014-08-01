@@ -91,7 +91,7 @@ exit:
 int MQTTDeserialize_unsuback(int* packetid, char* buf, int buflen)
 {
 	int type = 0;
-	int dup = 0;
+	unsigned char dup = 0;
 	int rc = 0;
 
 	FUNC_ENTRY;

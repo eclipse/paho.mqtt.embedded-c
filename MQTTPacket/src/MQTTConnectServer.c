@@ -18,7 +18,7 @@
 #include "MQTTPacket.h"
 #include <string.h>
 
-#define min(a, b) ((a < b) ? 1 : 0)
+#define min(a, b) ((a < b) ? a : b)
 
 
 /**
@@ -32,12 +32,11 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 	int rc = 0;
 
 	if (version == 3 && memcmp(protocol->lenstring.data, "MQIdsp",
-			min(6, protocol->lenstring.len)))
+			min(6, protocol->lenstring.len)) == 0)
 		rc = 1;
 	else if (version == 4 && memcmp(protocol->lenstring.data, "MQTT",
-			min(4, protocol->lenstring.len)))
+			min(4, protocol->lenstring.len)) == 0)
 		rc = 1;
-
 	return rc;
 }
 
@@ -63,7 +62,7 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, char* buf, int len)
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
 
-	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
+	curdata += MQTTPacket_decodeBuf(curdata, &mylen); /* read remaining length */
 
 	if (!readMQTTLenString(&Protocol, &curdata, enddata) ||
 		enddata - curdata < 0) /* do we have enough data to read the protocol version byte? */
