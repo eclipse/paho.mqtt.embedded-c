@@ -118,7 +118,7 @@ int Socket_new(char* addr, int port, int* sock)
 
 int mysock = 0;
 
-int getdata(char* buf, int count)
+int getdata(unsigned char* buf, int count)
 {
 	return recv(mysock, buf, count, 0);
 }
@@ -137,7 +137,7 @@ int main()
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
-	char buf[200];
+	unsigned char buf[200];
 	int buflen = sizeof(buf);
 	int msgid = 1;
 	MQTTString topicString = MQTTString_initializer;
@@ -149,7 +149,7 @@ int main()
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	rc = Socket_new("127.0.0.1", 1884, &mysock);
+	rc = Socket_new("m2m.eclipse.org", 1883, &mysock);
 
 	data.clientID.cstring = "me";
 	data.keepAliveInterval = 20;
@@ -168,9 +168,9 @@ int main()
 	/* wait for connack */
 	if (MQTTPacket_read(buf, buflen, getdata) == CONNACK)
 	{
-		int connack_rc;
+		unsigned char sessionPresent, connack_rc;
 
-		if (MQTTDeserialize_connack(&connack_rc, buf, buflen) != 1 || connack_rc != 0)
+		if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, buflen) != 1 || connack_rc != 0)
 		{
 			printf("Unable to connect, return code %d\n", connack_rc);
 			goto exit;
@@ -186,7 +186,7 @@ int main()
 	rc = write(mysock, buf, len);
 	if (MQTTPacket_read(buf, buflen, getdata) == SUBACK) 	/* wait for suback */
 	{
-		int submsgid;
+		unsigned short submsgid;
 		int subcount;
 		int granted_qos;
 
@@ -208,9 +208,9 @@ int main()
 			unsigned char dup;
 			int qos;
 			unsigned char retained;
-			int msgid;
+			unsigned short msgid;
 			int payloadlen_in;
-			char* payload_in;
+			unsigned char* payload_in;
 			int rc;
 			MQTTString receivedTopic;
 

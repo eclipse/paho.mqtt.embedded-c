@@ -58,8 +58,8 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options)
 {
 	unsigned char *ptr = buf;
-	MQTTHeader header;
-	MQTTConnectFlags flags;
+	MQTTHeader header = {0};
+	MQTTConnectFlags flags = {0};
 	int len = 0;
 	int rc = -1;
 
@@ -123,19 +123,20 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
 
 /**
   * Deserializes the supplied (wire) buffer into connack data - return code
+  * @param sessionPresent the session present flag returned (only for MQTT 3.1.1)
   * @param connack_rc returned integer value of the connack return code
   * @param buf the raw buffer data, of the correct length determined by the remaining length field
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_connack(unsigned char* connack_rc, unsigned char* buf, int buflen)
+int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen)
 {
-	MQTTHeader header;
+	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
 	unsigned char* enddata = NULL;
 	int rc = 0;
 	int mylen;
-	int compression;
+	MQTTConnackFlags flags = {0};
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
@@ -147,7 +148,8 @@ int MQTTDeserialize_connack(unsigned char* connack_rc, unsigned char* buf, int b
 	if (enddata - curdata < 2)
 		goto exit;
 
-	compression = readChar(&curdata);
+	flags.all = readChar(&curdata);
+	*sessionPresent = flags.bits.sessionpresent;
 	*connack_rc = readChar(&curdata);
 
 	rc = 1;
@@ -167,7 +169,7 @@ exit:
   */
 int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 {
-	MQTTHeader header;
+	MQTTHeader header = {0};
 	int rc = -1;
 	unsigned char *ptr = buf;
 

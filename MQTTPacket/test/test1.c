@@ -576,8 +576,10 @@ int test6(struct Options options)
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
 
+	unsigned char sessionPresent = 1;
 	unsigned char connack_rc = 77;
 
+	unsigned char sessionPresent2 = 0;
 	unsigned char connack_rc2 = 0;
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
@@ -585,14 +587,16 @@ int test6(struct Options options)
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - serialization of connack and back");
 
-	rc = MQTTSerialize_connack(buf, buflen, connack_rc);
+	rc = MQTTSerialize_connack(buf, buflen, connack_rc, sessionPresent);
 	assert("good rc from serialize connack", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_connack(&connack_rc2, buf, buflen);
+	rc = MQTTDeserialize_connack(&sessionPresent2, &connack_rc2, buf, buflen);
 	assert("good rc from deserialize connack", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
-	assert("dups should be the same", connack_rc == connack_rc2, "dups were different %d\n", connack_rc2);
+	assert("connack rcs should be the same", connack_rc == connack_rc2, "connack rcs were different %d\n", connack_rc2);
+	assert("session present flags should be the same", sessionPresent == sessionPresent2,
+			"session present flags were different %d\n", sessionPresent2);
 
 /* exit: */
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",

@@ -94,14 +94,32 @@ typedef struct
 	MQTTString password;
 } MQTTPacket_connectData;
 
+typedef union
+{
+	unsigned char all;	/**< all connack flags */
+#if defined(REVERSED)
+	struct
+	{
+		unsigned int sessionpresent : 1;    /**< session present flag */
+		unsigned int : y;	  	          /**< unused */
+	} bits;
+#else
+	struct
+	{
+		unsigned int : 7;	     			/**< unused */
+		unsigned int sessionpresent : 1;    /**< session present flag */
+	} bits;
+#endif
+} MQTTConnackFlags;	/**< connack flags byte */
+
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
 int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
 int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
 
-int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc);
-int MQTTDeserialize_connack(unsigned char* connack_rc, unsigned char* buf, int buflen);
+int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent);
+int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
 
 int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
 int MQTTSerialize_pingreq(unsigned char* buf, int buflen);

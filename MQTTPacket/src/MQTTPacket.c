@@ -288,7 +288,7 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
 int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int))
 {
 	int rc = -1;
-	MQTTHeader header;
+	MQTTHeader header = {0};
 	int len = 0;
 	int rem_len = 0;
 

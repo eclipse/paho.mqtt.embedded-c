@@ -128,7 +128,7 @@ int main()
 	int payloadlen = strlen(payload);
 	int len = 0;
 
-	rc = Socket_new("127.0.0.1", 1883, &mysock);
+	rc = Socket_new("m2m.eclipse.org", 1883, &mysock);
 
 	data.clientID.cstring = "me";
 	data.keepAliveInterval = 20;
@@ -145,6 +145,10 @@ int main()
 	len += MQTTSerialize_disconnect(buf + len, buflen - len);
 
 	rc = write(mysock, buf, len);
+	if (rc == len)
+		printf("Successfully published\n");
+	else
+		printf("Publish failed\n");
 
 	rc = shutdown(mysock, SHUT_WR);
 	rc = recv(mysock, NULL, (size_t)0, 0);
