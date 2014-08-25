@@ -1,0 +1,3 @@
+g++ hello.cpp -I .. -I ../../../MQTTPacket/src ../../../MQTTPacket/src/MQTTPacket.c ../../../MQTTPacket/src/MQTTDeserializePublish.c ../../../MQTTPacket/src/MQTTConnectClient.c ../../../MQTTPacket/src/MQTTSubscribeClient.c ../../../MQTTPacket/src/MQTTSerializePublish.c ../../../MQTTPacket/src/MQTTUnsubscribeClient.c -o hello
+
+g++ stdoutsub.cpp -I .. -I ../../../MQTTPacket/src ../../../MQTTPacket/src/MQTTPacket.c ../../../MQTTPacket/src/MQTTDeserializePublish.c ../../../MQTTPacket/src/MQTTConnectClient.c ../../../MQTTPacket/src/MQTTSubscribeClient.c ../../../MQTTPacket/src/MQTTSerializePublish.c -o stdoutsub
