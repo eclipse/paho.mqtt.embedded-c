@@ -12,11 +12,19 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
 #ifndef MQTTCONNECT_H_
 #define MQTTCONNECT_H_
 
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport  __attribute__ ((visibility ("default")))
+#endif
 	typedef union
 	{
 		unsigned char all;	/**< all connect flags */
@@ -115,13 +123,13 @@ typedef union
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
-int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
+DLLExport int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
+DLLExport int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
 
-int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent);
-int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
+DLLExport int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent);
+DLLExport int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
 
-int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
-int MQTTSerialize_pingreq(unsigned char* buf, int buflen);
+DLLExport int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
+DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int buflen);
 
 #endif /* MQTTCONNECT_H_ */

@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
 #ifndef MQTTPACKET_H_
@@ -19,6 +20,14 @@
 
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 extern "C" {
+#endif
+
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport  __attribute__ ((visibility ("default")))
 #endif
 
 enum errors
@@ -99,7 +108,7 @@ int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned cha
 void writeCString(unsigned char** pptr, const char* string);
 void writeMQTTString(unsigned char** pptr, MQTTString mqttstring);
 
-int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int));
+DLLExport int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int));
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }

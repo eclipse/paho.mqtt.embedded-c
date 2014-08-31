@@ -12,19 +12,28 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
 #ifndef MQTTUNSUBSCRIBE_H_
 #define MQTTUNSUBSCRIBE_H_
 
-int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport  __attribute__ ((visibility ("default")))
+#endif
+
+DLLExport int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[]);
 
-int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int max_count, int* count, MQTTString topicFilters[],
+DLLExport int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int max_count, int* count, MQTTString topicFilters[],
 		unsigned char* buf, int len);
 
-int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid);
+DLLExport int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid);
 
-int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int len);
+DLLExport int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int len);
 
 #endif /* MQTTUNSUBSCRIBE_H_ */

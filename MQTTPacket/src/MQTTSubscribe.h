@@ -12,20 +12,29 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
 #ifndef MQTTSUBSCRIBE_H_
 #define MQTTSUBSCRIBE_H_
 
-int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+#if defined(WIN32) || defined(WIN64)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#else
+  #define DLLImport extern
+  #define DLLExport  __attribute__ ((visibility ("default")))
+#endif
+
+DLLExport int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[], int requestedQoSs[]);
 
-int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid,
+DLLExport int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid,
 		int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], unsigned char* buf, int len);
 
-int MQTTSerialize_suback(unsigned char* buf, int buflen, unsigned short packetid, int count, int* grantedQoSs);
+DLLExport int MQTTSerialize_suback(unsigned char* buf, int buflen, unsigned short packetid, int count, int* grantedQoSs);
 
-int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int len);
+DLLExport int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int len);
 
 
 #endif /* MQTTSUBSCRIBE_H_ */

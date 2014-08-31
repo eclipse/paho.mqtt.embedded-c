@@ -137,12 +137,12 @@ int main()
 	data.password.cstring = "testpassword";
 	data.MQTTVersion = 4;
 
-	len = MQTTSerialize_connect(buf, buflen, &data);
+	len = MQTTSerialize_connect((unsigned char *)buf, buflen, &data);
 
 	topicString.cstring = "mytopic";
-	len += MQTTSerialize_publish(buf + len, buflen - len, 0, 0, 0, 0, topicString, payload, payloadlen);
+	len += MQTTSerialize_publish((unsigned char *)(buf + len), buflen - len, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
 
-	len += MQTTSerialize_disconnect(buf + len, buflen - len);
+	len += MQTTSerialize_disconnect((unsigned char *)(buf + len), buflen - len);
 
 	rc = write(mysock, buf, len);
 	if (rc == len)

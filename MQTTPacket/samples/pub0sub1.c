@@ -220,7 +220,7 @@ int main()
 		}
 
 		printf("publishing reading\n");
-		len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, payload, payloadlen);
+		len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char*)payload, payloadlen);
 		rc = write(mysock, buf, len);
 	}
 
