@@ -31,7 +31,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 {
 	int rc = 0;
 
-	if (version == 3 && memcmp(protocol->lenstring.data, "MQIdsp",
+	if (version == 3 && memcmp(protocol->lenstring.data, "MQIsdp",
 			min(6, protocol->lenstring.len)) == 0)
 		rc = 1;
 	else if (version == 4 && memcmp(protocol->lenstring.data, "MQTT",
@@ -81,9 +81,9 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 		data->keepAliveInterval = readInt(&curdata);
 		if (!readMQTTLenString(&data->clientID, &curdata, enddata))
 			goto exit;
+		data->willFlag = flags.bits.will;
 		if (flags.bits.will)
 		{
-			data->willFlag = 1;
 			data->will.qos = flags.bits.willQoS;
 			data->will.retained = flags.bits.willRetain;
 			if (!readMQTTLenString(&data->will.topicName, &curdata, enddata) ||

@@ -1,5 +1,4 @@
 
-#if defined(LINUX)
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -20,7 +19,7 @@
 #include <signal.h>
 
 #include "MQTTClient.h"
-#include "FP.cpp"
+//#include "FP.cpp"
 
 #define DEFAULT_STACK_SIZE -1
 
@@ -289,4 +288,4 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-#endif
+

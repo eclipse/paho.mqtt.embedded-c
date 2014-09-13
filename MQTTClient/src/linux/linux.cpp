@@ -29,12 +29,15 @@ public:
     
 	int Socket_error(const char* aString)
 	{
-
-		if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
-		{
+		int rc = 0;
+		//if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
+		//{
 			if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
+			{
 				printf("Socket error %s in %s for socket %d\n", strerror(errno), aString, mysock);
-		}
+				rc = errno;
+			}
+		//}
 		return errno;
 	}
 
@@ -102,12 +105,22 @@ public:
 
 		setsockopt(mysock, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
 
-		//printf("reading %d bytes\n", len);
-		int rc = ::recv(mysock, buffer, (size_t)len, 0);
-		if (rc == -1)
-			Socket_error("read");
-		//printf("read %d bytes\n", rc);
-		return rc;
+		int bytes = 0;
+		while (bytes < len)
+		{
+			int rc = ::recv(mysock, &buffer[bytes], (size_t)(len - bytes), 0);
+			if (rc == -1)
+			{
+				if (Socket_error("read") != 0)
+				{
+					bytes = -1;
+					break;
+				}
+			}
+			else
+				bytes += rc;
+		}
+		return bytes;
     }
     
     int write(unsigned char* buffer, int len, int timeout)

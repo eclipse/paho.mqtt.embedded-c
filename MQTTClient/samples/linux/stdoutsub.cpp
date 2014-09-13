@@ -35,7 +35,9 @@
 	--password none
  
 */
-#include "MQTTClient.h"
+#include <stdio.h>
+#define MQTT_DEBUG 1
+#include "MQTTClient.hpp"
 
 #define DEFAULT_STACK_SIZE -1
 
@@ -88,7 +90,7 @@ struct opts_struct
 	int showtopics;
 } opts =
 {
-	"stdout-subscriber", 0, "\n", MQTT::QOS2, NULL, NULL, "localhost", 1883, 0
+	(char*)"stdout-subscriber", 0, (char*)"\n", MQTT::QOS2, NULL, NULL, (char*)"localhost", 1883, 0
 };
 
 
@@ -176,14 +178,14 @@ void getopts(int argc, char** argv)
 }
 
 
-void myconnect(IPStack& ipstack, MQTT::Client<IPStack, Countdown>& client, MQTTPacket_connectData& data)
+void myconnect(IPStack& ipstack, MQTT::Client<IPStack, Countdown, 1000>& client, MQTTPacket_connectData& data)
 {
 	printf("Connecting to %s:%d\n", opts.host, opts.port);
 	int rc = ipstack.connect(opts.host, opts.port);
 	if (rc != 0)
 	    printf("rc from TCP connect is %d\n", rc);
 
-	rc = client.connect(&data);
+	rc = client.connect(data);
 	if (rc != 0)
 	{
 		printf("Failed to connect, return code %d\n", rc);
@@ -224,12 +226,13 @@ int main(int argc, char** argv)
 	getopts(argc, argv);	
 
 	IPStack ipstack = IPStack();
-	MQTT::Client<IPStack, Countdown> client = MQTT::Client<IPStack, Countdown>(ipstack);
+	MQTT::Client<IPStack, Countdown, 1000> client = MQTT::Client<IPStack, Countdown, 1000>(ipstack);
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
  
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
+	data.willFlag = 0;
 	data.MQTTVersion = 3;
 	data.clientID.cstring = opts.clientid;
 	data.username.cstring = opts.username;
@@ -237,6 +240,7 @@ int main(int argc, char** argv)
 
 	data.keepAliveInterval = 10;
 	data.cleansession = 1;
+	printf("will flag %d\n", data.willFlag);
 	
 	myconnect(ipstack, client, data);
     

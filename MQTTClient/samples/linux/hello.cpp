@@ -1,23 +1,4 @@
-
-#if defined(LINUX)
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fcntl.h>
-
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
+#define MQTTCLIENT_QOS2 1
 
 #include "MQTTClient.h"
 
@@ -58,7 +39,7 @@ int main(int argc, char* argv[])
     MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
     data.MQTTVersion = 3;
     data.clientID.cstring = (char*)"mbed-icraggs";
-    rc = client.connect(&data);
+    rc = client.connect(data);
 	if (rc != 0)
 	    printf("rc from MQTT connect is %d\n", rc);
 	printf("MQTT connected\n");
@@ -77,7 +58,7 @@ int main(int argc, char* argv[])
     message.dup = false;
     message.payload = (void*)buf;
     message.payloadlen = strlen(buf)+1;
-    rc = client.publish(topic, &message);
+    rc = client.publish(topic, message);
     while (arrivedcount == 0)
         client.yield(100);
         
@@ -86,7 +67,7 @@ int main(int argc, char* argv[])
     sprintf(buf, "Hello World!  QoS 1 message from app version %f", version);
     message.qos = MQTT::QOS1;
     message.payloadlen = strlen(buf)+1;
-    rc = client.publish(topic, &message);
+    rc = client.publish(topic, message);
     while (arrivedcount == 1)
         client.yield(100);
         
@@ -94,7 +75,7 @@ int main(int argc, char* argv[])
     sprintf(buf, "Hello World!  QoS 2 message from app version %f", version);
     message.qos = MQTT::QOS2;
     message.payloadlen = strlen(buf)+1;
-    rc = client.publish(topic, &message);
+    rc = client.publish(topic, message);
     while (arrivedcount == 2)
         client.yield(100);
     
@@ -113,4 +94,3 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-#endif

@@ -159,7 +159,6 @@ exit:
 }
 
 
-
 /**
   * Serializes a 0-length packet into the supplied buffer, ready for writing to a socket
   * @param buf the buffer into which the packet will be serialized
