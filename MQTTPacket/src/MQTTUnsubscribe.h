@@ -18,12 +18,11 @@
 #ifndef MQTTUNSUBSCRIBE_H_
 #define MQTTUNSUBSCRIBE_H_
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport  __attribute__ ((visibility ("default")))
+#if !defined(DLLImport)
+  #define DLLImport 
+#endif
+#if !defined(DLLExport)
+  #define DLLExport
 #endif
 
 DLLExport int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,

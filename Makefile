@@ -82,7 +82,7 @@ VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
 EMBED_MQTTLIB_C_TARGET = ${blddir}/lib${MQTT_EMBED_LIB_C}.so.${VERSION}
 
 
-CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden
+CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden -DLINUX_SO
 FLAGS_EXE = -I ${srcdir}  -L ${blddir}
 
 LDFLAGS_C = -shared -Wl,-soname,lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION}

@@ -18,40 +18,41 @@
 #ifndef MQTTCONNECT_H_
 #define MQTTCONNECT_H_
 
-#if defined(WIN32) || defined(WIN64)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
-#else
-  #define DLLImport extern
-  #define DLLExport  __attribute__ ((visibility ("default")))
+#if !defined(DLLImport)
+  #define DLLImport 
 #endif
-	typedef union
-	{
-		unsigned char all;	/**< all connect flags */
+#if !defined(DLLExport)
+  #define DLLExport
+#endif
+
+
+typedef union
+{
+	unsigned char all;	/**< all connect flags */
 #if defined(REVERSED)
-		struct
-		{
-			unsigned int username : 1;			/**< 3.1 user name */
-			unsigned int password : 1; 			/**< 3.1 password */
-			unsigned int willRetain : 1;		/**< will retain setting */
-			unsigned int willQoS : 2;				/**< will QoS value */
-			unsigned int will : 1;			    /**< will flag */
-			unsigned int cleansession : 1;	  /**< clean session flag */
-			unsigned int : 1;	  	          /**< unused */
-		} bits;
+	struct
+	{
+		unsigned int username : 1;			/**< 3.1 user name */
+		unsigned int password : 1; 			/**< 3.1 password */
+		unsigned int willRetain : 1;		/**< will retain setting */
+		unsigned int willQoS : 2;				/**< will QoS value */
+		unsigned int will : 1;			    /**< will flag */
+		unsigned int cleansession : 1;	  /**< clean session flag */
+		unsigned int : 1;	  	          /**< unused */
+	} bits;
 #else
-		struct
-		{
-			unsigned int : 1;	     					/**< unused */
-			unsigned int cleansession : 1;	  /**< cleansession flag */
-			unsigned int will : 1;			    /**< will flag */
-			unsigned int willQoS : 2;				/**< will QoS value */
-			unsigned int willRetain : 1;		/**< will retain setting */
-			unsigned int password : 1; 			/**< 3.1 password */
-			unsigned int username : 1;			/**< 3.1 user name */
-		} bits;
+	struct
+	{
+		unsigned int : 1;	     					/**< unused */
+		unsigned int cleansession : 1;	  /**< cleansession flag */
+		unsigned int will : 1;			    /**< will flag */
+		unsigned int willQoS : 2;				/**< will QoS value */
+		unsigned int willRetain : 1;		/**< will retain setting */
+		unsigned int password : 1; 			/**< 3.1 password */
+		unsigned int username : 1;			/**< 3.1 user name */
+	} bits;
 #endif
-	} MQTTConnectFlags;	/**< connect flags byte */
+} MQTTConnectFlags;	/**< connect flags byte */
 
 
 

@@ -81,7 +81,7 @@ int MQTTStringFormat_ack(char* strbuf, int strbuflen, unsigned char packettype, 
 {
 	int strindex = snprintf(strbuf, strbuflen, "%s, packet id %d", MQTTPacket_names[packettype], packetid);
 	if (dup)
-		strindex += snprintf(strbuf + strindex, strbuflen - strindex, ", dup %d");
+		strindex += snprintf(strbuf + strindex, strbuflen - strindex, ", dup %d", dup);
 	return strindex;
 }
 
