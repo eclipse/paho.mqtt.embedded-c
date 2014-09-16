@@ -135,6 +135,10 @@ uninstall:
 
 html:
 
+ARDUINO_LIB_FILES = MQTTClient/src/*.h MQTTClient/src/arduino/*.h $(srcdir)/*
+
+arduino: mkdir
+	zip ${blddir}/arduino -j $(ARDUINO_LIB_FILES)
 
 endif
 
