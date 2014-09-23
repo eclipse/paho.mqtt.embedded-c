@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial contribution
  *    Ian Craggs - change delimiter option from char to string
+ *    Al Stockdill-Mander - Version using the embedded C client
  *******************************************************************************/
 
 /*
@@ -33,22 +34,20 @@
 	
 	--userid none
 	--password none
- 
+
+ for example:
+
+    stdoutsub topic/of/interest --host iot.eclipse.org
+
 */
 #include <stdio.h>
-#define MQTT_DEBUG 1
 #include "MQTTClient.h"
-
-#define DEFAULT_STACK_SIZE -1
-
-#include "linux.cpp"
 
 #include <stdio.h>
 #include <signal.h>
 #include <memory.h>
 
 #include <sys/time.h>
-#include <stdlib.h>
 
 
 volatile int toStop = 0;
@@ -82,7 +81,7 @@ struct opts_struct
 	char* clientid;
 	int nodelimiter;
 	char* delimiter;
-	MQTT::QoS qos;
+	enum QoS qos;
 	char* username;
 	char* password;
 	char* host;
@@ -90,7 +89,7 @@ struct opts_struct
 	int showtopics;
 } opts =
 {
-	(char*)"stdout-subscriber", 0, (char*)"\n", MQTT::QOS2, NULL, NULL, (char*)"localhost", 1883, 0
+	(char*)"stdout-subscriber", 0, (char*)"\n", QOS2, NULL, NULL, (char*)"localhost", 1883, 0
 };
 
 
@@ -105,11 +104,11 @@ void getopts(int argc, char** argv)
 			if (++count < argc)
 			{
 				if (strcmp(argv[count], "0") == 0)
-					opts.qos = MQTT::QOS0;
+					opts.qos = QOS0;
 				else if (strcmp(argv[count], "1") == 0)
-					opts.qos = MQTT::QOS1;
+					opts.qos = QOS1;
 				else if (strcmp(argv[count], "2") == 0)
-					opts.qos = MQTT::QOS2;
+					opts.qos = QOS2;
 				else
 					usage();
 			}
@@ -178,40 +177,25 @@ void getopts(int argc, char** argv)
 }
 
 
-void myconnect(IPStack& ipstack, MQTT::Client<IPStack, Countdown, 1000>& client, MQTTPacket_connectData& data)
+void messageArrived(MessageData* md)
 {
-	printf("Connecting to %s:%d\n", opts.host, opts.port);
-	int rc = ipstack.connect(opts.host, opts.port);
-	if (rc != 0)
-	    printf("rc from TCP connect is %d\n", rc);
-
-	rc = client.connect(data);
-	if (rc != 0)
-	{
-		printf("Failed to connect, return code %d\n", rc);
-		exit(-1);	
-	}
-	printf("Connected\n");
-}
-
-
-void messageArrived(MQTT::MessageData& md)
-{
-	MQTT::Message &message = md.message;
+	MQTTMessage* message = md->message;
 
 	if (opts.showtopics)
-		printf("%.*s\t", md.topicName.lenstring.len, md.topicName.lenstring.data);
+		printf("%.*s\t", md->topicName->lenstring.len, md->topicName->lenstring.data);
 	if (opts.nodelimiter)
-		printf("%.*s", (int)message.payloadlen, (char*)message.payload);
+		printf("%.*s", (int)message->payloadlen, (char*)message->payload);
 	else
-		printf("%.*s%s", (int)message.payloadlen, (char*)message.payload, opts.delimiter);
-	fflush(stdout);
+		printf("%.*s%s", (int)message->payloadlen, (char*)message->payload, opts.delimiter);
+	//fflush(stdout);
 }
 
 
 int main(int argc, char** argv)
 {
 	int rc = 0;
+	unsigned char buf[100];
+	unsigned char readbuf[100];
 	
 	if (argc < 2)
 		usage();
@@ -225,11 +209,15 @@ int main(int argc, char** argv)
 
 	getopts(argc, argv);	
 
-	IPStack ipstack = IPStack();
-	MQTT::Client<IPStack, Countdown, 1000> client = MQTT::Client<IPStack, Countdown, 1000>(ipstack);
+	Network n;
+	Client c;
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
+
+	NewNetwork(&n);
+	ConnectNetwork(&n, opts.host, opts.port);
+	MQTTClient(&c, &n, 1000, buf, 100, readbuf, 100);
  
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
 	data.willFlag = 0;
@@ -240,26 +228,24 @@ int main(int argc, char** argv)
 
 	data.keepAliveInterval = 10;
 	data.cleansession = 1;
-	printf("will flag %d\n", data.willFlag);
+	printf("Connecting to %s %d\n", opts.host, opts.port);
 	
-	myconnect(ipstack, client, data);
+	rc = MQTTConnect(&c, &data);
+	printf("Connected %d\n", rc);
     
-	rc = client.subscribe(topic, opts.qos, messageArrived);
+    printf("Subscribing to %s\n", topic);
+	rc = MQTTSubscribe(&c, topic, opts.qos, messageArrived);
 	printf("Subscribed %d\n", rc);
 
 	while (!toStop)
 	{
-		client.yield(1000);	
-
-		//if (!client.isconnected)
-		//	myconnect(ipstack, client, data);
+		MQTTYield(&c, 1000);	
 	}
 	
 	printf("Stopping\n");
 
-	rc = client.disconnect();
-
-	ipstack.disconnect();
+	MQTTDisconnect(&c);
+	n.disconnect(&n);
 
 	return 0;
 }
