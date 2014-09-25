@@ -110,7 +110,7 @@ typedef union
 	struct
 	{
 		unsigned int sessionpresent : 1;    /**< session present flag */
-		unsigned int : y;	  	          /**< unused */
+		unsigned int : 7;	  	          /**< unused */
 	} bits;
 #else
 	struct
