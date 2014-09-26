@@ -12,111 +12,18 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Sergio R. Caprile - clarifications and/or documentation extension
  *******************************************************************************/
 
-#include "MQTTPacket.h"
-
-#include <sys/types.h>
-
-#include <sys/socket.h>
-#include <sys/param.h>
-#include <sys/time.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <netdb.h>
 #include <stdio.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fcntl.h>
-
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+
+#include "MQTTPacket.h"
+#include "transport.h"
 
 
-int Socket_new(char* addr, int port, int* sock)
-{
-	int type = SOCK_STREAM;
-	struct sockaddr_in address;
-#if defined(AF_INET6)
-	struct sockaddr_in6 address6;
-#endif
-	int rc = -1;
-#if defined(WIN32)
-	short family;
-#else
-	sa_family_t family = AF_INET;
-#endif
-	struct addrinfo *result = NULL;
-	struct addrinfo hints = {0, AF_UNSPEC, SOCK_STREAM, IPPROTO_TCP, 0, NULL, NULL, NULL};
-
-	*sock = -1;
-	if (addr[0] == '[')
-	  ++addr;
-
-	if ((rc = getaddrinfo(addr, NULL, &hints, &result)) == 0)
-	{
-		struct addrinfo* res = result;
-
-		/* prefer ip4 addresses */
-		while (res)
-		{
-			if (res->ai_family == AF_INET)
-			{
-				result = res;
-				break;
-			}
-			res = res->ai_next;
-		}
-
-#if defined(AF_INET6)
-		if (result->ai_family == AF_INET6)
-		{
-			address6.sin6_port = htons(port);
-			address6.sin6_family = family = AF_INET6;
-			address6.sin6_addr = ((struct sockaddr_in6*)(result->ai_addr))->sin6_addr;
-		}
-		else
-#endif
-		if (result->ai_family == AF_INET)
-		{
-			address.sin_port = htons(port);
-			address.sin_family = family = AF_INET;
-			address.sin_addr = ((struct sockaddr_in*)(result->ai_addr))->sin_addr;
-		}
-		else
-			rc = -1;
-
-		freeaddrinfo(result);
-	}
-
-	if (rc == 0)
-	{
-		*sock =	socket(family, type, 0);
-		if (*sock != -1)
-		{
-#if defined(NOSIGPIPE)
-			int opt = 1;
-
-			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
-				Log(TRACE_MIN, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
-#endif
-
-			if (family == AF_INET)
-				rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));
-	#if defined(AF_INET6)
-			else
-				rc = connect(*sock, (struct sockaddr*)&address6, sizeof(address6));
-	#endif
-		}
-	}
-	return rc;
-}
-
-
-
-int main()
+int main(int argc, char *argv[])
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
@@ -127,8 +34,20 @@ int main()
 	char* payload = "mypayload";
 	int payloadlen = strlen(payload);
 	int len = 0;
+	char *host = "m2m.eclipse.org";
+	int port = 1883;
 
-	rc = Socket_new("m2m.eclipse.org", 1883, &mysock);
+	if (argc > 1)
+		host = argv[1];
+
+	if (argc > 2)
+		port = atoi(argv[2]);
+
+	mysock = transport_open(host,port);
+	if(mysock < 0)
+		return mysock;
+
+	printf("Sending to hostname %s port %d\n", host, port);
 
 	data.clientID.cstring = "me";
 	data.keepAliveInterval = 20;
@@ -144,15 +63,14 @@ int main()
 
 	len += MQTTSerialize_disconnect((unsigned char *)(buf + len), buflen - len);
 
-	rc = write(mysock, buf, len);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
 	if (rc == len)
 		printf("Successfully published\n");
 	else
 		printf("Publish failed\n");
 
-	rc = shutdown(mysock, SHUT_WR);
-	rc = recv(mysock, NULL, (size_t)0, 0);
-	rc = close(mysock);
+exit:
+	transport_close(mysock);
 
 	return 0;
 }
