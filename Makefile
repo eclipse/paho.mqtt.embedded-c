@@ -136,9 +136,15 @@ uninstall:
 html:
 
 ARDUINO_LIB_FILES = MQTTClient/src/*.h MQTTClient/src/arduino/*.h $(srcdir)/*
+ARDUINO_SAMPLES = MQTTClient/samples/arduino/*
+LEGAL_FILES = edl-v10 epl-v10 notice.html about.html CONTRIBUTING.md README.md
 
 arduino: mkdir
-	zip ${blddir}/arduino -j $(ARDUINO_LIB_FILES)
+	-mkdir -p ${blddir}/arduino/MQTTClient/examples
+	cp $(ARDUINO_LIB_FILES) ${blddir}/arduino/MQTTClient
+	cp $(LEGAL_FILES) ${blddir}/arduino/MQTTClient
+	cp -R $(ARDUINO_SAMPLES) ${blddir}/arduino/MQTTClient/examples
+	cd ${blddir}/arduino && zip -r arduino MQTTClient
 
 endif
 

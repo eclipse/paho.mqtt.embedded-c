@@ -37,7 +37,7 @@
 */
 #include <stdio.h>
 #define MQTT_DEBUG 1
-#include "MQTTClient.hpp"
+#include "MQTTClient.h"
 
 #define DEFAULT_STACK_SIZE -1
 

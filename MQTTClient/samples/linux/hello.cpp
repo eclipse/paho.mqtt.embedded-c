@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
               
     MQTT::Client<IPStack, Countdown> client = MQTT::Client<IPStack, Countdown>(ipstack);
     
-    const char* hostname = "localhost"; //"m2m.eclipse.org";
+    const char* hostname = "iot.eclipse.org";
     int port = 1883;
     printf("Connecting to %s:%d\n", hostname, port);
     int rc = ipstack.connect(hostname, port);
@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	    printf("rc from MQTT connect is %d\n", rc);
 	printf("MQTT connected\n");
     
-    rc = client.subscribe("+", MQTT::QOS2, messageArrived);   
+    rc = client.subscribe(topic, MQTT::QOS2, messageArrived);   
     if (rc != 0)
         printf("rc from MQTT subscribe is %d\n", rc);
 
@@ -59,7 +59,9 @@ int main(int argc, char* argv[])
     message.payload = (void*)buf;
     message.payloadlen = strlen(buf)+1;
     rc = client.publish(topic, message);
-    while (arrivedcount == 0)
+	if (rc != 0)
+		printf("Error %d from sending QoS 0 message\n", rc);
+    else while (arrivedcount == 0)
         client.yield(100);
         
     // QoS 1
@@ -68,7 +70,9 @@ int main(int argc, char* argv[])
     message.qos = MQTT::QOS1;
     message.payloadlen = strlen(buf)+1;
     rc = client.publish(topic, message);
-    while (arrivedcount == 1)
+	if (rc != 0)
+		printf("Error %d from sending QoS 1 message\n", rc);
+    else while (arrivedcount == 1)
         client.yield(100);
         
     // QoS 2
@@ -76,6 +80,8 @@ int main(int argc, char* argv[])
     message.qos = MQTT::QOS2;
     message.payloadlen = strlen(buf)+1;
     rc = client.publish(topic, message);
+	if (rc != 0)
+		printf("Error %d from sending QoS 2 message\n", rc);
     while (arrivedcount == 2)
         client.yield(100);
     
