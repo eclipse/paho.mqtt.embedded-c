@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,13 +12,14 @@
  *
  * Contributors:
  *    Ian Craggs - initial contribution
+ *    Benjamin Cabe - adapt to IPStack, and add Yun instructions
  *******************************************************************************/
 
 #define MQTTCLIENT_QOS2 1
 
 #include <SPI.h>
 #include <Ethernet.h>
-#include <EthernetStack.h>
+#include <IPStack.h>
 #include <Countdown.h>
 #include <MQTTClient.h>
 
@@ -37,9 +38,9 @@ void messageArrived(MQTT::MessageData& md)
   Serial.print(printbuf);
 }
 
-
-EthernetStack ipstack;
-MQTT::Client<EthernetStack, Countdown> client = MQTT::Client<EthernetStack, Countdown>(ipstack);
+EthernetClient c; // replace by a YunClient if running on a Yun
+IPStack ipstack(c);
+MQTT::Client<IPStack, Countdown> client = MQTT::Client<IPStack, Countdown>(ipstack);
 
 byte mac[] = { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 };  // replace with your device's MAC
 const char* topic = "arduino-sample";
@@ -81,7 +82,7 @@ void connect()
 void setup()
 {
   Serial.begin(9600);
-  Ethernet.begin(mac);
+  Ethernet.begin(mac); // replace by Bridge.begin() if running on a Yun
   Serial.println("MQTT Hello example");
   connect();
 }

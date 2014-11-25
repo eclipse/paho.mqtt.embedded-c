@@ -12,31 +12,32 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Benjamin Cabe - generic IPStack
  *******************************************************************************/
 
-#if !defined(ETHERNETSTACK_H)
-#define ETHERNETSTACK_H
+#if !defined(IPSTACK_H)
+#define IPSTACK_H
 
 #include <SPI.h>
-#include <Ethernet.h>
 
+#include <Client.h>
 
-class EthernetStack 
+class IPStack 
 {
 public:    
-    EthernetStack()
+    IPStack(Client& client) : client(&client)
     {
 
     }
     
     int connect(char* hostname, int port)
     {
-        return client.connect(hostname, port);
+        return client->connect(hostname, port);
     }
 
     int connect(uint32_t hostname, int port)
     {
-        return client.connect(hostname, port);
+        return client->connect(hostname, port);
     }
 
     int read(unsigned char* buffer, int len, int timeout)
@@ -46,32 +47,31 @@ public:
 
 		if (timeout < 30)
 			interval = 2;
-		while (client.available() < len && total < timeout)
+		while (client->available() < len && total < timeout)
 		{
 			delay(interval);
 			total += interval;
 		}
-		if (client.available() >= len)
-			rc = client.readBytes((char*)buffer, len);
+		if (client->available() >= len)
+			rc = client->readBytes((char*)buffer, len);
 		return rc;
     }
     
     int write(unsigned char* buffer, int len, int timeout)
     {
-        client.setTimeout(timeout);  
-		return client.write((uint8_t*)buffer, len);
+        client->setTimeout(timeout);  
+		return client->write((uint8_t*)buffer, len);
     }
     
     int disconnect()
     {
-        client.stop();
+        client->stop();
         return 0;
     }
 
 private:
 
-    EthernetClient client;
-    
+    Client* client;
 };
 
 #endif
