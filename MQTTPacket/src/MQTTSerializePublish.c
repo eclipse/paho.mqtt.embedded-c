@@ -114,7 +114,7 @@ int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, 
 	}
 	header.bits.type = packettype;
 	header.bits.dup = dup;
-	header.bits.qos = 0;
+	header.bits.qos = (packettype == PUBREL) ? 1 : 0;
 	writeChar(&ptr, header.byte); /* write header */
 
 	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
