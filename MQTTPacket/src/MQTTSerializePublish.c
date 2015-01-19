@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix for https://bugs.eclipse.org/bugs/show_bug.cgi?id=453144
  *******************************************************************************/
 
 #include "MQTTPacket.h"
