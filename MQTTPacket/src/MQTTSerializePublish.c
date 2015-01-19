@@ -135,7 +135,7 @@ exit:
   */
 int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBACK, packetid, 0);
+	return MQTTSerialize_ack(buf, buflen, PUBACK, 0, packetid);
 }
 
 
@@ -149,7 +149,7 @@ int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid
   */
 int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBREL, packetid, dup);
+	return MQTTSerialize_ack(buf, buflen, PUBREL, dup, packetid);
 }
 
 
@@ -162,7 +162,7 @@ int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsi
   */
 int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBCOMP, packetid, 0);
+	return MQTTSerialize_ack(buf, buflen, PUBCOMP, 0, packetid);
 }
 
 
