@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - fix for bug 458512 - QoS 2 messages
  *******************************************************************************/
 
 #if !defined(MQTTCLIENT_H)
@@ -239,6 +240,7 @@ private:
     unsigned short incomingQoS2messages[MAX_INCOMING_QOS2_MESSAGES];
     bool isQoS2msgidFree(unsigned short id);
     bool useQoS2msgid(unsigned short id);
+	void freeQoS2msgid(unsigned short id);
 #endif
 
 };
@@ -295,6 +297,20 @@ bool MQTT::Client<Network, Timer, a, b>::useQoS2msgid(unsigned short id)
         }
     }
     return false;
+}
+
+
+template<class Network, class Timer, int a, int b>
+void MQTT::Client<Network, Timer, a, b>::freeQoS2msgid(unsigned short id)
+{
+    for (int i = 0; i < MAX_INCOMING_QOS2_MESSAGES; ++i)
+    {
+        if (incomingQoS2messages[i] == id)
+        {
+            incomingQoS2messages[i] = 0;
+            return;
+        }
+    }
 }
 #endif
 
@@ -566,6 +582,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
                 rc = FAILURE; // there was a problem
             if (rc == FAILURE)
                 goto exit; // there was a problem
+			if (packet_type == PUBREL)
+				freeQoS2msgid(mypacketid);
             break;
 			
         case PUBCOMP:
@@ -840,7 +858,6 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(const char* t
 
     len = MQTTSerialize_publish(sendbuf, MAX_MQTT_PACKET_SIZE, 0, qos, retained, id,
               topicString, (unsigned char*)payload, payloadlen);
-	printf("len from serialize publish is %d\n", len);
     if (len <= 0)
         goto exit;
 
