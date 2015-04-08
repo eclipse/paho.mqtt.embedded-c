@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - fix for bug 458512 - QoS 2 messages
  *    Ian Craggs - fix for bug 460389 - send loop uses wrong length
+ *    Ian Craggs - fix for bug 464169 - clearing subscriptions
  *******************************************************************************/
 
 #if !defined(MQTTCLIENT_H)
@@ -192,6 +193,7 @@ public:
 
 private:
 
+	void cleanSession();
     int cycle(Timer& timer);
     int waitfor(int packet_type, Timer& timer);
     int keepalive();
@@ -250,14 +252,11 @@ private:
 
 
 template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
-MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, unsigned int command_timeout_ms)  : ipstack(network), packetid()
+void MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::cleanSession() 
 {
-    last_sent = Timer();
-    last_received = Timer();
     ping_outstanding = false;
     for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
         messageHandlers[i].topicFilter = 0;
-    this->command_timeout_ms = command_timeout_ms;
     isconnected = false;
 
 #if MQTTCLIENT_QOS1 || MQTTCLIENT_QOS2
@@ -265,13 +264,23 @@ MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, 
     inflightQoS = QOS0;
 #endif
 
-
 #if MQTTCLIENT_QOS2
     pubrel = false;
     for (int i = 0; i < MAX_INCOMING_QOS2_MESSAGES; ++i)
         incomingQoS2messages[i] = 0;
 #endif
 }
+
+
+template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
+MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, unsigned int command_timeout_ms)  : ipstack(network), packetid()
+{
+    last_sent = Timer();
+    last_received = Timer();
+    this->command_timeout_ms = command_timeout_ms;
+	cleanSession();
+}
+
 
 #if MQTTCLIENT_QOS2
 template<class Network, class Timer, int a, int b>
@@ -754,7 +763,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
 
 exit:
     if (rc != SUCCESS)
-        isconnected = false;
+		cleanSession();
     return rc;
 }
 
@@ -786,7 +795,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
 
 exit:
     if (rc != SUCCESS)
-        isconnected = false;
+		cleanSession();
     return rc;
 }
 
@@ -833,7 +842,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(int len, Time
 
 exit:
     if (rc != SUCCESS)
-        isconnected = false;
+		cleanSession();
     return rc;
 }
 
@@ -905,7 +914,10 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::disconnect()
     if (len > 0)
         rc = sendPacket(len, timer);            // send the disconnect packet
 
-    isconnected = false;
+	if (cleansession)
+		cleanSession();
+	else
+	    isconnected = false;
     return rc;
 }
 
