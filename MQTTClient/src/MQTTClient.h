@@ -397,7 +397,6 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::readPacket(Timer& tim
     MQTTHeader header = {0};
     int len = 0;
     int rem_len = 0;
-	int read = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
     if (ipstack.read(readbuf, 1, timer.left_ms()) != 1)
@@ -727,7 +726,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
     int rc = FAILURE;
     Timer timer = Timer(command_timeout_ms);
     int len = 0;
-    MQTTString topic = {(char*)topicFilter, 0, 0};
+    MQTTString topic = {(char*)topicFilter, {0, 0}};
 
     if (!isconnected)
         goto exit;
@@ -773,7 +772,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
 {
     int rc = FAILURE;
     Timer timer = Timer(command_timeout_ms);
-    MQTTString topic = {(char*)topicFilter, 0, 0};
+    MQTTString topic = {(char*)topicFilter, {0, 0}};
     int len = 0;
 
     if (!isconnected)
@@ -788,7 +787,19 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
     {
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
+		{
             rc = 0;
+
+			// remove the subscription message handler associated with this topic, if there is one
+			for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+            {
+                if (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
+                {
+                    messageHandlers[i].topicFilter = 0;
+                    break;
+                }
+            }
+		}
     }
     else
         rc = FAILURE;
