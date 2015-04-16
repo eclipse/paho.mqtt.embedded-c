@@ -15,6 +15,7 @@
  *    Ian Craggs - fix for bug 458512 - QoS 2 messages
  *    Ian Craggs - fix for bug 460389 - send loop uses wrong length
  *    Ian Craggs - fix for bug 464169 - clearing subscriptions
+ *    Ian Craggs - fix for bug 464551 - enums and ints can be different size
  *******************************************************************************/
 
 #if !defined(MQTTCLIENT_H)
@@ -544,9 +545,11 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
 		{
             MQTTString topicName = MQTTString_initializer;
             Message msg;
-            if (MQTTDeserialize_publish((unsigned char*)&msg.dup, (int*)&msg.qos, (unsigned char*)&msg.retained, (unsigned short*)&msg.id, &topicName,
+            int intQoS;
+            if (MQTTDeserialize_publish((unsigned char*)&msg.dup, &intQoS, (unsigned char*)&msg.retained, (unsigned short*)&msg.id, &topicName,
                                  (unsigned char**)&msg.payload, (int*)&msg.payloadlen, readbuf, MAX_MQTT_PACKET_SIZE) != 1)
                 goto exit;
+            msg.qos = (enum QoS)intQoS;
 #if MQTTCLIENT_QOS2
             if (msg.qos != QOS2)
 #endif
@@ -687,8 +690,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect(MQTTPacket_co
         rc = FAILURE;
 
 #if MQTTCLIENT_QOS2
-    // resend an inflight publish
-    if (inflightMsgid >0 && inflightQoS == QOS2 && pubrel)
+    // resend any inflight publish
+    if (inflightMsgid > 0 && inflightQoS == QOS2 && pubrel)
     {
         if ((len = MQTTSerialize_ack(sendbuf, MAX_MQTT_PACKET_SIZE, PUBREL, 0, inflightMsgid)) <= 0)
             rc = FAILURE;
