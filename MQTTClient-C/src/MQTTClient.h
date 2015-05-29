@@ -36,8 +36,6 @@
 #include "MQTTPacket.h"
 #include "stdio.h"
 
-#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
-
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
 /* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
  * into a string constant suitable for use with include.
@@ -115,6 +113,10 @@ typedef struct MQTTClient
 
     Network* ipstack;
     Timer ping_timer;
+#if defined(MQTT_TASK)
+	Mutex mutex;
+	Thread thread;
+#endif 
 } MQTTClient;
 
 #define DefaultClient {0, 0, 0, 0, NULL, NULL, 0, 0, 0}
@@ -164,13 +166,22 @@ DLLExport int MQTTUnsubscribe(MQTTClient* client, const char* topicFilter);
  *  @param client - the client object to use
  *  @return success code
  */
-DLLExport int MQTTDisconnect(MQTTClient*);
+DLLExport int MQTTDisconnect(MQTTClient* client);
 
-/** MQTT Disconnect - send an MQTT disconnect packet and close the connection
+/** MQTT Yield - MQTT background
  *  @param client - the client object to use
+ *  @param time - the time, in milliseconds, to yield for 
  *  @return success code
  */
-DLLExport int MQTTYield(MQTTClient*, int);
+DLLExport int MQTTYield(MQTTClient* client, int time);
+
+#if defined(MQTT_TASK)
+/** MQTT start background thread for a client.  After this, MQTTYield should not be called.
+*  @param client - the client object to use
+*  @return success code
+*/
+DLLExport int MQTTStartTask(MQTTClient* client);
+#endif
 
 #if defined(__cplusplus)
      }

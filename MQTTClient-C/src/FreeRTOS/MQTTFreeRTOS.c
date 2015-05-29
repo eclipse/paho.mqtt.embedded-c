@@ -11,20 +11,50 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
+ *    Ian Craggs - convert to FreeRTOS
  *******************************************************************************/
 
 #include "MQTTFreeRTOS.h"
 
 
+int ThreadStart(Thread* thread, void (*fn)(void*), void* arg)
+{
+	int rc = 0;
+	uint16_t usTaskStackSize = (configMINIMAL_STACK_SIZE * 5);
+	UBaseType_t uxTaskPriority = uxTaskPriorityGet(NULL); /* set the priority as the same as the calling task*/
+
+	rc = xTaskCreate(fn,	/* The function that implements the task. */
+		"MQTTTask",			/* Just a text name for the task to aid debugging. */
+		usTaskStackSize,	/* The stack size is defined in FreeRTOSIPConfig.h. */
+		arg,				/* The task parameter, not used in this case. */
+		uxTaskPriority,		/* The priority assigned to the task is defined in FreeRTOSConfig.h. */
+		&thread->task);		/* The task handle is not used. */
+
+	return rc;
+}
+
+
+void MutexInit(Mutex* mutex)
+{
+	mutex->sem = xSemaphoreCreateMutex();
+}
+
+int MutexLock(Mutex* mutex)
+{
+	return xSemaphoreTake(mutex->sem, portMAX_DELAY);
+}
+
+int MutexUnlock(Mutex* mutex)
+{
+	return xSemaphoreGive(mutex->sem);
+}
+
+
 void TimerCountdownMS(Timer* timer, unsigned int timeout_ms)
 {
-	/* set the start and end tick counter */
 	timer->xTicksToWait = timeout_ms / portTICK_PERIOD_MS; /* convert milliseconds to ticks */
 	vTaskSetTimeOutState(&timer->xTimeOut); /* Record the time at which this function was entered. */
-
-	//timer->start_tick = xTaskGetTickCount();
-	//timer->end_tick = timer->start_tick + (timeout / portTICK_PERIOD_MS);
 }
 
 
@@ -36,9 +66,6 @@ void TimerCountdown(Timer* timer, unsigned int timeout)
 
 int TimerLeftMS(Timer* timer) 
 {
-	//TickType_t left_ticks = timer->end_tick - xTaskGetTickCount();
-	//return (left_ticks < 0) ? 0 : (left_ticks * portTICK_PERIOD_MS);
-
 	xTaskCheckForTimeOut(&timer->xTimeOut, &timer->xTicksToWait); /* updates xTicksToWait to the number left */
 	return (timer->xTicksToWait < 0) ? 0 : (timer->xTicksToWait * portTICK_PERIOD_MS);
 }
@@ -47,13 +74,11 @@ int TimerLeftMS(Timer* timer)
 char TimerIsExpired(Timer* timer)
 {
 	return xTaskCheckForTimeOut(&timer->xTimeOut, &timer->xTicksToWait) == pdTRUE;
-	//return TimerLeftMS(timer) <= 0;
 }
 
 
 void TimerInit(Timer* timer)
 {
-	//timer->start_tick = timer->end_tick = 0;
 	timer->xTicksToWait = 0;
 	memset(&timer->xTimeOut, '\0', sizeof(timer->xTimeOut));
 }
@@ -117,7 +142,7 @@ void FreeRTOS_disconnect(Network* n)
 }
 
 
-void NewNetwork(Network* n)
+void NetworkInit(Network* n)
 {
 	n->my_socket = 0;
 	n->mqttread = FreeRTOS_read;
@@ -126,73 +151,7 @@ void NewNetwork(Network* n)
 }
 
 
-#if 0
-int TLSConnectNetwork(Network *n, char* addr, int port, SlSockSecureFiles_t* certificates, unsigned char sec_method, unsigned int cipher, char server_verify) {
-	SlSockAddrIn_t sAddr;
-	int addrSize;
-	int retVal;
-	unsigned long ipAddress;
-
-	retVal = sl_NetAppDnsGetHostByName(addr, strlen(addr), &ipAddress, AF_INET);
-	if (retVal < 0) {
-		return -1;
-	}
-
-	sAddr.sin_family = AF_INET;
-	sAddr.sin_port = sl_Htons((unsigned short)port);
-	sAddr.sin_addr.s_addr = sl_Htonl(ipAddress);
-
-	addrSize = sizeof(SlSockAddrIn_t);
-
-	n->my_socket = sl_Socket(SL_AF_INET,SL_SOCK_STREAM, SL_SEC_SOCKET);
-	if (n->my_socket < 0) {
-		return -1;
-	}
-
-	SlSockSecureMethod method;
-	method.secureMethod = sec_method;
-	retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECMETHOD, &method, sizeof(method));
-	if (retVal < 0) {
-		return retVal;
-	}
-
-	SlSockSecureMask mask;
-	mask.secureMask = cipher;
-	retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECURE_MASK, &mask, sizeof(mask));
-	if (retVal < 0) {
-		return retVal;
-	}
-
-	if (certificates != NULL) {
-		retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECURE_FILES, certificates->secureFiles, sizeof(SlSockSecureFiles_t));
-		if(retVal < 0)
-		{
-			return retVal;
-		}
-	}
-
-	retVal = sl_Connect(n->my_socket, ( SlSockAddr_t *)&sAddr, addrSize);
-	if( retVal < 0 ) {
-		if (server_verify || retVal != -453) {
-			sl_Close(n->my_socket);
-			return retVal;
-		}
-	}
-
-	SysTickIntRegister(SysTickIntHandler);
-	SysTickPeriodSet(80000);
-	SysTickEnable();
-
-	return retVal;
-}
-#endif
-
-
-/* Rx and Tx time outs are used to ensure the sockets do not wait too long for missing data. */
-static const TickType_t xReceiveTimeOut = pdMS_TO_TICKS(100);
-static const TickType_t xSendTimeOut = pdMS_TO_TICKS(100);
-
-int ConnectNetwork(Network* n, char* addr, int port)
+int NetworkConnect(Network* n, char* addr, int port)
 {
 	struct freertos_sockaddr sAddr;
 	int retVal = -1;
@@ -213,10 +172,69 @@ int ConnectNetwork(Network* n, char* addr, int port)
 	    goto exit;
 	}
 
-	/* Set socket timeouts to values good for us */
-	FreeRTOS_setsockopt(n->my_socket, 0, FREERTOS_SO_RCVTIMEO, &xReceiveTimeOut, sizeof(xReceiveTimeOut));
-	FreeRTOS_setsockopt(n->my_socket, 0, FREERTOS_SO_SNDTIMEO, &xSendTimeOut, sizeof(xSendTimeOut));
-
 exit:
 	return retVal;
 }
+
+
+#if 0
+int NetworkConnectTLS(Network *n, char* addr, int port, SlSockSecureFiles_t* certificates, unsigned char sec_method, unsigned int cipher, char server_verify)
+{
+	SlSockAddrIn_t sAddr;
+	int addrSize;
+	int retVal;
+	unsigned long ipAddress;
+
+	retVal = sl_NetAppDnsGetHostByName(addr, strlen(addr), &ipAddress, AF_INET);
+	if (retVal < 0) {
+		return -1;
+	}
+
+	sAddr.sin_family = AF_INET;
+	sAddr.sin_port = sl_Htons((unsigned short)port);
+	sAddr.sin_addr.s_addr = sl_Htonl(ipAddress);
+
+	addrSize = sizeof(SlSockAddrIn_t);
+
+	n->my_socket = sl_Socket(SL_AF_INET, SL_SOCK_STREAM, SL_SEC_SOCKET);
+	if (n->my_socket < 0) {
+		return -1;
+	}
+
+	SlSockSecureMethod method;
+	method.secureMethod = sec_method;
+	retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECMETHOD, &method, sizeof(method));
+	if (retVal < 0) {
+		return retVal;
+	}
+
+	SlSockSecureMask mask;
+	mask.secureMask = cipher;
+	retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECURE_MASK, &mask, sizeof(mask));
+	if (retVal < 0) {
+		return retVal;
+	}
+
+	if (certificates != NULL) {
+		retVal = sl_SetSockOpt(n->my_socket, SL_SOL_SOCKET, SL_SO_SECURE_FILES, certificates->secureFiles, sizeof(SlSockSecureFiles_t));
+		if (retVal < 0)
+		{
+			return retVal;
+		}
+	}
+
+	retVal = sl_Connect(n->my_socket, (SlSockAddr_t *)&sAddr, addrSize);
+	if (retVal < 0) {
+		if (server_verify || retVal != -453) {
+			sl_Close(n->my_socket);
+			return retVal;
+		}
+	}
+
+	SysTickIntRegister(SysTickIntHandler);
+	SysTickPeriodSet(80000);
+	SysTickEnable();
+
+	return retVal;
+}
+#endif

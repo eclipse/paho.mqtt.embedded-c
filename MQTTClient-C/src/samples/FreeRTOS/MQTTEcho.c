@@ -12,6 +12,7 @@
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_Sockets.h"
 
+#define MQTT_TASK 1
 #include "MQTTClient.h"
 
 
@@ -32,12 +33,17 @@ static void prvMQTTEchoTask(void *pvParameters)
 	MQTTPacket_connectData connectData = MQTTPacket_connectData_initializer;
 
 	pvParameters = 0;
-	NewNetwork(&network);
+	NetworkInit(&network);
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
 
 	char* address = "iot.eclipse.org";
-	if ((rc = ConnectNetwork(&network, address, 1883)) != 0)
+	if ((rc = NetworkConnect(&network, address, 1883)) != 0)
 		printf("Return code from network connect is %d\n", rc);
+
+#if defined(MQTT_TASK)
+	if ((rc = MQTTStartTask(&client)) != pdPASS)
+		printf("Return code from start tasks is %d\n", rc);
+#endif
 
 	connectData.MQTTVersion = 3;
 	connectData.clientID.cstring = "FreeRTOS_sample";
@@ -63,8 +69,10 @@ static void prvMQTTEchoTask(void *pvParameters)
 
 		if ((rc = MQTTPublish(&client, "FreeRTOS/sample/a", &message)) != 0)
 			printf("Return code from MQTT publish is %d\n", rc);
+#if !defined(MQTT_TASK)
 		if ((rc = MQTTYield(&client, 1000)) != 0)
 			printf("Return code from yield is %d\n", rc);
+#endif
 	}
 
 	/* do not return */
