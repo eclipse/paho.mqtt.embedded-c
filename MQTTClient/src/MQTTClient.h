@@ -276,8 +276,6 @@ void MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::cleanSession()
 template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
 MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, unsigned int command_timeout_ms)  : ipstack(network), packetid()
 {
-    last_sent = Timer();
-    last_received = Timer();
     this->command_timeout_ms = command_timeout_ms;
 	cleanSession();
 }
@@ -504,7 +502,7 @@ template<class Network, class Timer, int a, int b>
 int MQTT::Client<Network, Timer, a, b>::yield(unsigned long timeout_ms)
 {
     int rc = SUCCESS;
-    Timer timer = Timer();
+    Timer timer;
 
     timer.countdown_ms(timeout_ms);
     while (!timer.expired())
@@ -628,7 +626,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::keepalive()
     {
         if (!ping_outstanding)
         {
-            Timer timer = Timer(1000);
+            Timer timer(1000);
             int len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
             if (len > 0 && (rc = sendPacket(len, timer)) == SUCCESS) // send the ping packet
                 ping_outstanding = true;
@@ -660,7 +658,7 @@ int MQTT::Client<Network, Timer, a, b>::waitfor(int packet_type, Timer& timer)
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect(MQTTPacket_connectData& options)
 {
-    Timer connect_timer = Timer(command_timeout_ms);
+    Timer connect_timer(command_timeout_ms);
     int rc = FAILURE;
     int len = 0;
 
@@ -727,7 +725,7 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_H
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter, enum QoS qos, messageHandler messageHandler)
 {
     int rc = FAILURE;
-    Timer timer = Timer(command_timeout_ms);
+    Timer timer(command_timeout_ms);
     int len = 0;
     MQTTString topic = {(char*)topicFilter, {0, 0}};
 
@@ -774,7 +772,7 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_H
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::unsubscribe(const char* topicFilter)
 {
     int rc = FAILURE;
-    Timer timer = Timer(command_timeout_ms);
+    Timer timer(command_timeout_ms);
     MQTTString topic = {(char*)topicFilter, {0, 0}};
     int len = 0;
 
@@ -866,7 +864,7 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(const char* topicName, void* payload, size_t payloadlen, unsigned short& id, enum QoS qos, bool retained)
 {
     int rc = FAILURE;
-    Timer timer = Timer(command_timeout_ms);
+    Timer timer(command_timeout_ms);
     MQTTString topicString = MQTTString_initializer;
     int len = 0;
 
@@ -923,7 +921,7 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::disconnect()
 {
     int rc = FAILURE;
-    Timer timer = Timer(command_timeout_ms);     // we might wait for incomplete incoming publishes to complete
+    Timer timer(command_timeout_ms);     // we might wait for incomplete incoming publishes to complete
     int len = MQTTSerialize_disconnect(sendbuf, MAX_MQTT_PACKET_SIZE);
     if (len > 0)
         rc = sendPacket(len, timer);            // send the disconnect packet
