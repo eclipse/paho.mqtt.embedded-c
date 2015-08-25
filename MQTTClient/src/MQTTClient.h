@@ -16,6 +16,8 @@
  *    Ian Craggs - fix for bug 460389 - send loop uses wrong length
  *    Ian Craggs - fix for bug 464169 - clearing subscriptions
  *    Ian Craggs - fix for bug 464551 - enums and ints can be different size
+ *    Mark Sonnentag - fix for bug 475204 - inefficient instantiation of Timer
+ *    Ian Craggs - fix for bug 475749 - packetid modified twice
  *******************************************************************************/
 
 #if !defined(MQTTCLIENT_H)
@@ -74,7 +76,7 @@ public:
 
     int getNext()
     {
-        return next = (next == MAX_PACKET_ID) ? 1 : ++next;
+        return next = (next == MAX_PACKET_ID) ? 1 : next + 1;
     }
 
 private:
@@ -794,7 +796,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
 			// remove the subscription message handler associated with this topic, if there is one
 			for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
-                if (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
+                if (messageHandlers[i].topicFilter != 0 && strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
                 {
                     messageHandlers[i].topicFilter = 0;
                     break;
