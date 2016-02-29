@@ -4,7 +4,7 @@ This repository contains the source code for the [Eclipse Paho](http://eclipse.o
 
 It is dual licensed under the EPL and EDL (see about.html and notice.html for more details).  You can choose which of these licenses you want to use the code under.  The EDL allows you to embed the code into your application, and distribute your application in binary or source form without contributing any of your code, or any changes you make back to Paho.  See the EDL for the exact conditions.
 
-The MQTTPacket directory contains the lowest level C library with the smallest requirements.  This supplies simple serialization 
+The MQTTPacket directory contains the lowest level C library with the smallest requirements.  This supplies simple serialization
 and deserialization routines.  It is mainly up to you to write and read to and from the network.
 
 The MQTTClient directory contains the next level C++ library.  This still avoids most networking code so that you can plugin the
@@ -26,7 +26,7 @@ As yet, there is no tracing.  For the smallest client, should we have tracing?
 
 ## Reporting bugs
 
-Please report bugs under the "MQTT-Embedded-C" Component in [Eclipse Bugzilla](http://bugs.eclipse.org/bugs/) for the Paho Technology project.
+This project uses GitHub Issues here: [github.com/eclipse/paho.mqtt.embedded-c/issues](https://github.com/eclipse/paho.mqtt.embedded-c/issues) to track ongoing development and issues.
 
 ## More information
 
