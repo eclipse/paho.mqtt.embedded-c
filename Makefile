@@ -135,8 +135,11 @@ uninstall:
 
 html:
 
+ESP8266_PORT_FILES = MQTTClient/src/esp8266/*.h
+ESP8266_LIB_FILES = MQTTClient/src/*.h $(srcdir)/*
 ARDUINO_LIB_FILES = MQTTClient/src/*.h MQTTClient/src/arduino/*.h $(srcdir)/*
 ARDUINO_SAMPLES = MQTTClient/samples/arduino/*
+ESP8266_SAMPLES = MQTTClient/samples/esp8266/*
 LEGAL_FILES = edl-v10 epl-v10 notice.html about.html CONTRIBUTING.md README.md
 
 arduino: mkdir
@@ -145,6 +148,14 @@ arduino: mkdir
 	cp $(LEGAL_FILES) ${blddir}/arduino/MQTTClient
 	cp -R $(ARDUINO_SAMPLES) ${blddir}/arduino/MQTTClient/examples
 	cd ${blddir}/arduino && zip -r arduino MQTTClient
+
+esp8266: mkdir
+	-mkdir -p ${blddir}/esp8266/MQTTClient/examples
+	cp  $(ESP8266_PORT_FILES) ${blddir}/esp8266/MQTTClient
+	cp -n $(ESP8266_LIB_FILES) ${blddir}/esp8266/MQTTClient
+	cp $(LEGAL_FILES) ${blddir}/esp8266/MQTTClient
+	cp -R $(ESP8266_SAMPLES) ${blddir}/esp8266/MQTTClient/examples
+	cd ${blddir}/esp8266 && zip -r esp8266 MQTTClient
 
 endif
 
