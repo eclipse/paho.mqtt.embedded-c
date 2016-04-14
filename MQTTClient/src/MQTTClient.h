@@ -536,9 +536,35 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
 		{
             MQTTString topicName = MQTTString_initializer;
             Message msg;
-            if (MQTTDeserialize_publish((unsigned char*)&msg.dup, (int*)&msg.qos, (unsigned char*)&msg.retained, (unsigned short*)&msg.id, &topicName,
-                                 (unsigned char**)&msg.payload, (int*)&msg.payloadlen, readbuf, MAX_MQTT_PACKET_SIZE) != 1)
+
+            unsigned char dup;
+            int qos;
+            unsigned char retained;
+            unsigned char *payload;
+            int payloadlen;
+
+            if (MQTTDeserialize_publish(&dup, &qos, &retained, &msg.id, &topicName,
+                                 &payload, &payloadlen, readbuf, MAX_MQTT_PACKET_SIZE) != 1)
                 goto exit;
+
+            msg.dup = !!dup;
+            switch(qos)
+            {
+                case 0:
+                    msg.qos = QOS0;
+                    break;
+                case 1:
+                    msg.qos = QOS1;
+                    break;
+                case 2:
+                    msg.qos = QOS2;
+                    break;
+                default:
+                    goto exit;
+            }
+            msg.retained = !!retained;
+            msg.payload = payload;
+            msg.payloadlen = payloadlen;
 #if MQTTCLIENT_QOS2
             if (msg.qos != QOS2)
 #endif
@@ -669,8 +695,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect(MQTTPacket_co
     if (waitfor(CONNACK, connect_timer) == CONNACK)
     {
         unsigned char connack_rc = 255;
-        bool sessionPresent = false;
-        if (MQTTDeserialize_connack((unsigned char*)&sessionPresent, &connack_rc, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
+        unsigned char sessionPresent;
+        if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
             rc = connack_rc;
         else
             rc = FAILURE;
