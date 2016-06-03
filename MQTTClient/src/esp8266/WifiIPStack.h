@@ -19,24 +19,23 @@
 #define ESP8266WIFIIPSTACK_H
 
 #include <ESP8266WiFi.h>
+#include <WiFiClient.h>
 
 class WifiIPStack 
 {
 public:
-    WifiIPStack()
+    WifiIPStack(WiFiClient& wifiClient) : iface(&wifiClient)
     {
-        //WiFi.begin();              // Use DHCP
-        iface.setTimeout(1000);    // 1 second Timeout 
     }
 
     int connect(char* hostname, int port)
     {
-        return iface.connect(hostname, port);
+        return iface->connect(hostname, port);
     }
 
     int connect(uint32_t hostname, int port)
     {
-        return iface.connect(hostname, port);
+        return iface->connect(hostname, port);
     }
 
     int read(unsigned char* buffer, int len, int timeout)
@@ -44,34 +43,40 @@ public:
         int count = 0;
         int start = millis();
 
-        while((iface.available() < len) && ((millis() - start) < timeout)) {
+        while((iface->available() < len) && ((millis() - start) < timeout)) {
             yield();
         }
 
-        count = iface.available();
+        count = iface->available();
 
         if (count > len) {
             count = len;
         }
 
-        return iface.readBytes(buffer, count);
+        return iface->readBytes(buffer, count);
     }
 
     int write(unsigned char* buffer, int len, int timeout)
     {
-        iface.setTimeout(timeout);  
-        return iface.write((uint8_t*)buffer, len);
+        int start = millis();
+        int res = iface->write((uint8_t*)buffer, len);
+
+        while ((res == 0) && ((millis() - start) < timeout)) {
+            yield();
+            res = iface->write((uint8_t*)buffer, len);
+        }
+        return res;
     }
 
     int disconnect()
     {
-        iface.stop();
+        iface->stop();
         return 0;
     }
 
 private:
 
-    WiFiClient iface;
+    WiFiClient* iface;
 };
 
 #endif

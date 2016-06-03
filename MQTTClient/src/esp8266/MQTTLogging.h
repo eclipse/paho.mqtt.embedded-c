@@ -41,7 +41,7 @@
     Serial.printf(__VA_ARGS__); \
     Serial.flush(); \
     }
-#endif 
+#endif
 #if !defined(ERROR)
 #define ERROR(...)  \
     { \
