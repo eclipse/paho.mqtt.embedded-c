@@ -21,7 +21,7 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 
-class WifiIPStack 
+class WifiIPStack
 {
 public:
     WifiIPStack(WiFiClient& wifiClient) : iface(&wifiClient)
