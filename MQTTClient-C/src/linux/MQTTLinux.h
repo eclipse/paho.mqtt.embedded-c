@@ -14,8 +14,19 @@
  *    Allan Stockdill-Mander - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#ifndef __MQTT_LINUX_
+#if !defined(__MQTT_LINUX_)
 #define __MQTT_LINUX_
+
+#if defined(WIN32_DLL) || defined(WIN64_DLL)
+  #define DLLImport __declspec(dllimport)
+  #define DLLExport __declspec(dllexport)
+#elif defined(LINUX_SO)
+  #define DLLImport extern
+  #define DLLExport  __attribute__ ((visibility ("default")))
+#else
+  #define DLLImport
+  #define DLLExport
+#endif
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -35,34 +46,29 @@
 #include <string.h>
 #include <signal.h>
 
-typedef struct Timer Timer;
-
-struct Timer {
+typedef struct Timer
+{
 	struct timeval end_time;
-};
+} Timer;
 
-typedef struct Network Network;
+void TimerInit(Timer*);
+char TimerIsExpired(Timer*);
+void TimerCountdownMS(Timer*, unsigned int);
+void TimerCountdown(Timer*, unsigned int);
+int TimerLeftMS(Timer*);
 
-struct Network
+typedef struct Network
 {
 	int my_socket;
-	int (*mqttread) (Network*, unsigned char*, int, int);
-	int (*mqttwrite) (Network*, unsigned char*, int, int);
-	void (*disconnect) (Network*);
-};
-
-char expired(Timer*);
-void countdown_ms(Timer*, unsigned int);
-void countdown(Timer*, unsigned int);
-int left_ms(Timer*);
-
-void InitTimer(Timer*);
+	int (*mqttread) (struct Network*, unsigned char*, int, int);
+	int (*mqttwrite) (struct Network*, unsigned char*, int, int);
+} Network;
 
 int linux_read(Network*, unsigned char*, int, int);
 int linux_write(Network*, unsigned char*, int, int);
-void linux_disconnect(Network*);
-void NewNetwork(Network*);
 
-int ConnectNetwork(Network*, char*, int);
+DLLExport void NetworkInit(Network*);
+DLLExport int NetworkConnect(Network*, char*, int);
+DLLExport void NetworkDisconnect(Network*);
 
 #endif
