@@ -46,29 +46,17 @@
 #include <string.h>
 #include <signal.h>
 
+#include "Network.h"
+#include "Timer.h"
+
 typedef struct Timer
 {
 	struct timeval end_time;
 } Timer;
 
-void TimerInit(Timer*);
-char TimerIsExpired(Timer*);
-void TimerCountdownMS(Timer*, unsigned int);
-void TimerCountdown(Timer*, unsigned int);
-int TimerLeftMS(Timer*);
-
 typedef struct Network
 {
 	int my_socket;
-	int (*mqttread) (struct Network*, unsigned char*, int, int);
-	int (*mqttwrite) (struct Network*, unsigned char*, int, int);
 } Network;
-
-int linux_read(Network*, unsigned char*, int, int);
-int linux_write(Network*, unsigned char*, int, int);
-
-DLLExport void NetworkInit(Network*);
-DLLExport int NetworkConnect(Network*, char*, int);
-DLLExport void NetworkDisconnect(Network*);
 
 #endif
