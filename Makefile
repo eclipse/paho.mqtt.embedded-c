@@ -102,8 +102,8 @@ ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
 	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
 
 
-${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/../samples/%.c
-	${CC} -o ${blddir}/samples/${basename ${+F}} $< -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
+${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/../samples/%.c ${srcdir}/../samples/transport.o
+	${CC} -o $@ $^ -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
 
 
 
