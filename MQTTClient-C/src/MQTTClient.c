@@ -103,13 +103,13 @@ exit:
 
 static int readPacket(MQTTClient* c, Timer* timer)
 {
-    int rc = FAILURE;
     MQTTHeader header = {0};
     int len = 0;
     int rem_len = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
-    if (c->ipstack->mqttread(c->ipstack, c->readbuf, 1, TimerLeftMS(timer)) != 1)
+    int rc = c->ipstack->mqttread(c->ipstack, c->readbuf, 1, TimerLeftMS(timer));
+    if (rc != 1)
         goto exit;
 
     len = 1;
@@ -118,7 +118,7 @@ static int readPacket(MQTTClient* c, Timer* timer)
     len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
-    if (rem_len > 0 && (c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len))
+    if (rem_len > 0 && (rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len))
         goto exit;
 
     header.byte = c->readbuf[0];
@@ -224,7 +224,9 @@ int cycle(MQTTClient* c, Timer* timer)
 {
     // read the socket, see what work is due
     unsigned short packet_type = readPacket(c, timer);
-    
+    if (packet_type == 0)
+        return FAILURE; // no more data to read, unrecoverable
+
     int len = 0,
         rc = SUCCESS;
 
@@ -281,7 +283,7 @@ int cycle(MQTTClient* c, Timer* timer)
     }
     keepalive(c);
 exit:
-    if (rc == SUCCESS)
+    if (rc == SUCCESS && packet_type != FAILURE)
         rc = packet_type;
     return rc;
 }
