@@ -81,6 +81,11 @@ int linux_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
 				break;
 			}
 		}
+		else if (rc == 0)
+		{
+			bytes = 0;
+			break;
+		}
 		else
 			bytes += rc;
 	}
