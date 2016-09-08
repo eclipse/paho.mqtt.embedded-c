@@ -66,7 +66,7 @@ void MQTTClientInit(MQTTClient* c, void* network, unsigned int command_timeout_m
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
 	c->next_packetid = 1;
-    TimerInit(&c->ping_timer);
+	c->ping_timer = TimerInit();
 #if defined(MQTT_TASK)
 	MutexInit(&c->mutex);
 #endif
@@ -207,11 +207,12 @@ int keepalive(MQTTClient* c)
         if (!c->ping_outstanding)
         {
             void *timer;
-            TimerInit(timer);
+            timer = TimerInit();
             TimerCountdownMS(timer, 1000);
             int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
             if (len > 0 && (rc = sendPacket(c, len, timer)) == SUCCESS) // send the ping packet
                 c->ping_outstanding = 1;
+            destroyTimer(timer);
         }
     }
 
@@ -292,7 +293,7 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     int rc = SUCCESS;
     void *timer;
 
-    TimerInit(timer);
+    timer = TimerInit();
     TimerCountdownMS(timer, timeout_ms);
 
 	do
@@ -303,7 +304,7 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
             break;
         }
 	} while (!TimerIsExpired(timer));
-        
+    destroyTimer(timer);
     return rc;
 }
 
@@ -313,7 +314,7 @@ void MQTTRun(void* parm)
 	void *timer;
 	MQTTClient* c = (MQTTClient*)parm;
 
-	TimerInit(timer);
+	timer = TimerInit();
 
 	while (1)
 	{
@@ -326,6 +327,7 @@ void MQTTRun(void* parm)
 		MutexUnlock(&c->mutex);
 #endif
 	} 
+	destroyTimer(timer);
 }
 
 
@@ -365,7 +367,7 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
 	if (c->isconnected) /* don't send connect packet again if we are already connected */
 		goto exit;
     
-    TimerInit(connect_timer);
+	connect_timer = TimerInit();
     TimerCountdownMS(connect_timer, c->command_timeout_ms);
 
     if (options == 0)
@@ -390,7 +392,8 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
     }
     else
         rc = FAILURE;
-    
+
+    destroyTimer(connect_timer);
 exit:
     if (rc == SUCCESS)
         c->isconnected = 1;
@@ -398,7 +401,6 @@ exit:
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
 #endif
-
     return rc;
 }
 
@@ -417,7 +419,7 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
 	if (!c->isconnected)
 		goto exit;
 
-    TimerInit(timer);
+	timer = TimerInit();
     TimerCountdownMS(timer, c->command_timeout_ms);
     
     len = MQTTSerialize_subscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic, (int*)&qos);
@@ -449,7 +451,8 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
     }
     else 
         rc = FAILURE;
-        
+
+    destroyTimer(timer);
 exit:
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
@@ -472,7 +475,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
 	if (!c->isconnected)
 		goto exit;
 
-    TimerInit(timer);
+    timer = TimerInit();
     TimerCountdownMS(timer, c->command_timeout_ms);
     
     if ((len = MQTTSerialize_unsubscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic)) <= 0)
@@ -489,6 +492,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     else
         rc = FAILURE;
     
+    destroyTimer(timer);
 exit:
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
@@ -511,7 +515,7 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
 	if (!c->isconnected)
 		goto exit;
 
-    TimerInit(timer);
+	timer = TimerInit();
     TimerCountdownMS(timer, c->command_timeout_ms);
 
     if (message->qos == QOS1 || message->qos == QOS2)
@@ -548,7 +552,7 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
         else
             rc = FAILURE;
     }
-    
+    destroyTimer(timer);
 exit:
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
@@ -566,7 +570,7 @@ int MQTTDisconnect(MQTTClient* c)
 #if defined(MQTT_TASK)
 	MutexLock(&c->mutex);
 #endif
-    TimerInit(timer);
+	timer = TimerInit();
     TimerCountdownMS(timer, c->command_timeout_ms);
 
 	len = MQTTSerialize_disconnect(c->buf, c->buf_size);
@@ -575,6 +579,7 @@ int MQTTDisconnect(MQTTClient* c)
         
     c->isconnected = 0;
 
+    destroyTimer(timer);
 #if defined(MQTT_TASK)
 	MutexUnlock(&c->mutex);
 #endif

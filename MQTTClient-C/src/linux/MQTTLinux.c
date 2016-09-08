@@ -16,11 +16,11 @@
 
 #include "MQTTLinux.h"
 
-void TimerInit(void *t)
+void *TimerInit()
 {
-	Timer *timer = t;
-	timer = (Timer *)malloc(sizeof(Timer));
+	Timer *timer = (Timer *)malloc(sizeof(Timer));
 	timer->end_time = (struct timeval){0, 0};
+	return (void *)timer;
 }
 
 char TimerIsExpired(void *t)
@@ -114,11 +114,11 @@ int mqttwrite(void *network, unsigned char* buffer, int len, int timeout_ms)
 }
 
 
-void NetworkInit(void *network)
+void *NetworkInit()
 {
-	Network *n = (Network *)network;
-	n = (Network *)malloc(sizeof(Network));
+	Network *n = (Network *)malloc(sizeof(Network));
 	n->my_socket = 0;
+	return (void *)n;
 }
 
 

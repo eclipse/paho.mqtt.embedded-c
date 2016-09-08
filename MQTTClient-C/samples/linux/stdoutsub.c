@@ -215,8 +215,8 @@ int main(int argc, char** argv)
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	NewNetwork(n);
-	ConnectNetwork(n, opts.host, opts.port);
+	n = NetworkInit();
+	NetworkConnect(n, opts.host, opts.port);
 	MQTTClientInit(&c, n, 1000, buf, 100, readbuf, 100);
  
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
