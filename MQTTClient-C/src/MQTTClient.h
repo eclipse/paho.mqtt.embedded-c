@@ -34,6 +34,8 @@
 #endif
 
 #include "MQTTPacket.h"
+#include "Network.h"
+#include "Timer.h"
 #include "stdio.h"
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
@@ -55,23 +57,6 @@ enum QoS { QOS0, QOS1, QOS2 };
 
 /* all failure return codes must be negative */
 enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
-
-/* The Platform specific header must define the Network and Timer structures and functions
- * which operate on them.
- *
-typedef struct Network
-{
-	int (*mqttread)(Network*, unsigned char* read_buffer, int, int);
-	int (*mqttwrite)(Network*, unsigned char* send_buffer, int, int);
-} Network;*/
-
-/* The Timer structure must be defined in the platform specific header,
- * and have the following functions to operate on it.  */
-extern void TimerInit(Timer*);
-extern char TimerIsExpired(Timer*);
-extern void TimerCountdownMS(Timer*, unsigned int);
-extern void TimerCountdown(Timer*, unsigned int);
-extern int TimerLeftMS(Timer*);
 
 typedef struct MQTTMessage
 {
@@ -111,8 +96,8 @@ typedef struct MQTTClient
 
     void (*defaultMessageHandler) (MessageData*);
 
-    Network* ipstack;
-    Timer ping_timer;
+    void *ipstackNetwork;
+    void *ping_timer;
 #if defined(MQTT_TASK)
 	Mutex mutex;
 	Thread thread;
@@ -129,7 +114,7 @@ typedef struct MQTTClient
  * @param command_timeout_ms
  * @param
  */
-DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
+DLLExport void MQTTClientInit(MQTTClient* client, void* network, unsigned int command_timeout_ms,
 		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack

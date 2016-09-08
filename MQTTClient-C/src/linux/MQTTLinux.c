@@ -16,31 +16,36 @@
 
 #include "MQTTLinux.h"
 
-void TimerInit(Timer* timer)
+void *TimerInit()
 {
+	Timer *timer = (Timer *)malloc(sizeof(Timer));
 	timer->end_time = (struct timeval){0, 0};
+	return (void *)timer;
 }
 
-char TimerIsExpired(Timer* timer)
+char TimerIsExpired(void *t)
 {
+	Timer *timer = t;
 	struct timeval now, res;
 	gettimeofday(&now, NULL);
-	timersub(&timer->end_time, &now, &res);		
+	timersub(&timer->end_time, &now, &res);
 	return res.tv_sec < 0 || (res.tv_sec == 0 && res.tv_usec <= 0);
 }
 
 
-void TimerCountdownMS(Timer* timer, unsigned int timeout)
+void TimerCountdownMS(void* t, unsigned int timeout)
 {
 	struct timeval now;
+	Timer *timer = t;
 	gettimeofday(&now, NULL);
 	struct timeval interval = {timeout / 1000, (timeout % 1000) * 1000};
 	timeradd(&now, &interval, &timer->end_time);
 }
 
 
-void TimerCountdown(Timer* timer, unsigned int timeout)
+void TimerCountdown(void* t, unsigned int timeout)
 {
+	Timer *timer = t;
 	struct timeval now;
 	gettimeofday(&now, NULL);
 	struct timeval interval = {timeout, 0};
@@ -48,8 +53,9 @@ void TimerCountdown(Timer* timer, unsigned int timeout)
 }
 
 
-int TimerLeftMS(Timer* timer)
+int TimerLeftMS(void* t)
 {
+	Timer *timer = t;
 	struct timeval now, res;
 	gettimeofday(&now, NULL);
 	timersub(&timer->end_time, &now, &res);
@@ -57,9 +63,15 @@ int TimerLeftMS(Timer* timer)
 	return (res.tv_sec < 0) ? 0 : res.tv_sec * 1000 + res.tv_usec / 1000;
 }
 
+void destroyTimer(void *t){
+	Timer *timer = t;
+	free(timer);
+}
 
-int linux_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
+
+int mqttread(void* network, unsigned char* buffer, int len, int timeout_ms)
 {
+	Network *n = network;
 	struct timeval interval = {timeout_ms / 1000, (timeout_ms % 1000) * 1000};
 	if (interval.tv_sec < 0 || (interval.tv_sec == 0 && interval.tv_usec <= 0))
 	{
@@ -88,8 +100,9 @@ int linux_read(Network* n, unsigned char* buffer, int len, int timeout_ms)
 }
 
 
-int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
+int mqttwrite(void *network, unsigned char* buffer, int len, int timeout_ms)
 {
+	Network *n = network;
 	struct timeval tv;
 
 	tv.tv_sec = 0;  /* 30 Secs Timeout */
@@ -101,16 +114,17 @@ int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
 }
 
 
-void NetworkInit(Network* n)
+void *NetworkInit()
 {
+	Network *n = (Network *)malloc(sizeof(Network));
 	n->my_socket = 0;
-	n->mqttread = linux_read;
-	n->mqttwrite = linux_write;
+	return (void *)n;
 }
 
 
-int NetworkConnect(Network* n, char* addr, int port)
+int NetworkConnect(void *network, char* addr, int port)
 {
+	Network *n = network;
 	int type = SOCK_STREAM;
 	struct sockaddr_in address;
 	int rc = -1;
@@ -156,7 +170,13 @@ int NetworkConnect(Network* n, char* addr, int port)
 }
 
 
-void NetworkDisconnect(Network* n)
+void NetworkDisconnect(void *network)
 {
+	Network *n = network;
 	close(n->my_socket);
+}
+
+void destroyNetwork(void *network){
+	Network *n = network;
+	free(n);
 }
