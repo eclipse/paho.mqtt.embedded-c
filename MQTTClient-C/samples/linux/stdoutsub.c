@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2016 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,6 +14,7 @@
  *    Ian Craggs - initial contribution
  *    Ian Craggs - change delimiter option from char to string
  *    Al Stockdill-Mander - Version using the embedded C client
+ *    Ian Craggs - update MQTTClient function names
  *******************************************************************************/
 
 /*
@@ -210,14 +211,14 @@ int main(int argc, char** argv)
 	getopts(argc, argv);	
 
 	Network n;
-	Client c;
+	MQTTClient c;
 
 	signal(SIGINT, cfinish);
 	signal(SIGTERM, cfinish);
 
-	NewNetwork(&n);
-	ConnectNetwork(&n, opts.host, opts.port);
-	MQTTClient(&c, &n, 1000, buf, 100, readbuf, 100);
+	NetworkInit(&n);
+	NetworkConnect(&n, opts.host, opts.port);
+	MQTTClientInit(&c, &n, 1000, buf, 100, readbuf, 100);
  
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;       
 	data.willFlag = 0;
@@ -245,7 +246,7 @@ int main(int argc, char** argv)
 	printf("Stopping\n");
 
 	MQTTDisconnect(&c);
-	n.disconnect(&n);
+	NetworkDisconnect(&n);
 
 	return 0;
 }
