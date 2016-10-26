@@ -750,7 +750,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
         {
             for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
-                if (messageHandlers[i].topicFilter == 0)
+                if ((messageHandlers[i].topicFilter == 0) 
+		    || (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0))
                 {
                     messageHandlers[i].topicFilter = topicFilter;
                     messageHandlers[i].fp.attach(messageHandler);
