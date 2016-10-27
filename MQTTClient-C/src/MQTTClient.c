@@ -34,7 +34,7 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
     while (sent < length && !TimerIsExpired(timer))
     {
         rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length, TimerLeftMS(timer));
-        if (rc < 0)  // there was an error writing the data
+        if (rc < 0)
             break;
         sent += rc;
     }
@@ -259,7 +259,7 @@ int cycle(MQTTClient* c, Timer* timer)
                 else
                     rc = sendPacket(c, len, timer);
                 if (rc == FAILURE)
-                    goto exit; // there was a problem
+                    goto exit;
             }
             break;
         }
@@ -271,10 +271,10 @@ int cycle(MQTTClient* c, Timer* timer)
                 rc = FAILURE;
             else if ((len = MQTTSerialize_ack(c->buf, c->buf_size, PUBREL, 0, mypacketid)) <= 0)
                 rc = FAILURE;
-            else if ((rc = sendPacket(c, len, timer)) != SUCCESS) // send the PUBREL packet
-                rc = FAILURE; // there was a problem
+            else if ((rc = sendPacket(c, len, timer)) != SUCCESS)
+                rc = FAILURE;
             if (rc == FAILURE)
-                goto exit; // there was a problem
+                goto exit;
             break;
         }
         case PUBCOMP:
@@ -373,14 +373,14 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
     TimerCountdownMS(&connect_timer, c->command_timeout_ms);
 
     if (options == 0)
-        options = &default_options; /* set default options if none were supplied */
+        options = &default_options;
     
     c->keepAliveInterval = options->keepAliveInterval;
     TimerCountdown(&c->ping_timer, c->keepAliveInterval);
     if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)  // send the connect packet
-        goto exit; // there was a problem
+    if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)
+        goto exit;
     
     // this will be a blocking call, wait for the connack
     if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
@@ -427,8 +427,8 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
     len = MQTTSerialize_subscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic, (int*)&qos);
     if (len <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &timer)) != SUCCESS) // send the subscribe packet
-        goto exit;             // there was a problem
+    if ((rc = sendPacket(c, len, &timer)) != SUCCESS)
+        goto exit;
     
     if (waitfor(c, SUBACK, &timer) == SUBACK)      // wait for suback 
     {
@@ -481,12 +481,12 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     
     if ((len = MQTTSerialize_unsubscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic)) <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &timer)) != SUCCESS) // send the subscribe packet
-        goto exit; // there was a problem
+    if ((rc = sendPacket(c, len, &timer)) != SUCCESS)
+        goto exit;
     
     if (waitfor(c, UNSUBACK, &timer) == UNSUBACK)
     {
-        unsigned short mypacketid;  // should be the same as the packetid above
+        unsigned short mypacketid;
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
             rc = 0; 
     }
@@ -525,8 +525,8 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
               topic, (unsigned char*)message->payload, message->payloadlen);
     if (len <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &timer)) != SUCCESS) // send the subscribe packet
-        goto exit; // there was a problem
+    if ((rc = sendPacket(c, len, &timer)) != SUCCESS)
+        goto exit;
     
     if (message->qos == QOS1)
     {
