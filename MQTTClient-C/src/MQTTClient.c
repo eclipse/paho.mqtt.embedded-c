@@ -226,6 +226,8 @@ int cycle(MQTTClient* c, Timer* timer)
     unsigned short packet_type = readPacket(c, timer);
     if (packet_type == 0)
         return FAILURE; // no more data to read, unrecoverable
+    if (packet_type == FAILURE)
+        return FAILURE;
 
     int len = 0,
         rc = SUCCESS;
@@ -283,7 +285,7 @@ int cycle(MQTTClient* c, Timer* timer)
     }
     keepalive(c);
 exit:
-    if (rc == SUCCESS && packet_type != FAILURE)
+    if (rc == SUCCESS)
         rc = packet_type;
     return rc;
 }
