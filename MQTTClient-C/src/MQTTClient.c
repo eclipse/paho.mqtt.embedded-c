@@ -78,16 +78,15 @@ static int decodePacket(MQTTClient* c, int* value, int timeout)
     unsigned char i;
     int multiplier = 1;
     int len = 0;
+    int rc = SUCCESS;
     const int MAX_NO_OF_REMAINING_LENGTH_BYTES = 4;
 
     *value = 0;
     do
     {
-        int rc = MQTTPACKET_READ_ERROR;
-
         if (++len > MAX_NO_OF_REMAINING_LENGTH_BYTES)
         {
-            rc = MQTTPACKET_READ_ERROR; /* bad data */
+            rc = FAILURE;
             goto exit;
         }
         rc = c->ipstack->mqttread(c->ipstack, &i, 1, timeout);
@@ -97,30 +96,31 @@ static int decodePacket(MQTTClient* c, int* value, int timeout)
         multiplier *= 128;
     } while ((i & 128) != 0);
 exit:
-    return len;
+    return rc;
 }
 
 
 static int readPacket(MQTTClient* c, Timer* timer)
 {
-    MQTTHeader header = {0};
-    int len = 0;
-    int rem_len = 0;
-
     /* 1. read the header byte.  This has the packet type in it */
     int rc = c->ipstack->mqttread(c->ipstack, c->readbuf, 1, TimerLeftMS(timer));
     if (rc != 1)
         goto exit;
 
-    len = 1;
+    int rem_len = 0;
+
     /* 2. read the remaining length.  This is variable in itself */
-    decodePacket(c, &rem_len, TimerLeftMS(timer));
-    len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
+    rc = decodePacket(c, &rem_len, TimerLeftMS(timer));
+    if (rc == FAILURE)
+        goto exit;
+
+    int len = 1 + MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
     if (rem_len > 0 && (rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len))
         goto exit;
 
+    MQTTHeader header = {0};
     header.byte = c->readbuf[0];
     rc = header.bits.type;
 exit:
