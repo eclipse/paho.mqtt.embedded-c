@@ -223,15 +223,14 @@ exit:
 int cycle(MQTTClient* c, Timer* timer)
 {
     // read the socket, see what work is due
-    unsigned short packet_type = readPacket(c, timer);
-    if (packet_type == 0)
-        return FAILURE; // no more data to read, unrecoverable
-    if (packet_type == FAILURE)
-        return FAILURE;
+    int rc = readPacket(c, timer);
+    if (rc == 0 || rc == FAILURE)
+        return FAILURE; // 0 is no more data to read, unrecoverable
 
-    int len = 0,
-        rc = SUCCESS;
+    unsigned short packet_type = (unsigned short)rc;
+    rc = SUCCESS;
 
+    int len = 0;
     switch (packet_type)
     {
         case CONNACK:
