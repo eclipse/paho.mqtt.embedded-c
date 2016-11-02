@@ -18,14 +18,14 @@
 #define __MQTT_LINUX_
 
 #if defined(WIN32_DLL) || defined(WIN64_DLL)
-  #define DLLImport __declspec(dllimport)
-  #define DLLExport __declspec(dllexport)
+#define DLLImport __declspec(dllimport)
+#define DLLExport __declspec(dllexport)
 #elif defined(LINUX_SO)
-  #define DLLImport extern
-  #define DLLExport  __attribute__ ((visibility ("default")))
+#define DLLImport extern
+#define DLLExport __attribute__((visibility("default")))
 #else
-  #define DLLImport
-  #define DLLExport
+#define DLLImport
+#define DLLExport
 #endif
 
 #include <sys/types.h>
@@ -41,34 +41,68 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 
+#include "MQTTErrors.h"
+
 typedef struct Timer
 {
-	struct timeval end_time;
+   struct timeval end_time;
 } Timer;
 
-void TimerInit(Timer*);
-char TimerIsExpired(Timer*);
-void TimerCountdownMS(Timer*, unsigned int);
-void TimerCountdown(Timer*, unsigned int);
-int TimerLeftMS(Timer*);
+void TimerInit(Timer *);
+char TimerIsExpired(Timer *);
+void TimerCountdownMS(Timer *, unsigned int);
+void TimerCountdown(Timer *, unsigned int);
+int TimerLeftMS(Timer *);
 
 typedef struct Network
 {
-	int my_socket;
-	int (*mqttread) (struct Network*, unsigned char*, int, int);
-	int (*mqttwrite) (struct Network*, unsigned char*, int, int);
+   int my_socket;
+   int (*mqttread)(struct Network *, unsigned char *, int, int);
+   int (*mqttwrite)(struct Network *, unsigned char *, int, int);
 } Network;
 
-int linux_read(Network*, unsigned char*, int, int);
-int linux_write(Network*, unsigned char*, int, int);
+int linux_read(Network *, unsigned char *, int, int);
+int linux_write(Network *, unsigned char *, int, int);
 
-DLLExport void NetworkInit(Network*);
-DLLExport int NetworkConnect(Network*, char*, int);
-DLLExport void NetworkDisconnect(Network*);
+DLLExport void NetworkInit(Network *);
+DLLExport int NetworkConnect(Network *, char *, int);
+DLLExport void NetworkDisconnect(Network *);
+
+typedef struct Mutex
+{
+   pthread_mutex_t m;
+} Mutex;
+
+void MutexInit(Mutex *);
+int MutexLock(Mutex *);
+int MutexUnlock(Mutex *);
+int MutexDestroy(Mutex *);
+
+typedef struct Condition
+{
+   pthread_cond_t c;
+} Condition;
+
+void ConditionInit(Condition *);
+int ConditionWait(Condition *, Mutex *);
+int ConditionSignal(Condition *);
+int ConditionDestroy(Condition *);
+
+typedef struct Thread
+{
+   pthread_t t;
+   int started;
+} Thread;
+
+int ThreadStart(Thread *, void (*fn)(void *), void *arg);
+int ThreadStarted(Thread *);
+int ThreadJoin(Thread *);
+void ThreadExit();
 
 #endif
