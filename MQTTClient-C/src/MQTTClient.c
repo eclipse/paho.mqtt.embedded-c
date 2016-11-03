@@ -83,10 +83,12 @@ void MQTTClientInit(MQTTClient *c, Network *network, unsigned int command_timeou
 
 void MQTTClientDestroy(MQTTClient *c)
 {
+#if defined(MQTT_TASK)
    ThreadJoin(&c->read_thread);
    MutexDestroy(&c->write_mutex);
    ConditionDestroy(&c->has_reply);
    MutexDestroy(&c->reply_mutex);
+#endif
 }
 
 static int decodePacket(MQTTClient *c, int *value, int timeout)
@@ -403,7 +405,7 @@ int waitfor(MQTTClient *c, unsigned short packet_type, Timer *timer)
       MutexUnlock(&c->reply_mutex);
       ConditionSignal(&c->has_reply);
    } while (rc != packet_type);
-#elif
+#else
    } while ((rc = cycle(c, timer)) != packet_type);
 #endif
 
@@ -434,7 +436,9 @@ int MQTTConnect(MQTTClient *c, MQTTPacket_connectData *options)
       goto exit;
 
    c->isconnected = 1;
+#if defined(MQTT_TASK)
    ThreadStart(&c->read_thread, &MQTTRead, c);
+#endif
 
    if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
    {
@@ -452,7 +456,9 @@ exit:
    if (rc == FAILURE)
    {
       c->isconnected = 0;
+#if defined(MQTT_TASK)
       ThreadJoin(&c->read_thread);
+#endif
    }
 
    return rc;
