@@ -85,7 +85,7 @@ typedef struct MQTTClient
        readbuf_size;
    unsigned char *buf,
        *readbuf;
-   unsigned int keepAliveInterval;
+   unsigned int keep_alive_interval;
    char ping_outstanding;
    int isconnected;
 

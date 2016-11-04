@@ -47,7 +47,7 @@ static int sendPacket(MQTTClient *c, int length, Timer *timer)
 
    if (sent == length)
    {
-      TimerCountdown(&c->ping_timer, c->keepAliveInterval); // record the fact that we have successfully sent the packet
+      TimerCountdown(&c->ping_timer, c->keep_alive_interval); // record the fact that we have successfully sent the packet
       rc = SUCCESS;
    }
    else
@@ -208,7 +208,7 @@ int keepalive(MQTTClient *c)
 {
    int rc = FAILURE;
 
-   if (c->keepAliveInterval == 0)
+   if (c->keep_alive_interval == 0)
    {
       rc = SUCCESS;
       goto exit;
@@ -427,8 +427,8 @@ int MQTTConnect(MQTTClient *c, MQTTPacket_connectData *options)
    if (options == NULL)
       options = &default_options;
 
-   c->keepAliveInterval = options->keepAliveInterval;
-   TimerCountdown(&c->ping_timer, c->keepAliveInterval);
+   c->keep_alive_interval = options->keepAliveInterval;
+   TimerCountdown(&c->ping_timer, c->keep_alive_interval);
    int len;
    if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
       goto exit;
