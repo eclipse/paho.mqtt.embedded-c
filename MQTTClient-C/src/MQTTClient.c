@@ -180,7 +180,7 @@ int deliverMessage(MQTTClient *c, MQTTString *topicName, MQTTMessage *message)
    // we have to find the right message handler - indexed by topic
    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
    {
-      if (c->messageHandlers[i].topicFilter != 0 && (MQTTPacket_equals(topicName, (char *)c->messageHandlers[i].topicFilter) ||
+      if (c->messageHandlers[i].topicFilter != NULL && (MQTTPacket_equals(topicName, (char *)c->messageHandlers[i].topicFilter) ||
                                                      isTopicMatched((char *)c->messageHandlers[i].topicFilter, topicName)))
       {
          if (c->messageHandlers[i].fp != NULL)
@@ -379,7 +379,7 @@ void MQTTRead(void *arg)
    }
 
 exit:
-   printf("Read thread exiting\n");
+   printf("mqtt: read thread exiting\n");
    c->isconnected = 0;
    ThreadExit();
 }
