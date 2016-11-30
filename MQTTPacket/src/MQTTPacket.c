@@ -333,7 +333,7 @@ static int MQTTPacket_decodenb(MQTTTransport *trp)
 	}
 	do {
 		int frc;
-		if (++(trp->len) > MAX_NO_OF_REMAINING_LENGTH_BYTES)
+		if (trp->len >= MAX_NO_OF_REMAINING_LENGTH_BYTES)
 			goto exit;
 		if ((frc=(*trp->getfn)(trp->sck, &c, 1)) == -1)
 			goto exit;
@@ -341,6 +341,7 @@ static int MQTTPacket_decodenb(MQTTTransport *trp)
 			rc = 0;
 			goto exit;
 		}
+		++(trp->len);
 		trp->rem_len += (c & 127) * trp->multiplier;
 		trp->multiplier *= 128;
 	} while ((c & 128) != 0);
