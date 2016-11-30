@@ -306,7 +306,7 @@ int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*,
 	/* 3. read the rest of the buffer using a callback to supply the rest of the data */
 	if((rem_len + len) > buflen)
 		goto exit;
-	if ((*getfn)(buf + len, rem_len) != rem_len)
+	if (rem_len && ((*getfn)(buf + len, rem_len) != rem_len))
 		goto exit;
 
 	header.byte = buf[0];
@@ -389,16 +389,17 @@ int MQTTPacket_readnb(unsigned char* buf, int buflen, MQTTTransport *trp)
 		++trp->state;
 		/*FALLTHROUGH*/
 	case 2:
-		/* read the rest of the buffer using a callback to supply the rest of the data */
-		if ((frc=(*trp->getfn)(trp->sck, buf + trp->len, trp->rem_len)) == -1)
-			goto exit;
-		if (frc == 0)
-			return 0;
-		trp->rem_len -= frc;
-		trp->len += frc;
-		if(trp->rem_len)
-			return 0;
-
+		if(trp->rem_len){
+			/* read the rest of the buffer using a callback to supply the rest of the data */
+			if ((frc=(*trp->getfn)(trp->sck, buf + trp->len, trp->rem_len)) == -1)
+				goto exit;
+			if (frc == 0)
+				return 0;
+			trp->rem_len -= frc;
+			trp->len += frc;
+			if(trp->rem_len)
+				return 0;
+		}
 		header.byte = buf[0];
 		rc = header.bits.type;
 		break;
