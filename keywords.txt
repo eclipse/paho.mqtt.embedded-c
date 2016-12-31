@@ -1,0 +1,27 @@
+#######################################
+# Syntax Coloring Map for MqttClient
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+MqttClient	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+isConnected	KEYWORD2
+connect	KEYWORD2
+disconnect	KEYWORD2
+publish	KEYWORD2
+subscribe	KEYWORD2
+unsubscribe	KEYWORD2
+yield	KEYWORD2
+getIdleInterval	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
