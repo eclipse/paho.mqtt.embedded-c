@@ -34,8 +34,8 @@ void printfln_P(const char *fmt, ...) {
 
 #define HW_UART_SPEED									57600L
 #define MQTT_ID											"TEST-ID"
-const char* MQTT_TOPIC_SUB = "test/"MQTT_ID"/sub";
-const char* MQTT_TOPIC_PUB = "test/"MQTT_ID"/pub";
+const char* MQTT_TOPIC_SUB = "test/" MQTT_ID "/sub";
+const char* MQTT_TOPIC_PUB = "test/" MQTT_ID "/pub";
 MqttClient *mqtt = NULL;
 
 // ============== Object to supply current time ================================
