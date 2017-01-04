@@ -598,7 +598,7 @@ public:
 	 */
 	unsigned long getIdleInterval() {
 		unsigned long res = 0;
-		if (isConnected()) {
+		if (isConnected() && !mSession.keepaliveSent) {
 			unsigned long a = mSession.lastSentTimer.leftMs();
 			unsigned long b = mSession.lastRecvTimer.leftMs();
 			res = (a < b) ? a : b;
