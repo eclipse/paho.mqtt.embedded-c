@@ -35,6 +35,7 @@
 #ifndef Arduino_h
 #define vsnprintf_P(fmt, ...) vsnprintf(fmt, ##__VA_ARGS__)
 #define PSTR(fmt) (fmt)
+#define min(a, b) std::min(a, b)
 #endif
 
 
@@ -599,9 +600,7 @@ public:
 	unsigned long getIdleInterval() {
 		unsigned long res = 0;
 		if (isConnected() && !mSession.keepaliveSent) {
-			unsigned long a = mSession.lastSentTimer.leftMs();
-			unsigned long b = mSession.lastRecvTimer.leftMs();
-			res = (a < b) ? a : b;
+			res = min(mSession.lastSentTimer.leftMs(), mSession.lastRecvTimer.leftMs());
 		}
 		return res;
 	}
