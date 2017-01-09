@@ -131,6 +131,32 @@ public:
 			const Time									&mTime;
 	};
 
+	template<class Client>
+	class NetworkClientImpl: public Network {
+		public:
+		NetworkClientImpl(Client &client, const Time& time): mClient(client), mTime(time) {}
+
+			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
+				Timer timer(mTime, timeoutMs);
+				int qty = 0;
+				while(!timer.expired() && qty<len) {
+					int tmpRes = mClient.read(buffer+qty, len-qty);
+					if (tmpRes > 0) {
+						qty+=tmpRes;
+					}
+				}
+				return qty;
+			}
+
+			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
+				mClient.setTimeout(timeoutMs);
+				return mClient.write(buffer, len);
+			}
+		private:
+			Client										&mClient;
+			const Time									&mTime;
+	};
+
 	struct Buffer {
 		/** Gets pointer to array */
 		virtual unsigned char* get() = 0;
@@ -370,7 +396,7 @@ public:
 				// Start keep-alive timers
 				mSession.lastSentTimer.set(mSession.keepAliveTmSec*1000L);
 				mSession.lastRecvTimer.set(mSession.keepAliveTmSec*1000L);
-				MQTT_LOG_PRINTFLN("Keepalive interval: %u", mSession.keepAliveTmSec);
+				MQTT_LOG_PRINTFLN("Keepalive interval: %u sec", mSession.keepAliveTmSec);
 				// Process session-present flag
 				if (!result.sessionPresent) {
 					MQTT_LOG_PRINTFLN("Session is not present => reset subscription");
