@@ -2,6 +2,9 @@ language: cpp
 env:
   global:
     - IDE_VERSION=1.6.9
+  matrix:
+    - EXAMPLE="PubSub" BOARD="arduino:avr:uno"
+    - EXAMPLE="ConnectEthernetClient" BOARD="arduino:avr:uno"
 before_install:
   - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
   - sleep 3
@@ -13,7 +16,7 @@ before_install:
 install:
   - ln -s $PWD /usr/local/share/arduino/libraries/ArduinoMqtt
 script:
-  - arduino --verify --board arduino:avr:uno $PWD/examples/PubSub/PubSub.ino
+  - arduino --verify --board $BOARD $PWD/examples/$EXAMPLE/$EXAMPLE.ino
 notifications:
   email:
     on_success: change
