@@ -98,6 +98,7 @@ class TestTime: public MqttClient::Time {
 #### Network
 
 Provide class implementing the `MqttClient::Network` interface.
+
 Alternatively just instantiate the `MqttClient::NetworkImpl` template class that
 allows usage of any class with implemented methods like:
 - `int read(unsigned char* buffer, int len, unsigned long timeoutMs)`
@@ -155,6 +156,15 @@ private:
 
 MqttClient::Time *time = new Time;
 MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, *time);
+```
+
+Another alternative allows using of `Arduino Client` compatible network classes
+like `EthernetClient`.
+To have this just instantiate the `MqttClient::NetworkClientImpl`template class:
+```c++
+EthernetClient network;
+MqttClient::Time *time = new Time;
+MqttClient::Network * mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, *time);
 ```
 
 #### Buffers
