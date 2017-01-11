@@ -35,7 +35,7 @@
 #ifndef Arduino_h
 #define vsnprintf_P(fmt, ...) vsnprintf(fmt, ##__VA_ARGS__)
 #define PSTR(fmt) (fmt)
-#define min(a, b) std::min(a, b)
+#define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
 
