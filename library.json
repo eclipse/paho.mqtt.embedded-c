@@ -1,6 +1,6 @@
 {
 	"name": "ArduinoMqtt",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"keywords": "mqtt, m2m, iot",
 	"description": "The library bundles synchronous C++ MQTT Client implementation with C/C++ Eclipse Paho MQTTPacket library. It supports MQTT 3.1 and 3.1.1; QoS 0, 1 and 2.",
 	"authors": {
