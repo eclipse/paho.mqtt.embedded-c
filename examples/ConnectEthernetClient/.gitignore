@@ -2,13 +2,5 @@
 .pioenvs
 .piolibdeps
 /lib
-
-# Atom IDE
-.clang_complete
-.gcc-flags.json
-
-# Eclipse IDE
-.project
-.cproject
-/.settings/
+.travis.yml
 
