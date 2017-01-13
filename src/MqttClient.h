@@ -16,6 +16,7 @@
 #define MQTT_CLIENT_H_
 
 /* External Includes */
+#include <stdarg.h>
 /* Internal Includes */
 #include "MQTTPacket/MQTTPacket.h"
 
