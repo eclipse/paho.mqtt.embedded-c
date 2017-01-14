@@ -45,7 +45,7 @@ public:
 		}
 		struct timeval timeout;
 		timeout.tv_sec = 0;
-		timeout.tv_usec = 100;
+		timeout.tv_usec = 10000;
 		if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0) {
 			std::cerr << "Can't set socket RECV timeout" << std::endl;
 			exit(0);
