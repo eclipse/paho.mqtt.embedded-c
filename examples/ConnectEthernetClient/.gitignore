@@ -1,6 +1,0 @@
-# PlatformIO
-.pioenvs
-.piolibdeps
-/lib
-.travis.yml
-
