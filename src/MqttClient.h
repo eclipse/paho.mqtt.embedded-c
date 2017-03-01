@@ -174,7 +174,10 @@ public:
 	};
 
 	struct Options {
-		/** Maximum time of the MQTT message transmission, in milliseconds */
+		/** Maximum time of the MQTT message transmission, in milliseconds.
+		 * Also used as delay of keep-alive messages in case of reception timer
+		 * expiration while another message has been just sent.
+		 */
 		unsigned long									commandTimeoutMs = 5000;
 	};
 
@@ -671,21 +674,21 @@ private:
 			}
 
 			bool expired() const {
-				return elapsed() >= mDuration;
+				return elapsedMs() >= mDuration;
 			}
 
 			unsigned long leftMs() const {
-				return expired() ? 0 : mDuration - elapsed();
+				return expired() ? 0 : mDuration - elapsedMs();
+			}
+
+			unsigned long elapsedMs() const {
+				return mTime.millis() - mStartMs;
 			}
 
 		private:
 			const Time									&mTime;
 			unsigned long								mStartMs = 0;
 			unsigned long								mDuration = 0;
-
-			unsigned long elapsed() const {
-				return mTime.millis() - mStartMs;
-			}
 	};
 
 	struct ReadPacketResult {
@@ -923,7 +926,13 @@ private:
 			return Error::SUCCESS;
 		}
 		if (!mSession.keepaliveSent
-			&& (mSession.lastSentTimer.expired() || mSession.lastRecvTimer.expired()))
+			// Sent timer expires => send
+			&& (mSession.lastSentTimer.expired() || (
+				// Do not send if another message is just sent => try to wait the response
+				mSession.lastSentTimer.elapsedMs() > mOptions.commandTimeoutMs
+				// No message in-flight and Recv timer expires => send
+				&& mSession.lastRecvTimer.expired())
+			))
 		{
 			MQTT_LOG_PRINTFLN("Keepalive, ts: %lu", mTime.millis());
 			int len = MQTTSerialize_pingreq(mSendBuffer.get(), mSendBuffer.size());
