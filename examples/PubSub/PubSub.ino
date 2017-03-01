@@ -66,15 +66,8 @@ public:
 	}
 
 	int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-		unsigned long startMs = time.millis();
 		mNet->setTimeout(timeoutMs);
-		do {
-			int qty = mNet->readBytes((char*) buffer, len);
-			if (qty > 0) {
-				return qty;
-			}
-		} while(time.millis() - startMs < timeoutMs);
-		return 0;
+		return mNet->readBytes((char*) buffer, len);
 	}
 
 	int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
