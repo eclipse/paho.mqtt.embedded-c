@@ -529,39 +529,51 @@ public:
 		if (!isConnected()) {
 			return Error::FAILURE;
 		}
-		if (mMessageHandlers.isFull()) {
+		// Set handler
+		if (!mMessageHandlers.set(topic, cbk)) {
 			MQTT_LOG_PRINTFLN("List of message handlers is full");
 			return Error::FAILURE;
 		}
-		MQTTString mqttTopic = {(char*)topic, {0, 0}};
-		int mqttQos = qos;
-		int len = MQTTSerialize_subscribe(mSendBuffer.get(), mSendBuffer.size(),
-			0, mPacketId.getNext(), 1, &mqttTopic, &mqttQos
-		);
+		Error::type rc = Error::SUCCESS;
+		// Prepare message
+		int len = 0;
+		{
+			MQTTString mqttTopic = {(char*)topic, {0, 0}};
+			int mqttQos = qos;
+			len = MQTTSerialize_subscribe(mSendBuffer.get(), mSendBuffer.size(),
+				0, mPacketId.getNext(), 1, &mqttTopic, &mqttQos
+			);
+		}
 		if (len <= 0) {
-			return Error::ENCODING_FAILURE;
-		}
-		Error::type rc = sendPacket(len, timer);
-		if (rc != Error::SUCCESS) {
-			MQTT_LOG_PRINTFLN("Can't send subscribe, rc: %i", rc);
-			return rc;
-		}
-		rc = waitFor(SUBACK, timer);
-		if (rc == Error::SUCCESS) {
-			MQTT_LOG_PRINTFLN("Subscribe ack received");
-			int ackCount = 0, ackQoS = -1;
-			unsigned short ackId;
-			if (MQTTDeserialize_suback(&ackId, 1, &ackCount, &ackQoS, mRecvBuffer.get(), mRecvBuffer.size()) != 1) {
-				rc = Error::DECODING_FAILURE;
+			rc = Error::ENCODING_FAILURE;
+		} else {
+			// Send message
+			rc = sendPacket(len, timer);
+			if (rc != Error::SUCCESS) {
+				MQTT_LOG_PRINTFLN("Can't send subscribe, rc: %i", rc);
 			} else {
-				if (ackQoS == 0x80) {
-					rc = Error::REFUSED;
+				// Wait the response message
+				rc = waitFor(SUBACK, timer);
+				if (rc == Error::SUCCESS) {
+					MQTT_LOG_PRINTFLN("Subscribe ack received");
+					int ackCount = 0, ackQoS = -1;
+					unsigned short ackId;
+					if (MQTTDeserialize_suback(&ackId, 1, &ackCount, &ackQoS, mRecvBuffer.get(), mRecvBuffer.size()) != 1) {
+						rc = Error::DECODING_FAILURE;
+					} else {
+						// Process the response message
+						if (ackQoS == 0x80) {
+							rc = Error::REFUSED;
+						}
+					}
 				} else {
-					mMessageHandlers.set(topic, cbk);
+					MQTT_LOG_PRINTFLN("Subscribe ack is not received, rc: %i, ts: %lu", rc, mTime.millis());
 				}
 			}
-		} else {
-			MQTT_LOG_PRINTFLN("Subscribe ack is not received, rc: %i, ts: %lu", rc, mTime.millis());
+		}
+		// Release handler if failed
+		if (rc != Error::SUCCESS) {
+			mMessageHandlers.reset(topic);
 		}
 		return rc;
 	}
