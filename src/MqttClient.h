@@ -36,7 +36,6 @@
 #ifndef Arduino_h
 #define vsnprintf_P(fmt, ...) vsnprintf(fmt, ##__VA_ARGS__)
 #define PSTR(fmt) (fmt)
-#define min(a,b) ((a)<(b)?(a):(b))
 #endif
 
 
@@ -1005,6 +1004,12 @@ private:
 		}
 		return (curn == curn_end) && (*curf == '\0');
 	}
+
+#ifndef min
+	template <class T> inline const T& min(const T& a, const T& b) {
+		return b < a ? b : a;
+	}
+#endif
 };
 
 #endif /* MQTT_CLIENT_H_ */
