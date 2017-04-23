@@ -38,13 +38,13 @@ const char* MQTT_TOPIC_SUB = "test/" MQTT_ID "/sub";
 const char* MQTT_TOPIC_PUB = "test/" MQTT_ID "/pub";
 MqttClient *mqtt = NULL;
 
-// ============== Object to supply current time ================================
-class Time: public MqttClient::Time {
+// ============== Object to supply system functions ================================
+class System: public MqttClient::System {
 public:
 	unsigned long millis() const {
 		return ::millis();
 	}
-} time;
+};
 
 // ============== Object to implement network connectivity =====================
 // Current example assumes the network TCP stack is connected using serial
@@ -96,8 +96,9 @@ void setup() {
 	// Setup network
 	network = new Network;
 	// Setup MqttClient
+	MqttClient::System *mqttSystem = new System;
 	MqttClient::Logger *mqttLogger = new MqttClient::LoggerImpl<HardwareSerial>(Serial);
-	MqttClient::Network * mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, time);
+	MqttClient::Network * mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, *mqttSystem);
 	//// Make 128 bytes send buffer
 	MqttClient::Buffer *mqttSendBuffer = new MqttClient::ArrayBuffer<128>();
 	//// Make 128 bytes receive buffer
@@ -110,7 +111,7 @@ void setup() {
 	mqttOptions.commandTimeoutMs = 10000;
 	//// Make client object
 	mqtt = new MqttClient (
-		mqttOptions, *mqttLogger, time, *mqttNetwork, *mqttSendBuffer,
+		mqttOptions, *mqttLogger, *mqttSystem, *mqttNetwork, *mqttSendBuffer,
 		*mqttRecvBuffer, *mqttMessageHandlers
 	);
 }

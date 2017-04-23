@@ -38,13 +38,13 @@ void printfln_P(const char *fmt, ...) {
 MqttClient *mqtt = NULL;
 EthernetClient network;
 
-// ============== Object to supply current time ================================
-class Time: public MqttClient::Time {
+// ============== Object to supply system functions ================================
+class System: public MqttClient::System {
 public:
 	unsigned long millis() const {
 		return ::millis();
 	}
-} time;
+};
 
 // ============== Setup all objects ============================================
 void setup() {
@@ -52,8 +52,9 @@ void setup() {
 	Serial.begin(HW_UART_SPEED);
 	while (!Serial);
 	// Setup MqttClient
+	MqttClient::System *mqttSystem = new System;
 	MqttClient::Logger *mqttLogger = new MqttClient::LoggerImpl<HardwareSerial>(Serial);
-	MqttClient::Network * mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, time);
+	MqttClient::Network * mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, *mqttSystem);
 	//// Make 128 bytes send buffer
 	MqttClient::Buffer *mqttSendBuffer = new MqttClient::ArrayBuffer<128>();
 	//// Make 128 bytes receive buffer
@@ -66,7 +67,7 @@ void setup() {
 	mqttOptions.commandTimeoutMs = 10000;
 	//// Make client object
 	mqtt = new MqttClient (
-		mqttOptions, *mqttLogger, time, *mqttNetwork, *mqttSendBuffer,
+		mqttOptions, *mqttLogger, *mqttSystem, *mqttNetwork, *mqttSendBuffer,
 		*mqttRecvBuffer, *mqttMessageHandlers
 	);
 }
@@ -77,7 +78,6 @@ void loop() {
 	if (!mqtt->isConnected()) {
 		// Close connection if exists
 		network.stop();
-		mqtt->yield();
 		// Re-establish TCP connection with MQTT broker
 		network.connect("test.mosquitto.org", 1883);
 		// Start new MQTT connection

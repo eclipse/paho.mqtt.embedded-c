@@ -16,7 +16,7 @@
 #include <MqttClient.h>
 
 // ============== Object to supply current time ================================
-class TestTime: public MqttClient::Time {
+class TestSystem: public MqttClient::System {
 	unsigned long millis() const {
 		return std::chrono::duration_cast<std::chrono::milliseconds>
 		(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -91,17 +91,17 @@ public:
 
 int main(int argc, char** argv) {
 	// Init
-	TestTime testTime;
+	TestSystem testSystem;
 	TestLogger testLogger;
 	TestNetwork testNetwork;
 	MqttClient::Logger *mqttLogger = new MqttClient::LoggerImpl<TestLogger>(testLogger);
-	MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<TestNetwork>(testNetwork, testTime);
+	MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<TestNetwork>(testNetwork, testSystem);
 	MqttClient::Buffer *mqttSendBuffer = new MqttClient::ArrayBuffer<128>();
 	MqttClient::Buffer *mqttRecvBuffer = new MqttClient::ArrayBuffer<128>();
 	MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandlersImpl<1>();
 	MqttClient::Options options;
 	options.commandTimeoutMs = 5000; // Set command timeout to 10 seconds
-	MqttClient *mqtt = new MqttClient (options, *mqttLogger, testTime, *mqttNetwork, *mqttSendBuffer, *mqttRecvBuffer, *mqttMessageHandlers);
+	MqttClient *mqtt = new MqttClient (options, *mqttLogger, testSystem, *mqttNetwork, *mqttSendBuffer, *mqttRecvBuffer, *mqttMessageHandlers);
 	// Connect
 	MqttClient::ConnectResult connectResult;
 	MQTTPacket_connectData connectOptions = MQTTPacket_connectData_initializer;

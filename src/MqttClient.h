@@ -80,12 +80,20 @@ public:
 			Log											&mLogger;
 	};
 
-	class Time {
+	class System {
 		public:
-			virtual ~Time() {}
+			virtual ~System() {}
 
 			/** Returns the current time in milliseconds. */
 			virtual unsigned long millis() const = 0;
+
+			/** Calls the background system functions.
+			 *
+			 * It will be called regularly while long waits.
+			 * Some systems like ESP requires calling the `yield` regularly.
+			 * Implement this method with all required actions.
+			 */
+			virtual void yield(void) {}
 	};
 
 	class Network {
@@ -116,12 +124,13 @@ public:
 	template<class Net>
 	class NetworkImpl: public Network {
 		public:
-			NetworkImpl(Net &network, const Time& time): mNetwork(network), mTime(time) {}
+			NetworkImpl(Net &network, System& system): mNetwork(network), mSystem(system) {}
 
 			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-				Timer timer(mTime, timeoutMs);
+				Timer timer(mSystem, timeoutMs);
 				int qty = 0;
 				while(!timer.expired() && qty<len) {
+					mSystem.yield();
 					int tmpRes = mNetwork.read(buffer+qty, len-qty, timer.leftMs());
 					if (tmpRes > 0) {
 						qty+=tmpRes;
@@ -131,22 +140,24 @@ public:
 			}
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
+				mSystem.yield();
 				return mNetwork.write(buffer, len, timeoutMs);
 			}
 		private:
 			Net											&mNetwork;
-			const Time									&mTime;
+			System										&mSystem;
 	};
 
 	template<class Client>
 	class NetworkClientImpl: public Network {
 		public:
-		NetworkClientImpl(Client &client, const Time& time): mClient(client), mTime(time) {}
+		NetworkClientImpl(Client &client, System& system): mClient(client), mSystem(system) {}
 
 			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-				Timer timer(mTime, timeoutMs);
+				Timer timer(mSystem, timeoutMs);
 				int qty = 0;
 				while(!timer.expired() && qty<len) {
+					mSystem.yield();
 					int tmpRes = mClient.read((uint8_t*)(buffer+qty), len-qty);
 					if (tmpRes > 0) {
 						qty+=tmpRes;
@@ -156,12 +167,13 @@ public:
 			}
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
+				mSystem.yield();
 				mClient.setTimeout(timeoutMs);
 				return mClient.write((const uint8_t*)buffer, len);
 			}
 		private:
 			Client										&mClient;
-			const Time									&mTime;
+			System										&mSystem;
 	};
 
 	struct Buffer {
@@ -343,17 +355,17 @@ public:
 	 * @param options - the client options
 	 * @param logger - the logger used for printing logs if MQTT_LOG_ENABLED
 	 *     set to 1, see LoggerImpl
-	 * @param time - used to retrieve the current time
+	 * @param system - used to access system functions like time, yield, etc...
 	 * @param network - used to send/receive data to/from broker, see NetworkImpl
 	 * @param sendBuffer - buffer to temporarily store the transmitted message, see ArrayBuffer
 	 * @param recvBuffer - buffer to temporarily store the received message, see ArrayBuffer
 	 * @param messageHandlers - storage for subscription callback functions, see MessageHandlersImpl
 	 */
-	MqttClient(const Options& options, Logger& logger, Time& time, Network& network,
+	MqttClient(const Options& options, Logger& logger, System& system, Network& network,
 		Buffer& sendBuffer, Buffer& recvBuffer, MessageHandlers& messageHandlers)
-	: mOptions(options), mLogger(logger), mTime(time), mNetwork(network),
+	: mOptions(options), mLogger(logger), mSystem(system), mNetwork(network),
 	  mSendBuffer(sendBuffer), mRecvBuffer(recvBuffer), mMessageHandlers(messageHandlers),
-	  mSession(time)
+	  mSession(system)
 	{}
 
 	/**
@@ -373,8 +385,8 @@ public:
 	 * @return execution status code
 	 */
 	Error::type connect(const MQTTPacket_connectData& connectOptions, ConnectResult& result) {
-		Timer timer(mTime, mOptions.commandTimeoutMs);
-		MQTT_LOG_PRINTFLN("Connect, clean-session: %u, ts: %lu", connectOptions.cleansession, mTime.millis());
+		Timer timer(mSystem, mOptions.commandTimeoutMs);
+		MQTT_LOG_PRINTFLN("Connect, clean-session: %u, ts: %lu", connectOptions.cleansession, mSystem.millis());
 		if (isConnected()) {
 			return Error::REFUSED;
 		}
@@ -415,7 +427,7 @@ public:
 			}
 			return isConnected() ? Error::SUCCESS : Error::REFUSED;
 		} else {
-			MQTT_LOG_PRINTFLN("Connect ack is not received, rc: %i, ts: %lu", rc, mTime.millis());
+			MQTT_LOG_PRINTFLN("Connect ack is not received, rc: %i, ts: %lu", rc, mSystem.millis());
 			return rc;
 		}
 	}
@@ -426,8 +438,8 @@ public:
 	 * @return execution status code
 	 */
 	Error::type disconnect() {
-		Timer timer(mTime, mOptions.commandTimeoutMs);
-		MQTT_LOG_PRINTFLN("Disconnecting, ts: %lu", mTime.millis());
+		Timer timer(mSystem, mOptions.commandTimeoutMs);
+		MQTT_LOG_PRINTFLN("Disconnecting, ts: %lu", mSystem.millis());
 		int len = MQTTSerialize_disconnect(mSendBuffer.get(), mSendBuffer.size());
 		if (len <= 0) {
 			return Error::ENCODING_FAILURE;
@@ -445,7 +457,7 @@ public:
 	 * @return execution status code
 	 */
 	Error::type publish(const char* topic, Message& message) {
-		Timer timer(mTime, mOptions.commandTimeoutMs);
+		Timer timer(mSystem, mOptions.commandTimeoutMs);
 		MQTT_LOG_PRINTFLN("Publish, to: %s, size: %u", topic, message.payloadLen);
 		if (!isConnected()) {
 			return Error::FAILURE;
@@ -530,7 +542,7 @@ public:
 	 *  @return execution status code
 	 */
 	Error::type subscribe(const char* topic, enum QoS qos, MessageHandlerCbk cbk) {
-		Timer timer(mTime, mOptions.commandTimeoutMs);
+		Timer timer(mSystem, mOptions.commandTimeoutMs);
 		MQTT_LOG_PRINTFLN("Subscribe, to: %s, qos: %u", topic, qos);
 		if (!isConnected()) {
 			return Error::FAILURE;
@@ -573,7 +585,7 @@ public:
 						}
 					}
 				} else {
-					MQTT_LOG_PRINTFLN("Subscribe ack is not received, rc: %i, ts: %lu", rc, mTime.millis());
+					MQTT_LOG_PRINTFLN("Subscribe ack is not received, rc: %i, ts: %lu", rc, mSystem.millis());
 				}
 			}
 		}
@@ -591,7 +603,7 @@ public:
 	 *  @return execution status code
 	 */
 	Error::type unsubscribe(const char* topic) {
-		Timer timer(mTime, mOptions.commandTimeoutMs);
+		Timer timer(mSystem, mOptions.commandTimeoutMs);
 		MQTT_LOG_PRINTFLN("Unsubscribe, from: %s", topic);
 		if (!isConnected()) {
 			return Error::FAILURE;
@@ -618,7 +630,7 @@ public:
 				mMessageHandlers.reset(topic);
 			}
 		} else {
-			MQTT_LOG_PRINTFLN("Unsubscribe ack is not received, rc: %i, ts: %lu", rc, mTime.millis());
+			MQTT_LOG_PRINTFLN("Unsubscribe ack is not received, rc: %i, ts: %lu", rc, mSystem.millis());
 		}
 		return rc;
 	}
@@ -631,7 +643,7 @@ public:
 	 * @param timeoutMs - the time to wait, in milliseconds
 	 */
 	void yield(unsigned long timeoutMs = 1000L) {
-		Timer timer(mTime, timeoutMs);
+		Timer timer(mSystem, timeoutMs);
 		MQTT_LOG_PRINTFLN("Yield for %lu ms", timer.leftMs());
 		do {
 			ReadPacketResult result;
@@ -670,20 +682,20 @@ private:
 
 	class Timer {
 		public:
-			Timer(const Time& time): mTime(time) {
+			Timer(const System& system): mSystem(system) {
 			}
 
-			Timer(const Time& time, unsigned long durationMs): Timer(time) {
+			Timer(const System& system, unsigned long durationMs): Timer(system) {
 				set(durationMs);
 			}
 
-			Timer(const Timer &timer, unsigned long minDurationMs, unsigned long maxDurationMs): Timer(timer.mTime) {
+			Timer(const Timer &timer, unsigned long minDurationMs, unsigned long maxDurationMs): Timer(timer.mSystem) {
 				unsigned long durationMs = (timer.leftMs() > maxDurationMs) ? maxDurationMs : timer.leftMs();
 				set(durationMs > minDurationMs ? durationMs : minDurationMs);
 			}
 
 			void set(unsigned long durationMs) {
-				mStartMs = mTime.millis();
+				mStartMs = mSystem.millis();
 				mDuration = durationMs;
 			}
 
@@ -700,11 +712,11 @@ private:
 			}
 
 			unsigned long elapsedMs() const {
-				return mTime.millis() - mStartMs;
+				return mSystem.millis() - mStartMs;
 			}
 
 		private:
-			const Time									&mTime;
+			const System								&mSystem;
 			unsigned long								mStartMs = 0;
 			unsigned long								mDuration = 0;
 	};
@@ -726,8 +738,8 @@ private:
 		bool											keepaliveSent = false;
 		Timer											keepaliveAckTimer;
 
-		Session(const Time& time): lastSentTimer(time), lastRecvTimer(time),
-			keepaliveAckTimer(time) {}
+		Session(const System& system): lastSentTimer(system), lastRecvTimer(system),
+			keepaliveAckTimer(system) {}
 
 		void reset() {
 			isConnected = false;
@@ -739,7 +751,7 @@ private:
 	PacketId											mPacketId;
 	Options												mOptions;
 	Logger												&mLogger;
-	Time												&mTime;
+	System												&mSystem;
 	Network												&mNetwork;
 	Buffer												&mSendBuffer;
 	Buffer												&mRecvBuffer;
@@ -840,7 +852,7 @@ private:
 			rc = processPacket(result.packetType, timer);
 		}
 		if (mSession.keepaliveSent && mSession.keepaliveAckTimer.expired()) {
-			MQTT_LOG_PRINTFLN("Keepalive ack failure, ts: %lu", mTime.millis());
+			MQTT_LOG_PRINTFLN("Keepalive ack failure, ts: %lu", mSystem.millis());
 			mSession.reset();
 		}
 		if (isConnected()) {
@@ -952,7 +964,7 @@ private:
 				&& mSession.lastRecvTimer.expired())
 			))
 		{
-			MQTT_LOG_PRINTFLN("Keepalive, ts: %lu", mTime.millis());
+			MQTT_LOG_PRINTFLN("Keepalive, ts: %lu", mSystem.millis());
 			int len = MQTTSerialize_pingreq(mSendBuffer.get(), mSendBuffer.size());
 			if (len <=0 ) {
 				return Error::ENCODING_FAILURE;
