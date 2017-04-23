@@ -140,7 +140,7 @@ public:
 				Timer timer(mTime, timeoutMs);
 				int qty = 0;
 				while(!timer.expired() && qty<len) {
-					int tmpRes = mClient.read(buffer+qty, len-qty);
+					int tmpRes = mClient.read((uint8_t*)(buffer+qty), len-qty);
 					if (tmpRes > 0) {
 						qty+=tmpRes;
 					}
@@ -150,7 +150,7 @@ public:
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
 				mClient.setTimeout(timeoutMs);
-				return mClient.write(buffer, len);
+				return mClient.write((const uint8_t*)buffer, len);
 			}
 		private:
 			Client										&mClient;
