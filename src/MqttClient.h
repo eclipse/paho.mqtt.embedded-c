@@ -24,18 +24,21 @@
 #define MQTT_LOG_SIZE_MAX								128
 
 #ifndef MQTT_LOG_ENABLED
-#define MQTT_LOG_ENABLED								0
+	#define MQTT_LOG_ENABLED							0
+#endif
+
+#ifdef __AVR__
+	#define MQTT_PSTR(s)								PSTR(s)
+	#define MQTT_PSTR_ENABLED							1
+#else
+	#define MQTT_PSTR(s)								s
+	#define MQTT_PSTR_ENABLED							0
 #endif
 
 #if MQTT_LOG_ENABLED
-#define MQTT_LOG_PRINTFLN(fmt, ...)	mLogger.printfln_P(PSTR("MQTT - " fmt), ##__VA_ARGS__)
+	#define MQTT_LOG_PRINTFLN(fmt, ...)	mLogger.printfln_P(MQTT_PSTR("MQTT - " fmt), ##__VA_ARGS__)
 #else
-#define MQTT_LOG_PRINTFLN(fmt, ...)	((void)0)
-#endif
-
-#ifndef Arduino_h
-#define vsnprintf_P(fmt, ...) vsnprintf(fmt, ##__VA_ARGS__)
-#define PSTR(fmt) (fmt)
+	#define MQTT_LOG_PRINTFLN(fmt, ...)	((void)0)
 #endif
 
 
@@ -58,7 +61,11 @@ public:
 				char buf[MQTT_LOG_SIZE_MAX];
 				va_list ap;
 				va_start(ap, fmt);
+#if MQTT_PSTR_ENABLED
 				vsnprintf_P(buf, MQTT_LOG_SIZE_MAX, fmt, ap);
+#else
+				vsnprintf(buf, MQTT_LOG_SIZE_MAX, fmt, ap);
+#endif
 				va_end(ap);
 				println(buf);
 			}
