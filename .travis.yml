@@ -14,6 +14,7 @@ before_install:
   - tar xf arduino-$IDE_VERSION-linux64.tar.xz
   - sudo mv arduino-$IDE_VERSION /usr/local/share/arduino
   - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+  - arduino --pref "boardsmanager.additional.urls=http://arduino.esp8266.com/stable/package_esp8266com_index.json" --save-prefs
   - arduino --install-boards esp8266:esp8266
 install:
   - ln -s $PWD /usr/local/share/arduino/libraries/ArduinoMqtt
