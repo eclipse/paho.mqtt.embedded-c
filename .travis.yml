@@ -1,22 +1,23 @@
-language: cpp
+language: python
+python:
+    - "2.7"
+sudo: false
+cache:
+  directories:
+    - "~/.platformio"
+
 env:
-  global:
-    - IDE_VERSION=1.8.2
   matrix:
-    - EXAMPLE="PubSub" BOARD="arduino:avr:uno"
-    - EXAMPLE="ConnectEthernetClient" BOARD="arduino:avr:uno"
-before_install:
-  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_1.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :1 -ac -screen 0 1280x1024x16"
-  - sleep 3
-  - export DISPLAY=:1.0
-  - wget http://downloads.arduino.cc/arduino-$IDE_VERSION-linux64.tar.xz
-  - tar xf arduino-$IDE_VERSION-linux64.tar.xz
-  - sudo mv arduino-$IDE_VERSION /usr/local/share/arduino
-  - sudo ln -s /usr/local/share/arduino/arduino /usr/local/bin/arduino
+    - TARGET="PubSub_pro8MHzatmega328"
+    - TARGET="ConnectEthernetClient_pro8MHzatmega328"
+    - TARGET="ConnectEsp8266WiFiClient_esp12e"
+
 install:
-  - ln -s $PWD /usr/local/share/arduino/libraries/ArduinoMqtt
+  - pip install -U platformio
+
 script:
-  - arduino --verify --board $BOARD $PWD/examples/$EXAMPLE/$EXAMPLE.ino
+  - platformio run -e $TARGET
+
 notifications:
   email:
     on_success: change
