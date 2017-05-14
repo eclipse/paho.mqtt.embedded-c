@@ -70,18 +70,25 @@ while (!Serial);
 MqttClient::Logger *mqttLogger = new MqttClient::LoggerImpl<HardwareSerial>(Serial);
 ```
 
-#### Time
+#### System resources
 
-Provide class implementing the `MqttClient::Time` interface to allow library
-access to the system time.
+Provide class implementing the `MqttClient::System` interface to allow library
+access to the system resources.
+
+##### millis
+
+Used to access the system time.
+The implementation must return the current time in milliseconds.
 
 `Arduino` simple implementation:
 ```c++
-class Time: public MqttClient::Time {
+class System: public MqttClient::System {
 public:
+	...
 	unsigned long millis() const {
 		return ::millis();
 	}
+	...
 }
 ```
 
@@ -89,11 +96,34 @@ General `C++` implementation might be like:
 ```c++
 #include <chrono>
 
-class TestTime: public MqttClient::Time {
+class TestSystem: public MqttClient::System {
+	...
 	unsigned long millis() const {
 		return std::chrono::duration_cast<std::chrono::milliseconds>
 		(std::chrono::system_clock::now().time_since_epoch()).count();
 	}
+	...
+}
+```
+
+##### yield [optional]
+
+Used to access the system `yield`.
+
+Method is called regularly while long waits.
+Some systems like ESP requires calling of the `yield` regularly to:
+- maintain WiFi connection
+- reset watchdog timer
+
+`ESP8266` simple implementation:
+```c++
+class System: public MqttClient::System {
+public:
+	...
+	void yield(void) {
+		::yield();
+	}
+	...
 }
 ```
 
@@ -127,15 +157,8 @@ public:
 	}
 
 	int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-		unsigned long startMs = millis();
 		mNet->setTimeout(timeoutMs);
-		do {
-			int qty = mNet->readBytes((char*) buffer, len);
-			if (qty > 0) {
-				return qty;
-			}
-		} while(millis() - startMs < timeoutMs);
-		return 0;
+		return mNet->readBytes((char*) buffer, len);
 	}
 
 	int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
@@ -156,8 +179,8 @@ private:
 	SoftwareSerial										*mNet;
 }
 
-MqttClient::Time *time = new Time;
-MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, *time);
+MqttClient::System *mqttSystem = new System;
+MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, *mqttSystem);
 ```
 
 Another alternative allows using of `Arduino Client` compatible network classes
@@ -165,8 +188,8 @@ like `EthernetClient`.
 To have this just instantiate the `MqttClient::NetworkClientImpl`template class:
 ```c++
 EthernetClient network;
-MqttClient::Time *time = new Time;
-MqttClient::Network * mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, *time);
+MqttClient::System *mqttSystem = new System;
+MqttClient::Network * mqttNetwork = new MqttClient::NetworkClientImpl<Client>(network, *mqttSystem);
 ```
 
 #### Buffers
