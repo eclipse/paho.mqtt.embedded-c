@@ -973,6 +973,9 @@ private:
 			if (rc == Error::SUCCESS) {
 				mSession.keepaliveAckTimer.set(mOptions.commandTimeoutMs);
 				mSession.keepaliveSent = true;
+			} else {
+				MQTT_LOG_PRINTFLN("Keepalive failure, ts: %lu", mSystem.millis());
+				mSession.reset();
 			}
 			return rc;
 		}
