@@ -119,6 +119,13 @@ public:
 			 * @return number of written bytes
 			 */
 			virtual int write(unsigned char* buffer, int len, unsigned long timeoutMs) = 0;
+
+			/**
+			 * Checks whether or not the network is connected.
+			 *
+			 * @return true if connected
+			 */
+			virtual bool connected() {return true;}
 	};
 
 	template<class Net>
@@ -170,6 +177,10 @@ public:
 				mSystem.yield();
 				mClient.setTimeout(timeoutMs);
 				return mClient.write((const uint8_t*)buffer, len);
+			}
+
+			bool connected() {
+				return mClient.connected();
 			}
 		private:
 			Client										&mClient;
@@ -847,6 +858,10 @@ private:
 	}
 
 	Error::type cycle(ReadPacketResult& result, const Timer& timer) {
+		if (!mNetwork.connected()) {
+			mSession.reset();
+			return Error::NETWORK_FAILURE;
+		}
 		Error::type rc = recvPacket(result, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
 		if (result.isPacketReceived) {
 			rc = processPacket(result.packetType, timer);
@@ -872,7 +887,7 @@ private:
 			case SUBACK:
 				break;
 			case PINGRESP:
-				MQTT_LOG_PRINTFLN("Keepalive ack received");
+				MQTT_LOG_PRINTFLN("Keepalive ack received, ts: %lu", mSystem.millis());
 				mSession.keepaliveSent = false;
 				break;
 			case PUBLISH:
