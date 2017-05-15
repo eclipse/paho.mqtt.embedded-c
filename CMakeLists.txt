@@ -25,7 +25,8 @@ add_executable(qos0pub
 "${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/transport.c")
 target_link_libraries(qos0pub paho-embed-mqtt3c)
 
-# Tests
-add_executable(test1
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/test/test1.c")
-target_link_libraries(test1 paho-embed-mqtt3c)
+
+ENABLE_TESTING()
+
+ADD_SUBDIRECTORY(MQTTPacket/test)
+
