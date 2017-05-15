@@ -439,7 +439,8 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
             int i;
             for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
-                if (c->messageHandlers[i].topicFilter == 0)
+                if ((c->messageHandlers[i].topicFilter == 0)
+                   || (strcmp(c->messageHandlers[i].topicFilter, topicFilter) == 0))
                 {
                     c->messageHandlers[i].topicFilter = topicFilter;
                     c->messageHandlers[i].fp = messageHandler;
