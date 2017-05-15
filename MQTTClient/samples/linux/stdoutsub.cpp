@@ -36,6 +36,7 @@
  
 */
 #include <stdio.h>
+#include <memory.h>
 #define MQTT_DEBUG 1
 #include "MQTTClient.h"
 
@@ -43,10 +44,7 @@
 
 #include "linux.cpp"
 
-#include <stdio.h>
 #include <signal.h>
-#include <memory.h>
-
 #include <sys/time.h>
 #include <stdlib.h>
 

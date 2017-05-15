@@ -1,5 +1,7 @@
 #define MQTTCLIENT_QOS2 1
 
+#include <memory.h>
+
 #include "MQTTClient.h"
 
 #define DEFAULT_STACK_SIZE -1
@@ -12,9 +14,9 @@ void messageArrived(MQTT::MessageData& md)
 {
     MQTT::Message &message = md.message;
 
-	printf("Message %d arrived: qos %d, retained %d, dup %d, packetid %d\n", 
+    printf("Message %d arrived: qos %d, retained %d, dup %d, packetid %d\n", 
 		++arrivedcount, message.qos, message.retained, message.dup, message.id);
-    printf("Payload %.*s\n", message.payloadlen, (char*)message.payload);
+    printf("Payload %.*s\n", (int)message.payloadlen, (char*)message.payload);
 }
 
 
