@@ -9,6 +9,9 @@ os:
 
 sudo: required
 
+before_install:
+  - ./travis-install.sh
+
 script:
   - if [[ "$COVERITY_SCAN_BRANCH" != 1 ]]; then ./travis-build.sh; fi
 
