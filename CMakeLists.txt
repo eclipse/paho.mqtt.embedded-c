@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 2.8)
 project (embedded-mqtt)
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -25,27 +25,27 @@ add_executable(qos0pub
 target_link_libraries(qos0pub paho-embed-mqtt3c)
 
 # MQTTClient Library - C++
-include_directories("MQTTPacket/src", "MQTTClient/src", "MQTTClient/src/linux")
 add_executable(hello
 "${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient/samples/linux/hello.cpp")
+target_include_directories(hello PRIVATE "MQTTClient/src" "MQTTClient/src/linux")
 target_link_libraries(hello paho-embed-mqtt3c)
 
-include_directories("MQTTPacket/src", "MQTTClient/src", "MQTTClient/src/linux")
 add_executable(stdoutsub
 "${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient/samples/linux/stdoutsub.cpp")
 target_link_libraries(stdoutsub paho-embed-mqtt3c)
+target_include_directories(stdoutsub PRIVATE "MQTTClient/src" "MQTTClient/src/linux")
 
 # MQTTClient Library - C
-include_directories("MQTTPacket/src", "MQTTClient-C/src", "MQTTClient-C/src/linux")
 ADD_DEFINITIONS(-DMQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h)
 file(GLOB SOURCES "MQTTClient-C/src/*.c" "MQTTClient-C/src/linux/*.c")
 add_library(paho-embed-mqtt3cc SHARED ${SOURCES})
 install(TARGETS paho-embed-mqtt3cc DESTINATION /usr/lib)
+target_include_directories(paho-embed-mqtt3cc PRIVATE "MQTTClient-C/src" "MQTTClient-C/src/linux")
 
 add_executable(stdoutsubc
 "${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient-C/samples/linux/stdoutsub.c")
 target_link_libraries(stdoutsubc paho-embed-mqtt3cc paho-embed-mqtt3c)
-
+target_include_directories(stdoutsubc PRIVATE "MQTTClient-C/src" "MQTTClient-C/src/linux")
 
 ENABLE_TESTING()
 
