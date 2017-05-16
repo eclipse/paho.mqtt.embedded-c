@@ -106,7 +106,6 @@ ${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/../samples/%.c ${srcdir}/../samp
 	${CC} -o $@ $^ -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
 
 
-
 ${EMBED_MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
 	-ln -s lib$(MQTT_EMBED_LIB_C).so.${VERSION}  ${blddir}/lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION}
@@ -120,7 +119,6 @@ install-strip: build strip_options install
 
 install: build 
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${EMBED_MQTTLIB_C_TARGET} $(DESTDIR)${libdir}
-
 
 	/sbin/ldconfig $(DESTDIR)${libdir}
 	ln -s lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).so
@@ -164,13 +162,13 @@ MAJOR_VERSION = 1
 MINOR_VERSION = 0
 VERSION = ${MAJOR_VERSION}.${MINOR_VERSION}
 
-EMBED_MQTTLIB_C_TARGET = ${blddir}/lib${MQTT_EMBED_LIB_C}.so.${VERSION}
+EMBED_MQTTLIB_C_TARGET = ${blddir}/lib${MQTT_EMBED_LIB_C}-${VERSION}.dylib
 
 
-CCFLAGS_SO = -g -fPIC -Os -Wall -fvisibility=hidden -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES
+CCFLAGS_SO = -g -fPIC -dynamiclib -Os -Wall -fvisibility=hidden -Wno-deprecated-declarations -DUSE_NAMED_SEMAPHORES -DLINUX_SO
 FLAGS_EXE = -I ${srcdir}  -L ${blddir}
 
-LDFLAGS_C = -shared -Wl,-install_name,lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION}
+LDFLAGS_C = -shared -Wl,-install_name,lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib
 
 all: build
 	
@@ -186,13 +184,13 @@ mkdir:
 ${SYNC_TESTS}: ${blddir}/test/%: ${srcdir}/../test/%.c
 	${CC} -g -o ${blddir}/test/${basename ${+F}} $< -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
 
-${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/../samples/%.c
-	${CC} -o ${blddir}/samples/${basename ${+F}} $< ${FLAGS_EXE} -l${MQTT_EMBED_LIB_C} 
+${SYNC_SAMPLES}: ${blddir}/samples/%: ${srcdir}/../samples/%.c ${srcdir}/../samples/transport.o
+	${CC} -o $@ $^ -l${MQTT_EMBED_LIB_C} ${FLAGS_EXE}
 
 ${EMBED_MQTTLIB_C_TARGET}: ${SOURCE_FILES_C} ${HEADERS_C}
 	${CC} ${CCFLAGS_SO} -o $@ ${SOURCE_FILES_C} ${LDFLAGS_C}
-	-ln -s lib$(MQTT_EMBED_LIB_C).so.${VERSION}  ${blddir}/lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION}
-	-ln -s lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION} ${blddir}/lib$(MQTT_EMBED_LIB_C).so
+	-ln -s lib$(MQTT_EMBED_LIB_C)-${VERSION}.dylib  ${blddir}/lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib
+	-ln -s lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib ${blddir}/lib$(MQTT_EMBED_LIB_C).dylib
 
 
 strip_options:
@@ -203,14 +201,14 @@ install-strip: build strip_options install
 install: build 
 	$(INSTALL_DATA) ${INSTALL_OPTS} ${EMBED_MQTTLIB_C_TARGET} $(DESTDIR)${libdir}
 
-	/sbin/ldconfig $(DESTDIR)${libdir}
-	ln -s lib$(MQTT_EMBED_LIB_C).so.${MAJOR_VERSION} $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).so
+	ln -s lib$(MQTT_EMBED_LIB_C)-${VERSION}.dylib $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib
+	ln -s lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).dylib
 
 
 uninstall:
-	rm $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).so.${VERSION}
-	/sbin/ldconfig $(DESTDIR)${libdir}
-	rm $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).so
+	rm $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C)-${MAJOR_VERSION}.dylib
+	rm $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C)-${VERSION}.dylib
+	rm $(DESTDIR)${libdir}/lib$(MQTT_EMBED_LIB_C).dylib
 
 
 html:

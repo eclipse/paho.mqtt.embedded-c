@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
-	char buf[200];
+	unsigned char buf[200];
 	int buflen = sizeof(buf);
 	int mysock = 0;
 	MQTTString topicString = MQTTString_initializer;
