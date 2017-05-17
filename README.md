@@ -21,8 +21,8 @@ Features
 incoming message processing and to send keep-alive packets in time
 - `TCP` network communication is out of the library scope.
 `MqttClient::Network` object must be provided with `read` and `write` implementations
-- System current time function is provided externally by `MqttClient::Time` object
-to allow easy adaptation for any other environments
+- System current time and other functions are provided externally by `MqttClient::System` object
+to allow easy adaptation to any other environments
 - External logger. `MqttClient::Logger` object is used to print logs with any
 convenient way for particular environment
 - No heap memory allocations.
@@ -131,7 +131,9 @@ public:
 
 Provide class implementing the `MqttClient::Network` interface.
 
-Alternatively just instantiate the `MqttClient::NetworkImpl` template class that
+##### Custom helper
+
+Instantiate the `MqttClient::NetworkImpl` template class that
 allows usage of any class with implemented methods like:
 - `int read(unsigned char* buffer, int len, unsigned long timeoutMs)`
 - `int write(unsigned char* buffer, int len, unsigned long timeoutMs)`
@@ -151,11 +153,6 @@ public:
 		mNet->begin(SW_UART_SPEED);
 	}
 
-	int connect(const char* hostname, int port) {
-		// TCP connection is already established otherwise do it here
-		return 0;
-	}
-
 	int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
 		mNet->setTimeout(timeoutMs);
 		return mNet->readBytes((char*) buffer, len);
@@ -170,11 +167,6 @@ public:
 		return len;
 	}
 
-	int disconnect() {
-		// Implement TCP network disconnect here
-		return 0;
-	}
-
 private:
 	SoftwareSerial										*mNet;
 }
@@ -183,8 +175,10 @@ MqttClient::System *mqttSystem = new System;
 MqttClient::Network *mqttNetwork = new MqttClient::NetworkImpl<Network>(*network, *mqttSystem);
 ```
 
+##### Arduino Client helper
+
 Another alternative allows using of `Arduino Client` compatible network classes
-like `EthernetClient`.
+like `EthernetClient` or `WiFiClient` of `ESP8266` etc...
 To have this just instantiate the `MqttClient::NetworkClientImpl`template class:
 ```c++
 EthernetClient network;
