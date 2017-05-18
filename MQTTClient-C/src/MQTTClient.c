@@ -227,8 +227,9 @@ int cycle(MQTTClient* c, Timer* timer)
     if (packet_type == 0)
         return FAILURE; // no more data to read, unrecoverable
 
-    int len = 0,
-        rc = SUCCESS;
+    int len = 0;
+    int rc = SUCCESS;
+    int keepalive_rc = SUCCESS;
 
     switch (packet_type)
     {
@@ -281,10 +282,12 @@ int cycle(MQTTClient* c, Timer* timer)
             c->ping_outstanding = 0;
             break;
     }
-    keepalive(c);
+    keepalive_rc = keepalive(c);
 exit:
-    if (rc == SUCCESS && packet_type != FAILURE)
+    if (rc == SUCCESS)
         rc = packet_type;
+    if (packet_type == FAILURE)
+        rc = keepalive_rc;
     return rc;
 }
 
@@ -297,14 +300,16 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     TimerInit(&timer);
     TimerCountdownMS(&timer, timeout_ms);
 
-	do
+    do
     {
         if (cycle(c, &timer) == FAILURE)
         {
             rc = FAILURE;
+            c->ping_outstanding = 0;
+            c->isconnected = 0;
             break;
         }
-	} while (!TimerIsExpired(&timer));
+    } while (!TimerIsExpired(&timer));
         
     return rc;
 }

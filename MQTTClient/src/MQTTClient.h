@@ -512,10 +512,11 @@ int MQTT::Client<Network, Timer, a, b>::yield(unsigned long timeout_ms)
         if (cycle(timer) < 0)
         {
             rc = FAILURE;
+	    ping_outstanding = false;
+	    isconnected = false;
             break;
         }
     }
-
     return rc;
 }
 
@@ -528,8 +529,9 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
     // read the socket, see what work is due
     int packet_type = readPacket(timer);
 
-    int len = 0,
-        rc = SUCCESS;
+    int len = 0;
+    int rc = SUCCESS;
+    int keepalive_rc = SUCCESS;
 
     switch (packet_type)
     {
@@ -605,10 +607,12 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
             ping_outstanding = false;
             break;
     }
-    keepalive();
+    keepalive_rc = keepalive();
 exit:
     if (rc == SUCCESS)
         rc = packet_type;
+    if (packet_type == FAILURE)
+        rc = keepalive_rc;
     return rc;
 }
 
