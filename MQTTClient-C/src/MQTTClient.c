@@ -281,7 +281,12 @@ int cycle(MQTTClient* c, Timer* timer)
             c->ping_outstanding = 0;
             break;
     }
-    keepalive(c);
+
+    if(keepalive(c) != SUCCESS) {
+        //check only keepalive FAILURE status so that previous FAILURE status can be considered as FAULT
+        rc = FAILURE;
+    }
+
 exit:
     if (rc == SUCCESS && packet_type != FAILURE)
         rc = packet_type;
