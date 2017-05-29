@@ -223,9 +223,9 @@ exit:
 int cycle(MQTTClient* c, Timer* timer)
 {
     // read the socket, see what work is due
-    unsigned short packet_type = readPacket(c, timer);
-    if (packet_type == 0)
-        return FAILURE; // no more data to read, unrecoverable
+    int packet_type = readPacket(c, timer);
+    if (packet_type <= 0)
+        return FAILURE; // no more data to read, unrecoverable. Or read packet fails due to unexpected network error
 
     int len = 0,
         rc = SUCCESS;
