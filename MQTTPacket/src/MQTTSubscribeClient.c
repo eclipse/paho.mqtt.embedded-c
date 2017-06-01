@@ -76,7 +76,7 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 	for (i = 0; i < count; ++i)
 	{
 		writeMQTTString(&ptr, topicFilters[i]);
-		writeChar(&ptr, requestedQoSs[i]);
+		writeChar(&ptr, *(uint8_t*)(requestedQoSs+i));
 	}
 
 	rc = ptr - buf;
