@@ -188,6 +188,7 @@ public:
 	};
 
 	struct Buffer {
+		virtual ~Buffer() {}
 		/** Gets pointer to array */
 		virtual unsigned char* get() = 0;
 		/** Gets the array size */
