@@ -283,6 +283,14 @@ public:
 	template<int SIZE = 5>
 	class MessageHandlersImpl: public MessageHandlers {
 		public:
+			MessageHandlersImpl() {
+				for (int i = 0; i < size(); ++i) {
+						handlers[i] = MessageHandler();
+				}
+			}
+
+			virtual ~MessageHandlersImpl() {}
+
 			int size() const {return SIZE;}
 
 			bool isFull() const {
@@ -304,7 +312,12 @@ public:
 					if (handlers[i].isUsed()) {
 						if (strcmp(handlers[i].topic, topic) == 0) {
 							// Replace
-							handlers[i].topic = topic;
+							onDeAllocateTopic(handlers[i].topic, i);
+							const char *t = onAllocateTopic(topic, i);
+							if (!t) {
+								return false;
+							}
+							handlers[i].topic = t;
 							handlers[i].cbk = handler;
 							res = true;
 							break;
@@ -317,7 +330,11 @@ public:
 				// Check result and try to use empty slot if available
 				if (!res && emptyIdx >= 0) {
 					// Set to the first empty slot
-					handlers[emptyIdx].topic = topic;
+					const char *t = onAllocateTopic(topic, emptyIdx);
+					if (!t) {
+						return false;
+					}
+					handlers[emptyIdx].topic = t;
 					handlers[emptyIdx].cbk = handler;
 					res = true;
 				}
@@ -327,6 +344,7 @@ public:
 			void reset(const char* topic) {
 				for (int i = 0; i < size(); ++i) {
 					if (handlers[i].isUsed() && strcmp(handlers[i].topic, topic) == 0) {
+						onDeAllocateTopic(handlers[i].topic, i);
 						handlers[i].reset();
 						break;
 					}
@@ -336,13 +354,77 @@ public:
 			void reset() {
 				for (int i = 0; i < size(); ++i) {
 					if (handlers[i].isUsed()) {
+						onDeAllocateTopic(handlers[i].topic, i);
 						handlers[i].reset();
 					}
 				}
 			}
 
+		protected:
+			virtual const char* onAllocateTopic(const char *topic, int storageIdx) {
+				// Keep provided pointer
+				return topic;
+			}
+
+			virtual void onDeAllocateTopic(const char *topic, int storageIdx) {
+				// Nothing to do
+			}
+
 		private:
 			MessageHandler								handlers[SIZE];
+	};
+
+	template<int SIZE, int TOPIC_SIZE>
+	class MessageHandlersStaticImpl: public MessageHandlersImpl<SIZE> {
+		private:
+			char										topics[SIZE][TOPIC_SIZE];
+
+			const char* onAllocateTopic(const char *topic, int storageIdx) {
+				if (!topic) {
+					return NULL;
+				}
+				if (storageIdx < 0 || storageIdx >= SIZE) {
+					// Wrong index
+					return NULL;
+				}
+				if (strlen(topic) >= TOPIC_SIZE) {
+					// Topic is too long
+					return NULL;
+				}
+				// Copy topic
+				strncpy(topics[storageIdx], topic, TOPIC_SIZE);
+				topics[storageIdx][TOPIC_SIZE - 1] = '\0';
+				return topics[storageIdx];
+			}
+
+			void onDeAllocateTopic(const char *topic, int storageIdx) {
+				// Nothing to do
+			}
+	};
+
+	template<int SIZE>
+	class MessageHandlersDynamicImpl: public MessageHandlersImpl<SIZE> {
+		public:
+			~MessageHandlersDynamicImpl() {
+				MessageHandlersImpl<SIZE>::reset();
+			}
+
+		private:
+			const char* onAllocateTopic(const char *topic, int storageIdx) {
+				if (!topic) {
+					return NULL;
+				}
+				// Copy topic
+				char *res = new char[strlen(topic) + 1];
+				if (res) {
+					strcpy(res, topic);
+				}
+				return res;
+			}
+
+			void onDeAllocateTopic(const char *topic, int storageIdx) {
+				delete[] topic;
+			}
 	};
 
 	struct ConnectResult {
@@ -561,7 +643,7 @@ public:
 		}
 		// Set handler
 		if (!mMessageHandlers.set(topic, cbk)) {
-			MQTT_LOG_PRINTFLN("List of message handlers is full");
+			MQTT_LOG_PRINTFLN("Can't set message handler");
 			return Error::FAILURE;
 		}
 		Error::type rc = Error::SUCCESS;
@@ -1004,6 +1086,7 @@ private:
 	}
 
 	void deliverMessage(MQTTString& topic, Message& message) {
+		bool delivered = false;
 		for (int i = 0; i < mMessageHandlers.size(); ++i) {
 			if (mMessageHandlers.get()[i].isUsed()) {
 				if (MQTTPacket_equals(&topic, (char*)(mMessageHandlers.get()[i].topic))
@@ -1012,8 +1095,12 @@ private:
 					MQTT_LOG_PRINTFLN("Deliver message for: %s", mMessageHandlers.get()[i].topic);
 					MessageData md(topic, message);
 					mMessageHandlers.get()[i].cbk(md);
+					delivered = true;
 				}
 			}
+		}
+		if (!delivered) {
+			MQTT_LOG_PRINTFLN("Unexpected message");
 		}
 	}
 
