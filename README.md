@@ -203,13 +203,41 @@ MqttClient::Buffer *mqttRecvBuffer = new MqttClient::ArrayBuffer<128>();
 
 Provide class implementing the `MqttClient::MessageHandlers` interface to keep
 subscription callback functions.
-Alternatively just instantiate the `MqttClient::MessageHandlersImpl` template
+
+##### Simple helper
+
+Instantiate the `MqttClient::MessageHandlersImpl` template
 class to get simplest implementation based on `C` array:
 ```c++
-// Allow up to 2 subscriptions simultaneously
+// Allows up to 2 subscriptions simultaneously
 MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandlersImpl<2>();
 ```
+This implementation does not copy the topic string and keeps only pointer.
+Please ensure the pointer remains valid while topic is subscribed.
+This is preferred implementation because of minimal resources requirements.
 
+##### Static helper
+
+Instantiate the `MqttClient::MessageHandlersStaticImpl` template class:
+```c++
+// Allows up to 2 subscriptions simultaneously
+// Allows up to 64 bytes for topic string including 1 byte for string termination symbol
+MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandlersStaticImpl<2, 64>();
+```
+This implementation preallocates buffers to store topic strings in advance.
+This implementation does copy the topic string.
+This is preferred implementation when the maximum topic length could be predicted
+because it avoids the heap allocations at the moment of `subscribe` call.
+
+##### Dynamic helper
+
+Instantiate the `MqttClient::MessageHandlersDynamicImpl` template class:
+```c++
+// Allows up to 2 subscriptions simultaneously
+MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandlersDynamicImpl<2>();
+```
+This implementation allocates buffer to store topic string at the moment of `subscribe` call.
+This implementation does copy the topic string.
 
 Development
 ===========
