@@ -11,6 +11,7 @@ env:
     - TARGET="PubSub_pro8MHzatmega328"
     - TARGET="ConnectEthernetClient_pro8MHzatmega328"
     - TARGET="ConnectEsp8266WiFiClient_esp12e"
+    - TARGET="LwtEsp8266WiFiClient_esp12e"
 
 install:
   - pip install -U platformio
