@@ -267,7 +267,10 @@ the `Language Mappings` in `Eclipse Preferences` -> `C/C++` -> `Language Mapping
 Add next mappings:
 	- `C Header file` to `C++`
 	- `C Source file` to `C++`
-
+7. In case of problems with `C++11` features syntax, edit the preprocessor compiler command.
+Navigate to `Project` -> `Properties` -> `C/C++ General` -> `Preprocessor Include Paths, Macros etc`
+-> `Providers`. Select the `CDT Cross GCC Built-in Compiler Settings` item.
+Add `-std=c++11` to the end of the line in edit-box named as `Command to get compiler specs`.
 
 Useful links
 ============
