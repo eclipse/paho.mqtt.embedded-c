@@ -163,8 +163,7 @@ public:
 			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
 				Timer timer(mSystem, timeoutMs);
 				int qty = 0;
-				while(!timer.expired() && qty<len) {
-					mSystem.yield();
+				while(connected() && !timer.expired() && qty<len) {
 					int tmpRes = mClient.read((uint8_t*)(buffer+qty), len-qty);
 					if (tmpRes > 0) {
 						qty+=tmpRes;
@@ -174,12 +173,12 @@ public:
 			}
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
-				mSystem.yield();
 				mClient.setTimeout(timeoutMs);
-				return mClient.write((const uint8_t*)buffer, len);
+				return connected() ? mClient.write((const uint8_t*)buffer, len) : -1;
 			}
 
 			bool connected() {
+				mSystem.yield();
 				return mClient.connected();
 			}
 		private:
@@ -875,7 +874,7 @@ private:
 		int len = 0;
 		// Read the fixed header byte
 		if (mNetwork.read(mRecvBuffer.get(), 1, timer.leftMs()) != 1) {
-			return Error::WAIT_TIMEOUT;
+			return mNetwork.connected() ? Error::WAIT_TIMEOUT : Error::NETWORK_FAILURE;
 		}
 		len++;
 		// Read the remaining length
@@ -941,11 +940,10 @@ private:
 	}
 
 	Error::type cycle(ReadPacketResult& result, const Timer& timer) {
-		if (!mNetwork.connected()) {
-			mSession.reset();
-			return Error::NETWORK_FAILURE;
-		}
 		Error::type rc = recvPacket(result, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+		if (rc == Error::NETWORK_FAILURE) {
+			mSession.reset();
+		}
 		if (result.isPacketReceived) {
 			rc = processPacket(result.packetType, timer);
 		}
