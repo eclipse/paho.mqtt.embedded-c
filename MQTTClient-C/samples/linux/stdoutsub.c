@@ -42,11 +42,11 @@
 
 */
 #include <stdio.h>
+#include <memory.h>
 #include "MQTTClient.h"
 
 #include <stdio.h>
 #include <signal.h>
-#include <memory.h>
 
 #include <sys/time.h>
 
