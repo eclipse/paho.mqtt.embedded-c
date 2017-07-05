@@ -1,53 +1,46 @@
+#*******************************************************************************
+#  Copyright (c) 2017 IBM Corp.
+#
+#  All rights reserved. This program and the accompanying materials
+#  are made available under the terms of the Eclipse Public License v1.0
+#  and Eclipse Distribution License v1.0 which accompany this distribution.
+#
+#  The Eclipse Public License is available at
+#     http://www.eclipse.org/legal/epl-v10.html
+#  and the Eclipse Distribution License is available at
+#    http://www.eclipse.org/org/documents/edl-v10.php.
+#
+#  Contributors:
+#     Ian Craggs - initial version
+#*******************************************************************************/
+
 cmake_minimum_required(VERSION 2.8)
 project (embedded-mqtt)
 set(CMAKE_BUILD_TYPE Debug)
 
-# MQTTPacket Library
-include_directories("MQTTPacket/src")
-file(GLOB SOURCES "MQTTPacket/src/*.c")
-add_library(paho-embed-mqtt3c SHARED ${SOURCES})
-install(TARGETS paho-embed-mqtt3c DESTINATION /usr/lib)
+message(STATUS "CMake version: " ${CMAKE_VERSION})
+message(STATUS "CMake system name: " ${CMAKE_SYSTEM_NAME})
 
-# Samples
-add_executable(pub0sub1 
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/pub0sub1.c"
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/transport.c")
-target_link_libraries(pub0sub1 paho-embed-mqtt3c)
+set(CMAKE_SCRIPTS "${CMAKE_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
-add_executable(pub0sub1_nb 
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/pub0sub1_nb.c"
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/transport.c")
-target_link_libraries(pub0sub1_nb paho-embed-mqtt3c)
+## build settings
+set(PAHO_VERSION_MAJOR 1)
+set(PAHO_VERSION_MINOR 0)
+set(PAHO_VERSION_PATCH 0)
+set(CLIENT_VERSION ${PAHO_VERSION_MAJOR}.${PAHO_VERSION_MINOR}.${PAHO_VERSION_PATCH})
 
-add_executable(qos0pub
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/qos0pub.c"
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTPacket/samples/transport.c")
-target_link_libraries(qos0pub paho-embed-mqtt3c)
+string(TIMESTAMP BUILD_TIMESTAMP UTC)
+message(STATUS "Timestamp is ${BUILD_TIMESTAMP}")
 
-# MQTTClient Library - C++
-add_executable(hello
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient/samples/linux/hello.cpp")
-target_include_directories(hello PRIVATE "MQTTClient/src" "MQTTClient/src/linux")
-target_link_libraries(hello paho-embed-mqtt3c)
+set(CPACK_PACKAGE_VERSION_MAJOR ${PAHO_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PAHO_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PAHO_VERSION_PATCH})
+include(CPack)
 
-add_executable(stdoutsub
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient/samples/linux/stdoutsub.cpp")
-target_link_libraries(stdoutsub paho-embed-mqtt3c)
-target_include_directories(stdoutsub PRIVATE "MQTTClient/src" "MQTTClient/src/linux")
+include_directories(MQTTPacket/src)
 
-# MQTTClient Library - C
-ADD_DEFINITIONS(-DMQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h)
-file(GLOB SOURCES "MQTTClient-C/src/*.c" "MQTTClient-C/src/linux/*.c")
-add_library(paho-embed-mqtt3cc SHARED ${SOURCES})
-install(TARGETS paho-embed-mqtt3cc DESTINATION /usr/lib)
-target_include_directories(paho-embed-mqtt3cc PRIVATE "MQTTClient-C/src" "MQTTClient-C/src/linux")
-
-add_executable(stdoutsubc
-"${CMAKE_CURRENT_SOURCE_DIR}/MQTTClient-C/samples/linux/stdoutsub.c")
-target_link_libraries(stdoutsubc paho-embed-mqtt3cc paho-embed-mqtt3c)
-target_include_directories(stdoutsubc PRIVATE "MQTTClient-C/src" "MQTTClient-C/src/linux")
-
-ENABLE_TESTING()
-
-ADD_SUBDIRECTORY(MQTTPacket/test)
-
+enable_testing()
+ADD_SUBDIRECTORY(MQTTPacket)
+ADD_SUBDIRECTORY(MQTTClient)
+ADD_SUBDIRECTORY(MQTTClient-C)

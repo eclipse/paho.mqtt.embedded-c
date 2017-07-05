@@ -12,6 +12,7 @@ ELSE ()
   SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl)
 ENDIF ()
 
+include_directories(../src)
 
 ADD_EXECUTABLE(
 	test1
@@ -23,15 +24,12 @@ TARGET_LINK_LIBRARIES(
 	paho-embed-mqtt3c
 )
 
-
 ADD_TEST(
 	NAME test1
 	COMMAND "test1" "--connection" ${MQTT_TEST_BROKER}
 )
 
-
 SET_TESTS_PROPERTIES(
 	test1
 	PROPERTIES TIMEOUT 540
 )
-

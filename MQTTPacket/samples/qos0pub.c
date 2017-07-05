@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
 	len += MQTTSerialize_disconnect((unsigned char *)(buf + len), buflen - len);
 
-	rc = transport_sendPacketBuffer(mysock, buf, len);
+	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)
 		printf("Successfully published\n");
 	else
