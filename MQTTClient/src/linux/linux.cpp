@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -33,30 +33,16 @@
 #include <signal.h>
 
 
-class IPStack 
+class IPStack
 {
-public:    
-    IPStack()
-    {
+public:
+  IPStack()
+  {
 
-    }
-    
-	int Socket_error(const char* aString)
-	{
-		int rc = 0;
-		//if (errno != EINTR && errno != EAGAIN && errno != EINPROGRESS && errno != EWOULDBLOCK)
-		//{
-			if (strcmp(aString, "shutdown") != 0 || (errno != ENOTCONN && errno != ECONNRESET))
-			{
-				printf("Socket error %s in %s for socket %d\n", strerror(errno), aString, mysock);
-				rc = errno;
-			}
-		//}
-		return errno;
-	}
+  }
 
-    int connect(const char* hostname, int port)
-    {
+  int connect(const char* hostname, int port)
+  {
 		int type = SOCK_STREAM;
 		struct sockaddr_in address;
 		int rc = -1;
@@ -100,7 +86,7 @@ public:
 
 				//if (setsockopt(mysock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
 				//	printf("Could not set SO_NOSIGPIPE for socket %d", mysock);
-				
+
 				rc = ::connect(mysock, (struct sockaddr*)&address, sizeof(address));
 			}
 		}
@@ -108,8 +94,10 @@ public:
         return rc;
     }
 
-    int read(unsigned char* buffer, int len, int timeout_ms)
-    {
+  // return -1 on error, or the number of bytes read
+  // which could be 0 on a read timeout
+  int read(unsigned char* buffer, int len, int timeout_ms)
+  {
 		struct timeval interval = {timeout_ms / 1000, (timeout_ms % 1000) * 1000};
 		if (interval.tv_sec < 0 || (interval.tv_sec == 0 && interval.tv_usec <= 0))
 		{
@@ -125,20 +113,18 @@ public:
 			int rc = ::recv(mysock, &buffer[bytes], (size_t)(len - bytes), 0);
 			if (rc == -1)
 			{
-				if (Socket_error("read") != 0)
-				{
-					bytes = -1;
-					break;
-				}
+        if (errno != EAGAIN && errno != EWOULDBLOCK)
+          bytes = -1;
+        break;
 			}
 			else
 				bytes += rc;
 		}
 		return bytes;
-    }
-    
-    int write(unsigned char* buffer, int len, int timeout)
-    {
+  }
+
+  int write(unsigned char* buffer, int len, int timeout)
+  {
 		struct timeval tv;
 
 		tv.tv_sec = 0;  /* 30 Secs Timeout */
@@ -148,76 +134,74 @@ public:
 		int	rc = ::write(mysock, buffer, len);
 		//printf("write rc %d\n", rc);
 		return rc;
-    }
+  }
 
 	int disconnect()
 	{
 		return ::close(mysock);
 	}
-    
+
 private:
 
-    int mysock; 
-    
+    int mysock;
 };
 
 
 class Countdown
 {
 public:
-    Countdown()
-    { 
-	
-    }
+  Countdown()
+  {
 
-    Countdown(int ms)
-    { 
+  }
+
+  Countdown(int ms)
+  {
 		countdown_ms(ms);
-    }
-    
+  }
 
-    bool expired()
-    {
+
+  bool expired()
+  {
 		struct timeval now, res;
 		gettimeofday(&now, NULL);
-		timersub(&end_time, &now, &res);		
+		timersub(&end_time, &now, &res);
 		//printf("left %d ms\n", (res.tv_sec < 0) ? 0 : res.tv_sec * 1000 + res.tv_usec / 1000);
 		//if (res.tv_sec > 0 || res.tv_usec > 0)
 		//	printf("expired %d %d\n", res.tv_sec, res.tv_usec);
         return res.tv_sec < 0 || (res.tv_sec == 0 && res.tv_usec <= 0);
-    }
-    
+  }
 
-    void countdown_ms(int ms)  
-    {
+
+  void countdown_ms(int ms)
+  {
 		struct timeval now;
 		gettimeofday(&now, NULL);
 		struct timeval interval = {ms / 1000, (ms % 1000) * 1000};
 		//printf("interval %d %d\n", interval.tv_sec, interval.tv_usec);
 		timeradd(&now, &interval, &end_time);
-    }
+  }
 
-    
-    void countdown(int seconds)
-    {
+
+  void countdown(int seconds)
+  {
 		struct timeval now;
 		gettimeofday(&now, NULL);
 		struct timeval interval = {seconds, 0};
 		timeradd(&now, &interval, &end_time);
-    }
+  }
 
-    
-    int left_ms()
-    {
+
+  int left_ms()
+  {
 		struct timeval now, res;
 		gettimeofday(&now, NULL);
 		timersub(&end_time, &now, &res);
 		//printf("left %d ms\n", (res.tv_sec < 0) ? 0 : res.tv_sec * 1000 + res.tv_usec / 1000);
         return (res.tv_sec < 0) ? 0 : res.tv_sec * 1000 + res.tv_usec / 1000;
-    }
-    
+  }
+
 private:
 
 	struct timeval end_time;
 };
-
