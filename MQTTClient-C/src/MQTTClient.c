@@ -226,11 +226,13 @@ int cycle(MQTTClient* c, Timer* timer)
 {
     // read the socket, see what work is due
     int packet_type = readPacket(c, timer);
-    if (packet_type <= 0)
-        return FAILURE; // no more data to read, unrecoverable. Or read packet fails due to unexpected network error
-
     int len = 0,
         rc = SUCCESS;
+
+    if (packet_type <= 0) {
+        // no more data to read, unrecoverable. Or read packet fails due to unexpected network error
+        goto keepalive_check; //need to check keepalive for ping/req
+    }
 
     switch (packet_type)
     {
@@ -284,11 +286,9 @@ int cycle(MQTTClient* c, Timer* timer)
             break;
     }
 
-    if(keepalive(c) != SUCCESS) {
-        //check only keepalive FAILURE status so that previous FAILURE status can be considered as FAULT
-        rc = FAILURE;
-    }
-
+keepalive_check:
+    keepalive(c);
+    
 exit:
     if (rc == SUCCESS && packet_type != FAILURE)
         rc = packet_type;
