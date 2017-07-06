@@ -11,9 +11,7 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs - MQTT 3.1.1 support
- *    Ian Craggs - change will message test back to using proxy
+ *    Ian Craggs - initial implementation for embedded C client
  *******************************************************************************/
 
 
@@ -269,11 +267,20 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 }
 
 
-static MessageData* test1_message_data = NULL;
+static volatile MessageData* test1_message_data = NULL;
+static MQTTMessage pubmsg;
 
 void messageArrived(MessageData* md)
 {
-	test1_message_data = md;
+  test1_message_data = md;
+  MQTTMessage* m = md->message;
+
+	assert("Good message lengths", pubmsg.payloadlen == m->payloadlen,
+         "payloadlen was %d", m->payloadlen);
+
+  if (pubmsg.payloadlen == m->payloadlen)
+      assert("Good message contents", memcmp(m->payload, pubmsg.payload, m->payloadlen) == 0,
+          "payload was %s", m->payload);
 }
 
 
@@ -284,7 +291,6 @@ Test1: single-threaded client
 *********************************************************************/
 void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
 {
-	MQTTMessage pubmsg;
 	char* topicName = NULL;
 	int topicLen;
 	int i = 0;
@@ -310,43 +316,20 @@ void test1_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
     wait_seconds = 10;
 		while ((test1_message_data == NULL) && (wait_seconds-- > 0))
 		{
-			#if defined(WIN32)
-				Sleep(1000);
-			#else
-				usleep(1000000L);
-			#endif
+      MQTTYield(c, 100);
 		}
-		assert("Message Arrived", wait_seconds > 0, "Time out waiting for message %d\n", i );
+		assert("Message Arrived", wait_seconds > 0, "Time out waiting for message %d\n", i);
 
-		if (test1_message_data)
-		{
-      MQTTMessage* m = test1_message_data->message;
-
-			MyLog(LOGA_DEBUG, "Message received on topic %s is %.*s", test1_message_data->topicName,
-        m->payloadlen, (char*)(m->payload));
-			if (pubmsg.payloadlen != m->payloadlen ||
-					memcmp(m->payload, pubmsg.payload, m->payloadlen) != 0)
-			{
-				failures++;
-				MyLog(LOGA_INFO, "Error: wrong data - received lengths %d %d", pubmsg.payloadlen, m->payloadlen);
-				break;
-			}
-		}
-		else
+		if (!test1_message_data)
 			printf("No message received within timeout period\n");
 	}
 
 	/* wait to receive any outstanding messages */
   wait_seconds = 2;
-  while ((test1_message_data == NULL) && (wait_seconds-- > 0))
+  while (wait_seconds-- > 0)
   {
-    #if defined(WIN32)
-      Sleep(1000);
-    #else
-      usleep(1000000L);
-    #endif
+      MQTTYield(c, 1000);
   }
-
 }
 
 
@@ -406,6 +389,7 @@ int test1(struct Options options)
 	assert("Disconnect successful", rc == SUCCESS, "rc was %d", rc);
 
 	/* Just to make sure we can connect again */
+  NetworkConnect(&n, options.host, options.port);
   rc = MQTTConnect(&c, &data);
 	assert("Connect successful",  rc == SUCCESS, "rc was %d", rc);
 	rc = MQTTDisconnect(&c);
