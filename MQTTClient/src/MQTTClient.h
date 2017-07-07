@@ -25,7 +25,7 @@
 
 #include "FP.h"
 #include "MQTTPacket.h"
-#include "stdio.h"
+#include <stdio.h>
 #include "MQTTLogging.h"
 
 #if !defined(MQTTCLIENT_QOS1)
@@ -426,12 +426,12 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::readPacket(Timer& tim
 exit:
 
 #if defined(MQTT_DEBUG)
-	  if (rc >= 0)
-  	{
-	      char printbuf[50];
-	      DEBUG("Rc %d from receiving packet %s\n", rc,
+    if (rc >= 0)
+    {
+        char printbuf[50];
+        DEBUG("Rc %d from receiving packet %s\n", rc,
             MQTTFormat_toClientString(printbuf, sizeof(printbuf), readbuf, len));
-	  }
+    }
 #endif
     return rc;
 }
@@ -581,10 +581,10 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
             }
             break;
 #endif
-		    }
+        }
 #if MQTTCLIENT_QOS2
         case PUBREC:
-		    case PUBREL:
+        case PUBREL:
             unsigned short mypacketid;
             unsigned char dup, type;
             if (MQTTDeserialize_ack(&type, &dup, &mypacketid, readbuf, MAX_MQTT_PACKET_SIZE) != 1)
@@ -596,8 +596,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
                 rc = FAILURE; // there was a problem
             if (rc == FAILURE)
                 goto exit; // there was a problem
-			      if (packet_type == PUBREL)
-				        freeQoS2msgid(mypacketid);
+            if (packet_type == PUBREL)
+                freeQoS2msgid(mypacketid);
             break;
 
         case PUBCOMP:
@@ -608,10 +608,9 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
             break;
     }
 
-    if (keepalive() != SUCCESS) {
+    if (keepalive() != SUCCESS)
         //check only keepalive FAILURE status so that previous FAILURE status can be considered as FAULT
         rc = FAILURE;
-    }
 
 exit:
     if (rc == SUCCESS)
@@ -776,7 +775,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
 
 exit:
     if (rc != SUCCESS)
-		cleanSession();
+        cleanSession();
     return rc;
 }
 
@@ -801,11 +800,11 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
     {
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
-		    {
+        {
             rc = 0;
 
-      			// remove the subscription message handler associated with this topic, if there is one
-			      for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+            // remove the subscription message handler associated with this topic, if there is one
+            for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
                 if (messageHandlers[i].topicFilter != 0 && strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
                 {
@@ -813,14 +812,14 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
                     break;
                 }
             }
-		    }
+        }
     }
     else
         rc = FAILURE;
 
 exit:
     if (rc != SUCCESS)
-		    cleanSession();
+        cleanSession();
     return rc;
 }
 
@@ -868,7 +867,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(int len, Time
 
 exit:
     if (rc != SUCCESS)
-		    cleanSession();
+        cleanSession();
     return rc;
 }
 
@@ -940,10 +939,10 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::disconnect()
     if (len > 0)
         rc = sendPacket(len, timer);            // send the disconnect packet
 
-	  if (cleansession)
-		    cleanSession();
-	  else
-	      isconnected = false;
+    if (cleansession)
+        cleanSession();
+    else
+        isconnected = false;
     return rc;
 }
 
