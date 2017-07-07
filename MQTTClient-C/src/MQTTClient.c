@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -11,7 +11,8 @@
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
  * Contributors:
- *    Allan Stockdill-Mander/Ian Craggs - initial API and implementation and/or initial documentation
+ *   Allan Stockdill-Mander/Ian Craggs - initial API and implementation and/or initial documentation
+ *   Ian Craggs - fix for #96 - check rem_len in readPacket
  *******************************************************************************/
 #include "MQTTClient.h"
 
@@ -116,6 +117,12 @@ static int readPacket(MQTTClient* c, Timer* timer)
     /* 2. read the remaining length.  This is variable in itself */
     decodePacket(c, &rem_len, TimerLeftMS(timer));
     len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
+
+    if (rem_len > (c->readbuf_size - len))
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
     if (rem_len > 0 && (rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len)) {
