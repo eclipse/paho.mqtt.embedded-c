@@ -130,7 +130,7 @@ public:
 		tv.tv_sec = 0;  /* 30 Secs Timeout */
 		tv.tv_usec = timeout * 1000;  // Not init'ing this can cause strange errors
 
-		setsockopt(mysock, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+		setsockopt(mysock, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
 		int	rc = ::write(mysock, buffer, len);
 		//printf("write rc %d\n", rc);
 		return rc;

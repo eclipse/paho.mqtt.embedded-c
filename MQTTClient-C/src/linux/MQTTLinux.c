@@ -99,7 +99,7 @@ int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
 	tv.tv_sec = 0;  /* 30 Secs Timeout */
 	tv.tv_usec = timeout_ms * 1000;  // Not init'ing this can cause strange errors
 
-	setsockopt(n->my_socket, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,sizeof(struct timeval));
+	setsockopt(n->my_socket, SOL_SOCKET, SO_SNDTIMEO, (char *)&tv,sizeof(struct timeval));
 	int	rc = write(n->my_socket, buffer, len);
 	return rc;
 }
