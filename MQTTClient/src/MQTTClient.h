@@ -18,6 +18,7 @@
  *    Ian Craggs - fix for bug 464551 - enums and ints can be different size
  *    Mark Sonnentag - fix for bug 475204 - inefficient instantiation of Timer
  *    Ian Craggs - fix for bug 475749 - packetid modified twice
+ *    Ian Craggs - add ability to set message handler separately #6
  *******************************************************************************/
 
 #if !defined(MQTTCLIENT_H)
@@ -110,12 +111,21 @@ public:
     Client(Network& network, unsigned int command_timeout_ms = 30000);
 
     /** Set the default message handling callback - used for any message which does not match a subscription message handler
-     *  @param mh - pointer to the callback function
+     *  @param mh - pointer to the callback function.  Set to 0 to remove.
      */
     void setDefaultMessageHandler(messageHandler mh)
     {
-        defaultMessageHandler.attach(mh);
+        if (mh != 0)
+            defaultMessageHandler.attach(mh);
+        else
+            defaultMessageHandler.detach();
     }
+
+    /** Set a message handling callback.  This can be used outside of the the subscribe method.
+     *  @param topicFilter - a topic pattern which can include wildcards
+     *  @param mh - pointer to the callback function. If 0, removes the callback if any
+     */
+    int setMessageHandler(const char* topicFilter, messageHandler mh);
 
     /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
      *  The nework object must be connected to the network endpoint before calling this
@@ -742,6 +752,47 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect()
 
 
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
+int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::setMessageHandler(const char* topicFilter, messageHandler messageHandler)
+{
+    int rc = FAILURE;
+    int i = -1;
+
+    // first check for an existing slot
+    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    {
+        if (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
+        {
+            if (messageHandler == 0)
+            {
+                messageHandlers[i].topicFilter = 0;
+                messageHandlers[i].fp.detach();
+            }
+            rc = SUCCESS;
+            break;
+        }
+    }
+    // if no existing, look for empty slot
+    if (rc == FAILURE && messageHandler != 0)
+    {
+        for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+        {
+            if (messageHandlers[i].topicFilter == 0)
+            {
+                rc = SUCCESS;
+                break;
+            }
+        }
+    }
+    if (i < MAX_MESSAGE_HANDLERS)
+    {
+        messageHandlers[i].topicFilter = topicFilter;
+        messageHandlers[i].fp.attach(messageHandler);
+    }
+    return rc;
+}
+
+
+template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter, enum QoS qos, messageHandler messageHandler)
 {
     int rc = FAILURE;
@@ -765,19 +816,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
         if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
             rc = grantedQoS; // 0, 1, 2 or 0x80
         if (rc != 0x80)
-        {
-            for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-            {
-                if ((messageHandlers[i].topicFilter == 0)
-		              || (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0))
-                {
-                    messageHandlers[i].topicFilter = topicFilter;
-                    messageHandlers[i].fp.attach(messageHandler);
-                    rc = 0;
-                    break;
-                }
-            }
-        }
+            rc = setMessageHandler(topicFilter, messageHandler);
     }
     else
         rc = FAILURE;
@@ -810,17 +849,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
         {
-            rc = 0;
-
             // remove the subscription message handler associated with this topic, if there is one
-            for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-            {
-                if (messageHandlers[i].topicFilter != 0 && strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
-                {
-                    messageHandlers[i].topicFilter = 0;
-                    break;
-                }
-            }
+            setMessageHandler(topicFilter, 0);
         }
     }
     else
