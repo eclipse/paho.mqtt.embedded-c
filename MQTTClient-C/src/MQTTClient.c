@@ -41,7 +41,7 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
     }
     if (sent == length)
     {
-        TimerCountdown(&c->ping_timer, c->keepAliveInterval); // record the fact that we have successfully sent the packet
+        TimerCountdown(&c->last_sent, c->keepAliveInterval); // record the fact that we have successfully sent the packet
         rc = SUCCESS;
     }
     else
@@ -66,10 +66,11 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     c->isconnected = 0;
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
-	c->next_packetid = 1;
-    TimerInit(&c->ping_timer);
+	  c->next_packetid = 1;
+    TimerInit(&c->last_sent);
+    TimerInit(&c->last_received);
 #if defined(MQTT_TASK)
-	MutexInit(&c->mutex);
+	  MutexInit(&c->mutex);
 #endif
 }
 
@@ -132,6 +133,8 @@ static int readPacket(MQTTClient* c, Timer* timer)
 
     header.byte = c->readbuf[0];
     rc = header.bits.type;
+    if (c->keepAliveInterval > 0)
+        TimerCountdown(&c->last_received, c->keepAliveInterval); // record the fact that we have successfully received a packet
 exit:
     return rc;
 }
@@ -208,9 +211,11 @@ int keepalive(MQTTClient* c)
     if (c->keepAliveInterval == 0)
         goto exit;
 
-    if (TimerIsExpired(&c->ping_timer))
+    if (TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received))
     {
-        if (!c->ping_outstanding)
+        if (c->ping_outstanding)
+            rc = FAILURE; /* PINGRESP not received in keepalive interval */
+        else
         {
             Timer timer;
             TimerInit(&timer);
@@ -395,7 +400,7 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
         options = &default_options; /* set default options if none were supplied */
 
     c->keepAliveInterval = options->keepAliveInterval;
-    TimerCountdown(&c->ping_timer, c->keepAliveInterval);
+    TimerCountdown(&c->last_received, c->keepAliveInterval);
     if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
         goto exit;
     if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)  // send the connect packet

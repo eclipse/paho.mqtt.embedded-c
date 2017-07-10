@@ -112,11 +112,11 @@ typedef struct MQTTClient
     void (*defaultMessageHandler) (MessageData*);
 
     Network* ipstack;
-    Timer ping_timer;
+    Timer last_sent, last_received;
 #if defined(MQTT_TASK)
 	Mutex mutex;
 	Thread thread;
-#endif 
+#endif
 } MQTTClient;
 
 #define DefaultClient {0, 0, 0, 0, NULL, NULL, 0, 0, 0}
@@ -170,7 +170,7 @@ DLLExport int MQTTDisconnect(MQTTClient* client);
 
 /** MQTT Yield - MQTT background
  *  @param client - the client object to use
- *  @param time - the time, in milliseconds, to yield for 
+ *  @param time - the time, in milliseconds, to yield for
  *  @return success code
  */
 DLLExport int MQTTYield(MQTTClient* client, int time);

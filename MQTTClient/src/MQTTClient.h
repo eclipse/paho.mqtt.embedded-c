@@ -279,7 +279,7 @@ template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
 MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, unsigned int command_timeout_ms)  : ipstack(network), packetid()
 {
     this->command_timeout_ms = command_timeout_ms;
-	cleanSession();
+	  cleanSession();
 }
 
 
@@ -632,7 +632,15 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::keepalive()
 
     if (last_sent.expired() || last_received.expired())
     {
-        if (!ping_outstanding)
+        if (ping_outstanding)
+        {
+            rc = FAILURE; // session failure
+            #if defined(MQTT_DEBUG)
+                char printbuf[150];
+                DEBUG("PINGRESP not received in keepalive interval\n");
+            #endif
+        }
+        else
         {
             Timer timer(1000);
             int len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
@@ -761,7 +769,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
             for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
                 if ((messageHandlers[i].topicFilter == 0)
-		    || (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0))
+		              || (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0))
                 {
                     messageHandlers[i].topicFilter = topicFilter;
                     messageHandlers[i].fp.attach(messageHandler);
