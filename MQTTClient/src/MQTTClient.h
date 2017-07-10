@@ -757,36 +757,38 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::se
     int rc = FAILURE;
     int i = -1;
 
-    // first check for an existing slot
+    // first check for an existing matching slot
     for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
     {
-        if (strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
+        if (messageHandlers[i].topicFilter != 0 && strcmp(messageHandlers[i].topicFilter, topicFilter) == 0)
         {
-            if (messageHandler == 0)
+            if (messageHandler == 0) // remove existing
             {
                 messageHandlers[i].topicFilter = 0;
                 messageHandlers[i].fp.detach();
             }
-            rc = SUCCESS;
+            rc = SUCCESS; // return i when adding new subscription
             break;
         }
     }
-    // if no existing, look for empty slot
-    if (rc == FAILURE && messageHandler != 0)
-    {
-        for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    // if no existing, look for empty slot (unless we are removing)
+    if (messageHandler != 0) {
+        if (rc == FAILURE)
         {
-            if (messageHandlers[i].topicFilter == 0)
+            for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
             {
-                rc = SUCCESS;
-                break;
+                if (messageHandlers[i].topicFilter == 0)
+                {
+                    rc = SUCCESS;
+                    break;
+                }
             }
         }
-    }
-    if (i < MAX_MESSAGE_HANDLERS)
-    {
-        messageHandlers[i].topicFilter = topicFilter;
-        messageHandlers[i].fp.attach(messageHandler);
+        if (i < MAX_MESSAGE_HANDLERS)
+        {
+            messageHandlers[i].topicFilter = topicFilter;
+            messageHandlers[i].fp.attach(messageHandler);
+        }
     }
     return rc;
 }
