@@ -96,6 +96,11 @@ typedef struct MQTTConnackData
     unsigned char sessionPresent;
 } MQTTConnackData;
 
+typedef struct MQTTSubackData
+{
+    int grantedQoS;
+} MQTTSubackData;
+
 typedef void (*messageHandler)(MessageData*);
 
 typedef struct MQTTClient
@@ -177,6 +182,15 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, mess
  *  @return success code
  */
 DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler);
+
+/** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
+ *  @param client - the client object to use
+ *  @param topicFilter - the topic filter to subscribe to
+ *  @param message - the message to send
+ *  @param data - suback granted QoS returned
+ *  @return success code
+ */
+DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, MQTTSubackData* data);
 
 /** MQTT Subscribe - send an MQTT unsubscribe packet and wait for unsuback before returning.
  *  @param client - the client object to use

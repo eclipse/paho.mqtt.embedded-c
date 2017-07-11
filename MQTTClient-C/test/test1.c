@@ -421,6 +421,7 @@ int test2(struct Options options)
   unsigned char buf[100];
   unsigned char readbuf[100];
   MQTTConnackData connack;
+  MQTTSubackData suback;
 
 	fprintf(xml, "<testcase classname=\"test2\" name=\"connack return data\"");
 	global_start_time = start_clock();
@@ -467,8 +468,10 @@ int test2(struct Options options)
          "sessionPresent was %d", connack.sessionPresent);
 
   /* set up some state */
-  rc = MQTTSubscribe(&c, test_topic, subsqos, messageArrived);
+  rc = MQTTSubscribeWithResults(&c, test_topic, subsqos, messageArrived, &suback);
   assert("Good rc from subscribe", rc == SUCCESS, "rc was %d", rc);
+  assert("Good granted QoS", suback.grantedQoS == subsqos,
+         "granted QoS was %d", suback.grantedQoS);
 
   rc = MQTTDisconnect(&c);
   assert("Disconnect successful", rc == SUCCESS, "rc was %d", rc);

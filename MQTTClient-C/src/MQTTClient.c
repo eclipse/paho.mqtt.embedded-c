@@ -484,7 +484,8 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
 }
 
 
-int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler messageHandler)
+int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qos,
+       messageHandler messageHandler, MQTTSubackData* data)
 {
     int rc = FAILURE;
     Timer timer;
@@ -509,12 +510,14 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
 
     if (waitfor(c, SUBACK, &timer) == SUBACK)      // wait for suback
     {
-        int count = 0, grantedQoS = -1;
+        int count = 0;
         unsigned short mypacketid;
-        if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size) == 1)
-            rc = grantedQoS; // 0, 1, 2 or 0x80
-        if (rc != 0x80)
-            rc = MQTTSetMessageHandler(c,topicFilter, messageHandler);
+        data->grantedQoS = 0;
+        if (MQTTDeserialize_suback(&mypacketid, 1, &count, &data->grantedQoS, c->readbuf, c->readbuf_size) == 1)
+        {
+            if (data->grantedQoS != 0x80)
+                rc = MQTTSetMessageHandler(c, topicFilter, messageHandler);
+        }
     }
     else
         rc = FAILURE;
@@ -524,6 +527,14 @@ exit:
 	  MutexUnlock(&c->mutex);
 #endif
     return rc;
+}
+
+
+int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos,
+       messageHandler messageHandler)
+{
+    MQTTSubackData data;
+    return MQTTSubscribeWithResults(c, topicFilter, qos, messageHandler, &data);
 }
 
 

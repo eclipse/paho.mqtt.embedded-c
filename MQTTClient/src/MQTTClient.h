@@ -74,6 +74,12 @@ struct connackData
 };
 
 
+struct subackData
+{
+    int grantedQoS;
+};
+
+
 class PacketId
 {
 public:
@@ -191,6 +197,15 @@ public:
      *  @return success code -
      */
     int subscribe(const char* topicFilter, enum QoS qos, messageHandler mh);
+
+    /** MQTT Subscribe - send an MQTT subscribe packet and wait for the suback
+     *  @param topicFilter - a topic pattern which can include wildcards
+     *  @param qos - the MQTT QoS to subscribe at©
+     *  @param mh - the callback function to be invoked when a message is received for this subscription
+     *  @param
+     *  @return success code -
+     */
+    int subscribe(const char* topicFilter, enum QoS qos, messageHandler mh, subackData &data);
 
     /** MQTT Unsubscribe - send an MQTT unsubscribe packet and wait for the unsuback
      *  @param topicFilter - a topic pattern which can include wildcards
@@ -819,7 +834,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::se
 
 
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
-int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter, enum QoS qos, messageHandler messageHandler)
+int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter,
+     enum QoS qos, messageHandler messageHandler, subackData& data)
 {
     int rc = FAILURE;
     Timer timer(command_timeout_ms);
@@ -837,20 +853,30 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
 
     if (waitfor(SUBACK, timer) == SUBACK)      // wait for suback
     {
-        int count = 0, grantedQoS = -1;
+        int count = 0;
         unsigned short mypacketid;
-        if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
-            rc = grantedQoS; // 0, 1, 2 or 0x80
-        if (rc != 0x80)
-            rc = setMessageHandler(topicFilter, messageHandler);
+        data.grantedQoS = 0;
+        if (MQTTDeserialize_suback(&mypacketid, 1, &count, &data.grantedQoS, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
+        {
+            if (data.grantedQoS != 0x80)
+                rc = setMessageHandler(topicFilter, messageHandler);
+        }
     }
     else
         rc = FAILURE;
 
 exit:
-    if (rc != SUCCESS)
+    if (rc == FAILURE)
         cleanSession();
     return rc;
+}
+
+
+template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
+int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter, enum QoS qos, messageHandler messageHandler)
+{
+    subackData data;
+    return subscribe(topicFilter, qos, messageHandler, data);
 }
 
 

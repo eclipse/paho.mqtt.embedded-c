@@ -465,8 +465,11 @@ int test2(struct Options options)
   assert("Session present is 0", connack.sessionPresent == 0,
            "sessionPresent was %d", connack.sessionPresent);
 
-  rc = client.subscribe(test_topic, subsqos, messageArrived);
+  MQTT::subackData suback;
+  rc = client.subscribe(test_topic, subsqos, messageArrived, suback);
   assert("Good rc from subscribe", rc == MQTT::SUCCESS, "rc was %d", rc);
+  assert("Granted QoS rc from subscribe", suback.grantedQoS == MQTT::QOS2,
+         "rc was %d", suback.grantedQoS);
 
   rc = client.disconnect();
   assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
