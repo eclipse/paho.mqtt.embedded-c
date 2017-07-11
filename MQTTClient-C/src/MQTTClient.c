@@ -13,6 +13,7 @@
  * Contributors:
  *   Allan Stockdill-Mander/Ian Craggs - initial API and implementation and/or initial documentation
  *   Ian Craggs - fix for #96 - check rem_len in readPacket
+ *   Ian Craggs - add ability to set message handler separately #6
  *******************************************************************************/
 #include "MQTTClient.h"
 
@@ -434,6 +435,48 @@ exit:
 }
 
 
+int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler messageHandler)
+{
+    int rc = FAILURE;
+    int i = -1;
+
+    /* first check for an existing matching slot */
+    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    {
+        if (c->messageHandlers[i].topicFilter != NULL && strcmp(c->messageHandlers[i].topicFilter, topicFilter) == 0)
+        {
+            if (messageHandler == NULL) /* remove existing */
+            {
+                c->messageHandlers[i].topicFilter = NULL;
+                c->messageHandlers[i].fp = NULL;
+            }
+            rc = SUCCESS; /* return i when adding new subscription */
+            break;
+        }
+    }
+    /* if no existing, look for empty slot (unless we are removing) */
+    if (messageHandler != NULL) {
+        if (rc == FAILURE)
+        {
+            for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+            {
+                if (c->messageHandlers[i].topicFilter == NULL)
+                {
+                    rc = SUCCESS;
+                    break;
+                }
+            }
+        }
+        if (i < MAX_MESSAGE_HANDLERS)
+        {
+            c->messageHandlers[i].topicFilter = topicFilter;
+            c->messageHandlers[i].fp = messageHandler;
+        }
+    }
+    return rc;
+}
+
+
 int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler messageHandler)
 {
     int rc = FAILURE;
@@ -464,20 +507,7 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageH
         if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size) == 1)
             rc = grantedQoS; // 0, 1, 2 or 0x80
         if (rc != 0x80)
-        {
-            int i;
-            for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
-            {
-                if ((c->messageHandlers[i].topicFilter == 0)
-                   || (strcmp(c->messageHandlers[i].topicFilter, topicFilter) == 0))
-                {
-                    c->messageHandlers[i].topicFilter = topicFilter;
-                    c->messageHandlers[i].fp = messageHandler;
-                    rc = 0;
-                    break;
-                }
-            }
-        }
+            rc = MQTTSetMessageHandler(c,topicFilter, messageHandler);
     }
     else
         rc = FAILURE;
@@ -516,7 +546,10 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     {
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
-            rc = 0;
+        {
+            /* remove the subscription message handler associated with this topic, if there is one */
+            MQTTSetMessageHandler(c, topicFilter, NULL);
+        }
     }
     else
         rc = FAILURE;

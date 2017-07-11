@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2015 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Allan Stockdill-Mander/Ian Craggs - initial API and implementation and/or initial documentation
  *    Ian Craggs - documentation and platform specific header
+ *    Ian Craggs - add setMessageHandler function
  *******************************************************************************/
 
 #if !defined(__MQTT_CLIENT_C_)
@@ -146,6 +147,14 @@ DLLExport int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
  *  @return success code
  */
 DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
+
+/** MQTT SetMessageHandler - set or remove a per topic message handler
+ *  @param client - the client object to use
+ *  @param topicFilter - the topic filter set the message handler for
+ *  @param messageHandler - pointer to the message handler function or NULL to remove
+ *  @return success code
+ */
+DLLExport int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler messageHandler);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
