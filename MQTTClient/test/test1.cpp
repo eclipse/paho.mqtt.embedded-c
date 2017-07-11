@@ -399,247 +399,118 @@ exit:
 	return failures;
 }
 
-#if 0
+
 /*********************************************************************
 
-Test2: multi-threaded client using callbacks
+Test 2: connack return data
 
 *********************************************************************/
-volatile int test2_arrivedcount = 0;
-int test2_deliveryCompleted = 0;
-MQTTClient_message test2_pubmsg = MQTTClient_message_initializer;
-
-void test2_deliveryComplete(void* context, MQTTClient_deliveryToken dt)
-{
-	++test2_deliveryCompleted;
-}
-
-int test2_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
-{
-	++test2_arrivedcount;
-	MyLog(LOGA_DEBUG, "Callback: %d message received on topic %s is %.*s.",
-					test2_arrivedcount, topicName, m->payloadlen, (char*)(m->payload));
-	if (test2_pubmsg.payloadlen != m->payloadlen ||
-					memcmp(m->payload, test2_pubmsg.payload, m->payloadlen) != 0)
-	{
-		failures++;
-		MyLog(LOGA_INFO, "Error: wrong data received lengths %d %d\n", test2_pubmsg.payloadlen, m->payloadlen);
-	}
-	MQTTClient_free(topicName);
-	MQTTClient_freeMessage(&m);
-	return 1;
-}
-
-
-void test2_sendAndReceive(MQTTClient* c, int qos, char* test_topic)
-{
-	MQTTClient_deliveryToken dt;
-	int i = 0;
-	int iterations = 50;
-	int rc = 0;
-	int wait_seconds = 0;
-
-	test2_deliveryCompleted = 0;
-
-	MyLog(LOGA_INFO, "%d messages at QoS %d", iterations, qos);
-	test2_pubmsg.payload = "a much longer message that we can shorten to the extent that we need to";
-	test2_pubmsg.payloadlen = 27;
-	test2_pubmsg.qos = qos;
-	test2_pubmsg.retained = 0;
-
-	for (i = 1; i <= iterations; ++i)
-	{
-		if (i % 10 == 0)
-			rc = MQTTClient_publish(c, test_topic, test2_pubmsg.payloadlen, test2_pubmsg.payload,
-                   test2_pubmsg.qos, test2_pubmsg.retained, NULL);
-		else
-			rc = MQTTClient_publishMessage(c, test_topic, &test2_pubmsg, &dt);
-		assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-
-		#if defined(WIN32)
-			Sleep(100);
-		#else
-			usleep(100000L);
-		#endif
-
-		wait_seconds = 10;
-		while ((test2_arrivedcount < i) && (wait_seconds-- > 0))
-		{
-			MyLog(LOGA_DEBUG, "Arrived %d count %d", test2_arrivedcount, i);
-			#if defined(WIN32)
-				Sleep(1000);
-			#else
-				usleep(1000000L);
-			#endif
-		}
-		assert("Message Arrived", wait_seconds > 0,
-				"Time out waiting for message %d\n", i );
-	}
-	if (qos > 0)
-	{
-		/* MQ Telemetry can send a message to a subscriber before the server has
-		   completed the QoS 2 handshake with the publisher. For QoS 1 and 2,
-		   allow time for the final delivery complete callback before checking
-		   that all expected callbacks have been made */
-		wait_seconds = 10;
-		while ((test2_deliveryCompleted < iterations) && (wait_seconds-- > 0))
-		{
-			MyLog(LOGA_DEBUG, "Delivery Completed %d count %d", test2_deliveryCompleted, i);
-			#if defined(WIN32)
-				Sleep(1000);
-			#else
-				usleep(1000000L);
-			#endif
-		}
-		assert("All Deliveries Complete", wait_seconds > 0,
-			   "Number of deliveryCompleted callbacks was %d\n",
-			   test2_deliveryCompleted);
-	}
-}
-
-
 int test2(struct Options options)
 {
-	char* testname = "test2";
-	int subsqos = 2;
-	/* TODO - usused - remove ? MQTTClient_deliveryToken* dt = NULL; */
-	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
-	int rc = 0;
-	char* test_topic = "C client test2";
+  MQTT::QoS subsqos = MQTT::QOS2;
+	int rc;
+  const char* test_topic = "C client test2";
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"multi-threaded client using callbacks\"");
-	MyLog(LOGA_INFO, "Starting test 2 - multi-threaded client using callbacks");
-	global_start_time = start_clock();
-	failures = 0;
+  fprintf(xml, "<testcase classname=\"test2\" name=\"connack return data\"");
+  global_start_time = start_clock();
+  failures = 0;
+  MyLog(LOGA_INFO, "Starting test 2 - connack return data");
 
-	MQTTClient_create(&c, options.connection, "multi_threaded_sample", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+  IPStack ipstack = IPStack();
+  MQTT::Client<IPStack, Countdown, 1000> client = MQTT::Client<IPStack, Countdown, 1000>(ipstack);
 
-	opts.keepAliveInterval = 20;
-	opts.cleansession = 1;
-	opts.MQTTVersion = options.MQTTVersion;
-	opts.username = "testuser";
-	opts.binarypwd.data = "testpassword";
-	opts.binarypwd.len = strlen(opts.binarypwd.data);
-	if (options.haconnections != NULL)
-	{
-		opts.serverURIs = options.haconnections;
-		opts.serverURIcount = options.hacount;
-	}
+  MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+  data.willFlag = 1;
+  data.MQTTVersion = options.MQTTVersion;
+  data.clientID.cstring = (char*)"connack-return-data";
+  data.username.cstring = (char*)"testuser";
+  data.password.cstring = (char*)"testpassword";
 
-	rc = MQTTClient_setCallbacks(c, NULL, NULL, test2_messageArrived, test2_deliveryComplete);
-	assert("Good rc from setCallbacks", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+  data.keepAliveInterval = 20;
+  data.cleansession = 1;
 
-	MyLog(LOGA_DEBUG, "Connecting");
-	rc = MQTTClient_connect(c, &opts);
-	assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	if (rc != MQTTCLIENT_SUCCESS)
-		goto exit;
+  data.will.message.cstring = (char*)"will message";
+  data.will.qos = 1;
+  data.will.retained = 0;
+  data.will.topicName.cstring = (char*)"will topic";
 
-	rc = MQTTClient_subscribe(c, test_topic, subsqos);
-	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+  MyLog(LOGA_DEBUG, "Connecting");
+  rc = ipstack.connect(options.host, options.port);
+  assert("Good rc from TCP connect", rc == MQTT::SUCCESS, "rc was %d", rc);
+  if (rc != MQTT::SUCCESS)
+    goto exit;
 
-	test2_sendAndReceive(c, 0, test_topic);
-	test2_sendAndReceive(c, 1, test_topic);
-	test2_sendAndReceive(c, 2, test_topic);
+  MQTT::connackData connack;
+  rc = client.connect(data, connack);
+  assert("Good rc from connect", rc == MQTT::SUCCESS, "rc was %d", rc);
+  if (rc != MQTT::SUCCESS)
+    goto exit;
 
-	MyLog(LOGA_DEBUG, "Stopping");
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+         "sessionPresent was %d", connack.sessionPresent);
 
-	rc = MQTTClient_unsubscribe(c, test_topic);
-	assert("Unsubscribe successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
-	rc = MQTTClient_disconnect(c, 0);
-	assert("Disconnect successful", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
 
-	MQTTClient_destroy(&c);
+  /* reconnect with cleansession false */
+  data.cleansession = 0;
+  rc = ipstack.connect(options.host, options.port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  rc = client.subscribe(test_topic, subsqos, messageArrived);
+  assert("Good rc from subscribe", rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
+
+  /* reconnect with cleansession false */
+  data.cleansession = 0;
+  rc = ipstack.connect(options.host, options.port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 1", connack.sessionPresent == 1,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
+
+  /* reconnect with cleansession true */
+  data.cleansession = 1;
+  rc = ipstack.connect(options.host, options.port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
 
 exit:
-	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
-			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-	write_test_result();
-	return failures;
+  MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
+      (failures == 0) ? "passed" : "failed", tests, failures);
+  write_test_result();
+  return failures;
 }
 
 
-/*********************************************************************
-
-Test 3: connack return codes
-
-for AMQTDD, needs an amqtdd.cfg of:
-
-	allow_anonymous false
-  password_file passwords
-
-and a passwords file of:
-
-	Admin:Admin
-
-*********************************************************************/
-int test3(struct Options options)
-{
-	char* testname = "test3";
-	int rc;
-	MQTTClient c;
-	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
-	MQTTClient_willOptions wopts = MQTTClient_willOptions_initializer;
-
-	fprintf(xml, "<testcase classname=\"test1\" name=\"connack return codes\"");
-	global_start_time = start_clock();
-	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 3 - connack return codes");
-
 #if 0
-	/* clientid too long (RC = 2) */
-	rc = MQTTClient_create(&c, options.connection, "client_ID_too_long_for_MQTT_protocol_version_3",
-		MQTTCLIENT_PERSISTENCE_NONE, NULL);
-	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
-	rc = MQTTClient_connect(c, &opts);
-	assert("identifier rejected", rc == 2, "rc was %d\n", rc);
-	MQTTClient_destroy(&c);
-#endif
-	/* broker unavailable (RC = 3)  - TDD when allow_anonymous not set*/
-	rc = MQTTClient_create(&c, options.connection, "The C Client", MQTTCLIENT_PERSISTENCE_NONE, NULL);
-	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
-#if 0
-	rc = MQTTClient_connect(c, &opts);
-	assert("broker unavailable", rc == 3, "rc was %d\n", rc);
-
-	/* authentication failure (RC = 4) */
-	opts.username = "Admin";
-	opts.password = "fred";
-	rc = MQTTClient_connect(c, &opts);
-	assert("Bad user name or password", rc == 4, "rc was %d\n", rc);
-#endif
-
-	/* authorization failure (RC = 5) */
-	opts.username = "Admin";
-	opts.password = "Admin";
-	/*opts.will = &wopts;    "Admin" not authorized to publish to Will topic by default
-	opts.will->message = "will message";
-	opts.will->qos = 1;
-	opts.will->retained = 0;
-	opts.will->topicName = "will topic";*/
-	rc = MQTTClient_connect(c, &opts);
-	//assert("Not authorized", rc == 5, "rc was %d\n", rc);
-
-#if 0
-	/* successful connection (RC = 0) */
-	opts.username = "Admin";
-	opts.password = "Admin";
-  opts.will = NULL;
-	rc = MQTTClient_connect(c, &opts);
-	assert("successful connection", rc == MQTTCLIENT_SUCCESS,  "rc was %d\n", rc);
-	MQTTClient_disconnect(c, 0);
-	MQTTClient_destroy(&c);
-#endif
-
-/* TODO - unused - remove ? exit: */
-	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.",
-			(failures == 0) ? "passed" : "failed", testname, tests, failures);
-	write_test_result();
-	return failures;
-}
-
-
 /*********************************************************************
 
 Test 4: client persistence 1
@@ -1133,7 +1004,7 @@ exit:
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])(Options) = {NULL, test1 /*, test2, test3, test4, test5, test6, test6a*/};
+ 	int (*tests[])(Options) = {NULL, test1, test2, /*test3, test4, test5, test6, test6a*/};
 	int i;
 
 	xml = fopen("TEST-test1.xml", "w");

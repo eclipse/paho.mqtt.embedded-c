@@ -381,7 +381,7 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
 }
 
 
-int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
+int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTConnackData* data)
 {
     Timer connect_timer;
     int rc = FAILURE;
@@ -410,10 +410,10 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
     // this will be a blocking call, wait for the connack
     if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
     {
-        unsigned char connack_rc = 255;
-        unsigned char sessionPresent = 0;
-        if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, c->readbuf, c->readbuf_size) == 1)
-            rc = connack_rc;
+        data->rc = 0;
+        data->sessionPresent = 0;
+        if (MQTTDeserialize_connack(&data->sessionPresent, &data->rc, c->readbuf, c->readbuf_size) == 1)
+            rc = data->rc;
         else
             rc = FAILURE;
     }
@@ -432,6 +432,13 @@ exit:
 #endif
 
     return rc;
+}
+
+
+int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
+{
+    MQTTConnackData data;
+    return MQTTConnectWithResults(c, options, &data);
 }
 
 

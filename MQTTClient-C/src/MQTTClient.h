@@ -90,6 +90,12 @@ typedef struct MessageData
     MQTTString* topicName;
 } MessageData;
 
+typedef struct MQTTConnackData
+{
+    unsigned char rc;
+    unsigned char sessionPresent;
+} MQTTConnackData;
+
 typedef void (*messageHandler)(MessageData*);
 
 typedef struct MQTTClient
@@ -115,8 +121,8 @@ typedef struct MQTTClient
     Network* ipstack;
     Timer last_sent, last_received;
 #if defined(MQTT_TASK)
-	Mutex mutex;
-	Thread thread;
+    Mutex mutex;
+    Thread thread;
 #endif
 } MQTTClient;
 
@@ -132,6 +138,14 @@ typedef struct MQTTClient
  */
 DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
 		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size);
+
+/** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
+ *  The nework object must be connected to the network endpoint before calling this
+ *  @param options - connect options
+ *  @return success code
+ */
+DLLExport int MQTTConnectWithResults(MQTTClient* client, MQTTPacket_connectData* options,
+    MQTTConnackData* data);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
