@@ -236,6 +236,7 @@ public:
 
 private:
 
+    void closeSession();
     void cleanSession();
     int cycle(Timer& timer);
     int waitfor(int packet_type, Timer& timer);
@@ -297,10 +298,8 @@ private:
 template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
 void MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::cleanSession()
 {
-    ping_outstanding = false;
     for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
         messageHandlers[i].topicFilter = 0;
-    isconnected = false;
 
 #if MQTTCLIENT_QOS1 || MQTTCLIENT_QOS2
     inflightMsgid = 0;
@@ -316,10 +315,21 @@ void MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::cleanSession()
 
 
 template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
+void MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::closeSession()
+{
+    ping_outstanding = false;
+    isconnected = false;
+    if (cleansession)
+        cleanSession();
+}
+
+
+template<class Network, class Timer, int a, int MAX_MESSAGE_HANDLERS>
 MQTT::Client<Network, Timer, a, MAX_MESSAGE_HANDLERS>::Client(Network& network, unsigned int command_timeout_ms)  : ipstack(network), packetid()
 {
     this->command_timeout_ms = command_timeout_ms;
-	  cleanSession();
+    cleansession = true;
+	  closeSession();
 }
 
 
@@ -656,8 +666,8 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
 exit:
     if (rc == SUCCESS)
         rc = packet_type;
-    else
-        isconnected = false;
+    else if (isconnected)
+        closeSession();
     return rc;
 }
 
@@ -867,7 +877,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
 
 exit:
     if (rc == FAILURE)
-        cleanSession();
+        closeSession();
     return rc;
 }
 
@@ -910,7 +920,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
 
 exit:
     if (rc != SUCCESS)
-        cleanSession();
+        closeSession();
     return rc;
 }
 
@@ -958,7 +968,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(int len, Time
 
 exit:
     if (rc != SUCCESS)
-        cleanSession();
+        closeSession();
     return rc;
 }
 
@@ -1029,11 +1039,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::disconnect()
     int len = MQTTSerialize_disconnect(sendbuf, MAX_MQTT_PACKET_SIZE);
     if (len > 0)
         rc = sendPacket(len, timer);            // send the disconnect packet
-
-    if (cleansession)
-        cleanSession();
-    else
-        isconnected = false;
+    closeSession();
     return rc;
 }
 

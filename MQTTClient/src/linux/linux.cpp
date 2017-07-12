@@ -12,6 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - ensure read returns if no bytes read
  *******************************************************************************/
 
 #include <sys/types.h>
@@ -108,6 +109,7 @@ public:
 		setsockopt(mysock, SOL_SOCKET, SO_RCVTIMEO, (char *)&interval, sizeof(struct timeval));
 
 		int bytes = 0;
+    int i = 0; const int max_tries = 10;
 		while (bytes < len)
 		{
 			int rc = ::recv(mysock, &buffer[bytes], (size_t)(len - bytes), 0);
@@ -119,6 +121,10 @@ public:
 			}
 			else
 				bytes += rc;
+      if (++i >= max_tries)
+        break;
+      if (rc == 0)
+        break;
 		}
 		return bytes;
   }
