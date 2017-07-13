@@ -586,7 +586,7 @@ int test3(struct Options options)
 {
   MQTT::QoS subsqos = MQTT::QOS2;
 	int rc;
-  const char* test_topic = "C client test2";
+  const char* test_topic = "C client test3";
   int wait_seconds = 0;
 
   fprintf(xml, "<testcase classname=\"test3\" name=\"session state\"");
@@ -678,6 +678,8 @@ int test3(struct Options options)
   assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
   assert("Session present is 1", connack.sessionPresent == 1,
            "sessionPresent was %d", connack.sessionPresent);
+
+  check_subs_exist(client, test_topic, 2);
 
   rc = client.subscribe(test_topic, subsqos, messageArrived, suback);
   assert("Good rc from subscribe", rc == MQTT::SUCCESS, "rc was %d", rc);

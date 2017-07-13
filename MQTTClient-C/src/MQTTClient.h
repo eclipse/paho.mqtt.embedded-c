@@ -52,7 +52,7 @@
 #define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
 #endif
 
-enum QoS { QOS0, QOS1, QOS2 };
+enum QoS { QOS0, QOS1, QOS2, SUBFAIL=0x80 };
 
 /* all failure return codes must be negative */
 enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
@@ -98,7 +98,7 @@ typedef struct MQTTConnackData
 
 typedef struct MQTTSubackData
 {
-    int grantedQoS;
+    enum QoS grantedQoS;
 } MQTTSubackData;
 
 typedef void (*messageHandler)(MessageData*);
@@ -114,6 +114,7 @@ typedef struct MQTTClient
     unsigned int keepAliveInterval;
     char ping_outstanding;
     int isconnected;
+    int cleansession;
 
     struct MessageHandlers
     {
@@ -211,6 +212,15 @@ DLLExport int MQTTDisconnect(MQTTClient* client);
  *  @return success code
  */
 DLLExport int MQTTYield(MQTTClient* client, int time);
+
+/** MQTT isConnected
+ *  @param client - the client object to use
+ *  @return truth value indicating whether the client is connected to the server
+ */
+DLLExport int MQTTIsConnected(MQTTClient* client)
+{
+  return client->isconnected;
+}
 
 #if defined(MQTT_TASK)
 /** MQTT start background thread for a client.  After this, MQTTYield should not be called.
