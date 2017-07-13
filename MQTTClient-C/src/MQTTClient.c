@@ -235,7 +235,9 @@ exit:
 
 void MQTTCleanSession(MQTTClient* c)
 {
-    for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    int i = 0;
+
+    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
         c->messageHandlers[i].topicFilter = NULL;
 }
 
