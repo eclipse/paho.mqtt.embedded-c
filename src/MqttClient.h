@@ -44,8 +44,8 @@
 
 class MqttClient {
 
-	const unsigned long									NET_MAX_TM_MS = 1000L;
-	const unsigned long									NET_MIN_TM_MS = 100L;
+	const unsigned long									NET_MAX_TM_MS;
+	const unsigned long									NET_MIN_TM_MS;
 
 public:
 
@@ -453,10 +453,15 @@ public:
 	 * @param sendBuffer - buffer to temporarily store the transmitted message, see ArrayBuffer
 	 * @param recvBuffer - buffer to temporarily store the received message, see ArrayBuffer
 	 * @param messageHandlers - storage for subscription callback functions, see MessageHandlersImpl
+	 * @param netMinTmMs - the minimum amount of time allowed for single network operation, in milliseconds
+	 * @param netMaxTmMs - the maximum amount of time allowed for single network operation, in milliseconds
 	 */
 	MqttClient(const Options& options, Logger& logger, System& system, Network& network,
-		Buffer& sendBuffer, Buffer& recvBuffer, MessageHandlers& messageHandlers)
-	: mOptions(options), mLogger(logger), mSystem(system), mNetwork(network),
+		Buffer& sendBuffer, Buffer& recvBuffer, MessageHandlers& messageHandlers,
+		unsigned long netMinTmMs = 100L, unsigned long netMaxTmMs = 1000L)
+	:
+	  NET_MAX_TM_MS(netMaxTmMs), NET_MIN_TM_MS(netMinTmMs),
+	  mOptions(options), mLogger(logger), mSystem(system), mNetwork(network),
 	  mSendBuffer(sendBuffer), mRecvBuffer(recvBuffer), mMessageHandlers(messageHandlers),
 	  mSession(system)
 	{}
