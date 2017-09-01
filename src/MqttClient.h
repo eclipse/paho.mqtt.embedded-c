@@ -43,10 +43,6 @@
 
 
 class MqttClient {
-
-	const unsigned long									NET_MAX_TM_MS;
-	const unsigned long									NET_MIN_TM_MS;
-
 public:
 
 	class Logger {
@@ -134,16 +130,8 @@ public:
 			NetworkImpl(Net &network, System& system): mNetwork(network), mSystem(system) {}
 
 			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-				Timer timer(mSystem, timeoutMs);
-				int qty = 0;
-				while(!timer.expired() && qty<len) {
-					mSystem.yield();
-					int tmpRes = mNetwork.read(buffer+qty, len-qty, timer.leftMs());
-					if (tmpRes > 0) {
-						qty+=tmpRes;
-					}
-				}
-				return qty;
+				mSystem.yield();
+				return mNetwork.read(buffer, len, timeoutMs);
 			}
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
@@ -161,19 +149,16 @@ public:
 		NetworkClientImpl(Client &client, System& system): mClient(client), mSystem(system) {}
 
 			int read(unsigned char* buffer, int len, unsigned long timeoutMs) {
-				Timer timer(mSystem, timeoutMs);
-				int qty = 0;
-				while(connected() && !timer.expired() && qty<len) {
-					int tmpRes = mClient.read((uint8_t*)(buffer+qty), len-qty);
-					if (tmpRes > 0) {
-						qty+=tmpRes;
-					}
-				}
-				return qty;
+				// Request time-blocked operation...if supported
+				mClient.setTimeout(timeoutMs);
+				// Read
+				return connected() ? mClient.read((uint8_t*)buffer, len) : -1;
 			}
 
 			int write(unsigned char* buffer, int len, unsigned long timeoutMs) {
+				// Request time-blocked operation...if supported
 				mClient.setTimeout(timeoutMs);
+				// Write
 				return connected() ? mClient.write((const uint8_t*)buffer, len) : -1;
 			}
 
@@ -454,13 +439,12 @@ public:
 	 * @param recvBuffer - buffer to temporarily store the received message, see ArrayBuffer
 	 * @param messageHandlers - storage for subscription callback functions, see MessageHandlersImpl
 	 * @param netMinTmMs - the minimum amount of time allowed for single network operation, in milliseconds
-	 * @param netMaxTmMs - the maximum amount of time allowed for single network operation, in milliseconds
 	 */
 	MqttClient(const Options& options, Logger& logger, System& system, Network& network,
 		Buffer& sendBuffer, Buffer& recvBuffer, MessageHandlers& messageHandlers,
-		unsigned long netMinTmMs = 100L, unsigned long netMaxTmMs = 1000L)
+		unsigned long netMinTmMs = 10)
 	:
-	  NET_MAX_TM_MS(netMaxTmMs), NET_MIN_TM_MS(netMinTmMs),
+	  NET_MIN_TM_MS(netMinTmMs),
 	  mOptions(options), mLogger(logger), mSystem(system), mNetwork(network),
 	  mSendBuffer(sendBuffer), mRecvBuffer(recvBuffer), mMessageHandlers(messageHandlers),
 	  mSession(system)
@@ -495,7 +479,7 @@ public:
 		if ((len = MQTTSerialize_connect(mSendBuffer.get(), mSendBuffer.size(), &(MQTTPacket_connectData&)connectOptions)) <= 0) {
 			return Error::ENCODING_FAILURE;
 		}
-		Error::type rc = sendPacket(len, timer);
+		Error::type rc = sendPacket(len);
 		if (rc != Error::SUCCESS) {
 			MQTT_LOG_PRINTFLN("Can't send connect, rc: %i", rc);
 			return rc;
@@ -536,13 +520,12 @@ public:
 	 * @return execution status code
 	 */
 	Error::type disconnect() {
-		Timer timer(mSystem, mOptions.commandTimeoutMs);
 		MQTT_LOG_PRINTFLN("Disconnecting, ts: %lu", mSystem.millis());
 		int len = MQTTSerialize_disconnect(mSendBuffer.get(), mSendBuffer.size());
 		if (len <= 0) {
 			return Error::ENCODING_FAILURE;
 		}
-		Error::type rc = sendPacket(len, timer);
+		Error::type rc = sendPacket(len);
 		mSession.reset();
 		return rc;
 	}
@@ -578,7 +561,7 @@ public:
 		if (len <= 0) {
 			return Error::ENCODING_FAILURE;
 		}
-		Error::type rc = sendPacket(len, timer);
+		Error::type rc = sendPacket(len);
 		if (rc == Error::SUCCESS) switch (message.qos) {
 			case QOS1:
 			{
@@ -606,7 +589,7 @@ public:
 					} else {
 						int len = MQTTSerialize_ack(mSendBuffer.get(), mSendBuffer.size(), PUBREL, 0, ackId);
 						if (len > 0) {
-							rc = sendPacket(len, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+							rc = sendPacket(len);
 							if (rc == Error::SUCCESS) {
 								rc = waitFor(PUBCOMP, timer);
 								if (rc == Error::SUCCESS) {
@@ -664,7 +647,7 @@ public:
 			rc = Error::ENCODING_FAILURE;
 		} else {
 			// Send message
-			rc = sendPacket(len, timer);
+			rc = sendPacket(len);
 			if (rc != Error::SUCCESS) {
 				MQTT_LOG_PRINTFLN("Can't send subscribe, rc: %i", rc);
 			} else {
@@ -713,7 +696,7 @@ public:
 		if (len <= 0) {
 			return Error::ENCODING_FAILURE;
 		}
-		Error::type rc = sendPacket(len, timer);
+		Error::type rc = sendPacket(len);
 		if (rc != Error::SUCCESS) {
 			MQTT_LOG_PRINTFLN("Can't send unsubscribe, rc: %i", rc);
 			return rc;
@@ -745,7 +728,7 @@ public:
 		MQTT_LOG_PRINTFLN("Yield for %lu ms", timer.leftMs());
 		do {
 			ReadPacketResult result;
-			cycle(result, timer);
+			cycle(result);
 		} while (isConnected() && !timer.expired());
 	}
 
@@ -846,6 +829,7 @@ private:
 		}
 	};
 
+	const unsigned long									NET_MIN_TM_MS;
 	PacketId											mPacketId;
 	Options												mOptions;
 	Logger												&mLogger;
@@ -856,16 +840,12 @@ private:
 	MessageHandlers										&mMessageHandlers;
 	Session												mSession;
 
-	Error::type sendPacket(int length, const Timer& timer) {
-		int sent = 0;
-		while (sent < length && !timer.expired()) {
-			int r = mNetwork.write(&(mSendBuffer.get()[sent]), length - sent, timer.leftMs());
-			if (r < 0) {
-				return Error::NETWORK_FAILURE;
-			}
-			sent += r;
-		}
-		if (sent == length) {
+	Error::type sendPacket(int length) {
+		Timer timer(mSystem, NET_MIN_TM_MS);
+		int sent = sendBytes(mSendBuffer.get(), length, timer);
+		if (sent < 0) {
+			return Error::NETWORK_FAILURE;
+		} else if (sent == length) {
 			mSession.lastSentTimer.reset();
 			return Error::SUCCESS;
 		} else {
@@ -873,16 +853,18 @@ private:
 		}
 	}
 
-	Error::type recvPacket(ReadPacketResult& result, const Timer& timer) {
+	Error::type recvPacket(ReadPacketResult& result) {
+		Timer timer(mSystem, NET_MIN_TM_MS);
 		result.reset();
 		Error::type rc = Error::SUCCESS;
 		int len = 0;
 		// Read the fixed header byte
-		if (mNetwork.read(mRecvBuffer.get(), 1, timer.leftMs()) != 1) {
+		if (recvBytes(mRecvBuffer.get(), 1, timer) != 1) {
 			return mNetwork.connected() ? Error::WAIT_TIMEOUT : Error::NETWORK_FAILURE;
 		}
 		len++;
 		// Read the remaining length
+		timer.reset();
 		int remLen = 0;
 		rc = recvRemainingLength(&remLen, timer);
 		if (rc != Error::SUCCESS) {
@@ -895,7 +877,8 @@ private:
 			return Error::BUFFER_OVERFLOW;
 		}
 		// Read the rest of the packet
-		if (remLen > 0 && (mNetwork.read(mRecvBuffer.get() + len, remLen, timer.leftMs()) != remLen)) {
+		timer.reset();
+		if (remLen > 0 && (recvBytes(mRecvBuffer.get() + len, remLen, timer) != remLen)) {
 			return Error::NETWORK_FAILURE;
 		}
 		// Get packet type
@@ -907,13 +890,13 @@ private:
 		return Error::SUCCESS;
 	}
 
-	Error::type recvRemainingLength(int* result, const Timer& timer) {
+	Error::type recvRemainingLength(int* result, Timer& timer) {
 		unsigned char c;
 		long multiplier = 1;
 		const long MAX_MULTIPLIER = 128L*128L*128L;
 		*result = 0;
 		do {
-			if (mNetwork.read(&c, 1, timer.leftMs()) != 1) {
+			if (recvBytes(&c, 1, timer) != 1) {
 				return Error::NETWORK_FAILURE;
 			}
 			*result += (c & 127) * multiplier;
@@ -921,8 +904,41 @@ private:
 			if (multiplier > MAX_MULTIPLIER) {
 				return Error::DECODING_FAILURE_REM_LENGHT;
 			}
+			timer.reset();
 		} while ((c & 128) != 0);
 		return Error::SUCCESS;
+	}
+
+	int recvBytes(unsigned char* buffer, int length, Timer& timer) {
+		int qty = 0;
+		while (qty < length) {
+			int r = mNetwork.read(buffer + qty, length - qty, timer.leftMs());
+			if (r < 0) {
+				return r;
+			} else if (r > 0) {
+				qty += r;
+				timer.reset();
+			} else if (timer.expired()) {
+				break;
+			}
+		}
+		return qty;
+	}
+
+	int sendBytes(unsigned char* buffer, int length, Timer& timer) {
+		int qty = 0;
+		while (qty < length) {
+			int r = mNetwork.write(buffer + qty, length - qty, timer.leftMs());
+			if (r < 0) {
+				return r;
+			} else if (r > 0) {
+				qty += r;
+				timer.reset();
+			} else if (timer.expired()) {
+				break;
+			}
+		}
+		return qty;
 	}
 
 	Error::type waitFor(enum msgTypes packetType, const Timer& timer) {
@@ -930,39 +946,38 @@ private:
 		ReadPacketResult result;
 		Error::type rc = Error::SUCCESS;
 		do {
+			rc = cycle(result);
 			if (result.isPacketReceived && result.packetType == packetType) {
-				// done
+				rc = Error::SUCCESS;
 				break;
 			}
 			if (timer.expired()) {
 				rc = Error::WAIT_TIMEOUT;
 				break;
-			} else {
-				rc = cycle(result, timer);
 			}
 		} while (rc == Error::SUCCESS || rc == Error::WAIT_TIMEOUT);
 		return rc;
 	}
 
-	Error::type cycle(ReadPacketResult& result, const Timer& timer) {
-		Error::type rc = recvPacket(result, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+	Error::type cycle(ReadPacketResult& result) {
+		Error::type rc = recvPacket(result);
 		if (rc == Error::NETWORK_FAILURE) {
 			mSession.reset();
 		}
 		if (result.isPacketReceived) {
-			rc = processPacket(result.packetType, timer);
+			rc = processPacket(result.packetType);
 		}
 		if (mSession.keepaliveSent && mSession.keepaliveAckTimer.expired()) {
 			MQTT_LOG_PRINTFLN("Keepalive ack failure, ts: %lu", mSystem.millis());
 			mSession.reset();
 		}
 		if (isConnected()) {
-			rc = keepalive(timer);
+			rc = keepalive();
 		}
 		return rc;
 	}
 
-	Error::type processPacket(enum msgTypes packetType, const Timer& timer) {
+	Error::type processPacket(enum msgTypes packetType) {
 		MQTT_LOG_PRINTFLN("Process message, type: %i", packetType);
 		Error::type rc = Error::SUCCESS;
 		switch (packetType) {
@@ -1000,7 +1015,7 @@ private:
 						{
 							int len = MQTTSerialize_ack(mSendBuffer.get(), mSendBuffer.size(), PUBACK, 0, msg.id);
 							if (len > 0) {
-								rc = sendPacket(len, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+								rc = sendPacket(len);
 							} else {
 								rc = Error::ENCODING_FAILURE;
 							}
@@ -1011,7 +1026,7 @@ private:
 							// Simplified QoS 2 implementation
 							int len = MQTTSerialize_ack(mSendBuffer.get(), mSendBuffer.size(), PUBREC, 0, msg.id);
 							if (len > 0) {
-								rc = sendPacket(len, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+								rc = sendPacket(len);
 							} else {
 								rc = Error::ENCODING_FAILURE;
 							}
@@ -1038,7 +1053,7 @@ private:
 				} else {
 					int len = MQTTSerialize_ack(mSendBuffer.get(), mSendBuffer.size(), PUBCOMP, 0, ackId);
 					if (len > 0) {
-						rc = sendPacket(len, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+						rc = sendPacket(len);
 					} else {
 						rc = Error::ENCODING_FAILURE;
 					}
@@ -1049,7 +1064,7 @@ private:
 		return rc;
 	}
 
-	Error::type keepalive(const Timer& timer) {
+	Error::type keepalive() {
 		if (!isConnected()) {
 			return Error::FAILURE;
 		}
@@ -1070,7 +1085,7 @@ private:
 			if (len <=0 ) {
 				return Error::ENCODING_FAILURE;
 			}
-			Error::type rc = sendPacket(len, Timer(timer, NET_MIN_TM_MS, NET_MAX_TM_MS));
+			Error::type rc = sendPacket(len);
 			if (rc == Error::SUCCESS) {
 				mSession.keepaliveAckTimer.set(mOptions.commandTimeoutMs);
 				mSession.keepaliveSent = true;
