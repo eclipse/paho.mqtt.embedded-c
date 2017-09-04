@@ -725,7 +725,9 @@ public:
 	 */
 	void yield(unsigned long timeoutMs = 1000L) {
 		Timer timer(mSystem, timeoutMs);
-		MQTT_LOG_PRINTFLN("Yield for %lu ms", timer.leftMs());
+		if (timeoutMs >= 1000L) {
+			MQTT_LOG_PRINTFLN("Yield for %lu ms", timer.leftMs());
+		}
 		do {
 			ReadPacketResult result;
 			cycle(result);
