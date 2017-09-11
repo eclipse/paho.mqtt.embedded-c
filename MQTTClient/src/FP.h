@@ -175,7 +175,7 @@ public:
     /** Determine if an callback is currently hooked
      *  @return 1 if a method is hooked, 0 otherwise
      */
-    bool attached()
+    bool attached() const
     {
         return obj_callback || c_callback;
     }
