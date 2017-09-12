@@ -835,9 +835,9 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect()
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::setMessageHandler(const char* topicFilter, messageHandler mh)
 {
-  MessageHandlerType fp;
-  fp.attach(mh);
-  setMessageHandler(topicFilter, mh);
+    MessageHandlerType fp;
+    fp.attach(mh);
+    setMessageHandler(topicFilter, fp);
 }
 
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
