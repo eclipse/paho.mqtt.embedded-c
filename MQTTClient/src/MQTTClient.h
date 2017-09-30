@@ -400,7 +400,8 @@ int MQTT::Client<Network, Timer, a, b>::sendPacket(int length, Timer& timer)
 
 #if defined(MQTT_DEBUG)
     char printbuf[150];
-    DEBUG("Rc %d from sending packet %s\n", rc, MQTTFormat_toServerString(printbuf, sizeof(printbuf), sendbuf, length));
+    DEBUG("Rc %d from sending packet %s\n", rc, 
+        MQTTFormat_toServerString(printbuf, sizeof(printbuf), sendbuf, length));
 #endif
     return rc;
 }
@@ -479,7 +480,7 @@ exit:
     if (rc >= 0)
     {
         char printbuf[50];
-        DEBUG("Rc %d from receiving packet %s\n", rc,
+        DEBUG("Rc %d receiving packet %s\n", rc, 
             MQTTFormat_toClientString(printbuf, sizeof(printbuf), readbuf, len));
     }
 #endif
@@ -676,13 +677,14 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::keepalive()
 {
     int rc = SUCCESS;
+    static Timer ping_sent;
 
     if (keepAliveInterval == 0)
         goto exit;
-
-    if (last_sent.expired() || last_received.expired())
+    
+    if (ping_outstanding)
     {
-        if (ping_outstanding)
+        if (ping_sent.expired())
         {
             rc = FAILURE; // session failure
             #if defined(MQTT_DEBUG)
@@ -690,15 +692,17 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::keepalive()
                 DEBUG("PINGRESP not received in keepalive interval\n");
             #endif
         }
-        else
+    }
+    else if (last_sent.expired() || last_received.expired())
+    {
+        Timer timer(1000);
+        int len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
+        if (len > 0 && (rc = sendPacket(len, timer)) == SUCCESS) // send the ping packet
         {
-            Timer timer(1000);
-            int len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
-            if (len > 0 && (rc = sendPacket(len, timer)) == SUCCESS) // send the ping packet
-                ping_outstanding = true;
+            ping_outstanding = true;
+            ping_sent.countdown(this->keepAliveInterval);
         }
     }
-
 exit:
     return rc;
 }
