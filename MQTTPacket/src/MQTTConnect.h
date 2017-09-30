@@ -12,12 +12,23 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add connack return code definitions 
  *    Xiang Rong - 442039 Add makefile to Embedded C client
  *    Ian Craggs - fix for issue #64, bit order in connack response
  *******************************************************************************/
 
 #ifndef MQTTCONNECT_H_
 #define MQTTCONNECT_H_
+
+enum connack_return_codes
+{
+    MQTT_CONNECTION_ACCEPTED = 0,
+    MQTT_UNNACCEPTABLE_PROTOCOL = 1,
+    MQTT_CLIENTID_REJECTED = 2,
+    MQTT_SERVER_UNAVAILABLE = 3,
+    MQTT_BAD_USERNAME_OR_PASSWORD = 4,
+    MQTT_NOT_AUTHORIZED = 5,
+};
 
 #if !defined(DLLImport)
   #define DLLImport
