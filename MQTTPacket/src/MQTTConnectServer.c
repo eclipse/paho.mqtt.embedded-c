@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +12,15 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add MQTT v5 support
  *******************************************************************************/
 
 #include "StackTrace.h"
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
 #include <string.h>
 
 #define min(a, b) ((a < b) ? a : b)
@@ -37,6 +42,11 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 	else if (version == 4 && memcmp(protocol->lenstring.data, "MQTT",
 			min(4, protocol->lenstring.len)) == 0)
 		rc = 1;
+#if defined(MQTTV5)
+  else if (version == 5 && memcmp(protocol->lenstring.data, "MQTT",
+		  min(4, protocol->lenstring.len)) == 0)
+	  rc = 1;
+#endif
 	return rc;
 }
 
@@ -48,7 +58,12 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
+#if defined(MQTTV5)
+int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
+	MQTTPacket_connectData* data, unsigned char* buf, int len)
+#else
 int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+#endif
 {
 	MQTTHeader header = {0};
 	MQTTConnectFlags flags = {0};
@@ -56,7 +71,6 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 	unsigned char* enddata = &buf[len];
 	int rc = 0;
 	MQTTString Protocol;
-	int version;
 	int mylen = 0;
 
 	FUNC_ENTRY;
@@ -70,20 +84,34 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 		enddata - curdata < 0) /* do we have enough data to read the protocol version byte? */
 		goto exit;
 
-	version = (int)readChar(&curdata); /* Protocol version */
+	data->MQTTVersion = (int)readChar(&curdata); /* Protocol version */
 	/* If we don't recognize the protocol version, we don't parse the connect packet on the
 	 * basis that we don't know what the format will be.
 	 */
-	if (MQTTPacket_checkVersion(&Protocol, version))
+	if (MQTTPacket_checkVersion(&Protocol, data->MQTTVersion))
 	{
 		flags.all = readChar(&curdata);
 		data->cleansession = flags.bits.cleansession;
 		data->keepAliveInterval = readInt(&curdata);
+		#if defined(MQTTV5)
+		if (data->MQTTVersion == 5)
+		{
+		  if (!MQTTProperties_read(connectProperties, &curdata, enddata))
+			  goto exit;
+		}
+		#endif
 		if (!readMQTTLenString(&data->clientID, &curdata, enddata))
 			goto exit;
 		data->willFlag = flags.bits.will;
 		if (flags.bits.will)
 		{
+			#if defined(MQTTV5)
+			if (data->MQTTVersion == 5)
+			{
+				if (!MQTTProperties_read(willProperties, &curdata, enddata))
+				  goto exit;
+			}
+			#endif
 			data->will.qos = flags.bits.willQoS;
 			data->will.retained = flags.bits.willRetain;
 			if (!readMQTTLenString(&data->will.topicName, &curdata, enddata) ||
@@ -112,7 +140,7 @@ exit:
   * Serializes the connack packet into the supplied buffer.
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer
-  * @param connack_rc the integer connack return code to be used 
+  * @param connack_rc the integer connack return code to be used
   * @param sessionPresent the MQTT 3.1.1 sessionPresent flag
   * @return serialized length, or error if 0
   */
@@ -137,7 +165,7 @@ int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_
 
 	flags.all = 0;
 	flags.bits.sessionpresent = sessionPresent;
-	writeChar(&ptr, flags.all); 
+	writeChar(&ptr, flags.all);
 	writeChar(&ptr, connack_rc);
 
 	rc = ptr - buf;
@@ -145,4 +173,3 @@ exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -14,7 +14,11 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
 #include "StackTrace.h"
 
 #include <string.h>
@@ -24,7 +28,12 @@
   * @param options the options to be used to build the connect packet
   * @return the length of buffer needed to contain the serialized version of the packet
   */
+#if defined(MQTTV5)
+int MQTTSerialize_connectLength(MQTTPacket_connectData* options, MQTTProperties* connectProperties,
+  MQTTProperties* willProperties)
+#else
 int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
+#endif
 {
 	int len = 0;
 
@@ -32,7 +41,7 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 
 	if (options->MQTTVersion == 3)
 		len = 12; /* variable depending on MQTT or MQIsdp */
-	else if (options->MQTTVersion == 4)
+	else if (options->MQTTVersion >= 4)
 		len = 10;
 
 	len += MQTTstrlen(options->clientID)+2;
@@ -42,6 +51,12 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 		len += MQTTstrlen(options->username)+2;
 	if (options->password.cstring || options->password.lenstring.data)
 		len += MQTTstrlen(options->password)+2;
+#if defined(MQTTV5)
+  if (connectProperties)
+	  len += connectProperties->length;
+	if (willProperties)
+		len += willProperties->length;
+#endif
 
 	FUNC_EXIT_RC(len);
 	return len;
@@ -55,7 +70,17 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
   * @param options the options to be used to build the connect packet
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options)
+{
+  return MQTTV5Serialize_connect(buf, buflen, options, NULL, NULL);
+}
+
+int MQTTV5Serialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options,
+  MQTTProperties* connectProperties, MQTTProperties* willProperties)
+#else
+int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options)
+#endif
 {
 	unsigned char *ptr = buf;
 	MQTTHeader header = {0};
@@ -64,7 +89,12 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
 	int rc = -1;
 
 	FUNC_ENTRY;
+	#if defined(MQTTV5)
+	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options,
+		         connectProperties, willProperties)) > buflen)
+	#else
 	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options)) > buflen)
+	#endif
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -76,16 +106,13 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
 
 	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 
-	if (options->MQTTVersion == 4)
-	{
+  if (options->MQTTVersion == 5 || options->MQTTVersion == 4)
 		writeCString(&ptr, "MQTT");
-		writeChar(&ptr, (char) 4);
-	}
-	else
-	{
+	else if (options->MQTTVersion == 3)
 		writeCString(&ptr, "MQIsdp");
-		writeChar(&ptr, (char) 3);
-	}
+	else
+	  goto exit;
+	writeChar(&ptr, (char)options->MQTTVersion);
 
 	flags.all = 0;
 	flags.bits.cleansession = options->cleansession;
@@ -103,9 +130,18 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
 
 	writeChar(&ptr, flags.all);
 	writeInt(&ptr, options->keepAliveInterval);
+#if defined(MQTTV5)
+	if (options->MQTTVersion == 5)
+	  MQTTProperties_write(&ptr, connectProperties);
+#endif
 	writeMQTTString(&ptr, options->clientID);
 	if (options->willFlag)
 	{
+#if defined(MQTTV5)
+		/* write will properties */
+		if (options->MQTTVersion == 5)
+		  MQTTProperties_write(&ptr, willProperties);
+#endif
 		writeMQTTString(&ptr, options->will.topicName);
 		writeMQTTString(&ptr, options->will.message);
 	}
