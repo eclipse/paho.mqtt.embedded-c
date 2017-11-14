@@ -52,10 +52,13 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 	if (options->password.cstring || options->password.lenstring.data)
 		len += MQTTstrlen(options->password)+2;
 #if defined(MQTTV5)
-  if (connectProperties)
-	  len += connectProperties->length;
-	if (willProperties)
-		len += willProperties->length;
+  if (options->MQTTVersion >= 5)
+	{
+    if (connectProperties)
+	    len += MQTTProperties_len(connectProperties);
+	  if (options->willFlag && willProperties)
+		  len += MQTTProperties_len(willProperties);
+	}
 #endif
 
 	FUNC_EXIT_RC(len);
@@ -139,7 +142,7 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
 	{
 #if defined(MQTTV5)
 		/* write will properties */
-		if (options->MQTTVersion == 5)
+		if (options->MQTTVersion == 5 && willProperties)
 		  MQTTProperties_write(&ptr, willProperties);
 #endif
 		writeMQTTString(&ptr, options->will.topicName);

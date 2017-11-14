@@ -358,8 +358,10 @@ int test1(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	MQTTProperties connectProperties, willProperties;
-	MQTTProperties outConnectProperties, outWillProperties;
+	MQTTProperties connectProperties = MQTTProperties_initializer,
+	               willProperties = MQTTProperties_initializer;
+	MQTTProperties outConnectProperties = MQTTProperties_initializer,
+	               outWillProperties = MQTTProperties_initializer;
 	MQTTProperty connect_props[10], will_props[10];
 	MQTTProperty out_connect_props[10], out_will_props[10];
 
@@ -369,7 +371,6 @@ int test1(struct Options options)
 	MyLog(LOGA_INFO, "Starting test 1 - serialization of connect and back");
 
   data.MQTTVersion = 5;
-	connectProperties.count = connectProperties.length = 0;
 	connectProperties.max_count = 10;
 	connectProperties.array = connect_props;
 
@@ -378,15 +379,12 @@ int test1(struct Options options)
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&connectProperties, &one);
 
-	willProperties.count = willProperties.length = 0;
 	willProperties.max_count = 10;
 	willProperties.array = will_props;
 
-	outConnectProperties.count = outConnectProperties.length = 0;
 	outConnectProperties.max_count = 10;
 	outConnectProperties.array = out_connect_props;
 
-	outWillProperties.count = outWillProperties.length = 0;
 	outWillProperties.max_count = 10;
 	outWillProperties.array = out_will_props;
 

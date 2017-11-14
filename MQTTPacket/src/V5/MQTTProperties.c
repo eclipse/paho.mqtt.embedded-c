@@ -69,6 +69,13 @@ int MQTTProperty_getType(int identifier)
 }
 
 
+int MQTTProperties_len(MQTTProperties* props)
+{
+  /* properties length is an mbi */
+  return props->length + MQTTPacket_VBIlen(props->length);
+}
+
+
 int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
 {
   int rc = 0, type;
@@ -113,7 +120,7 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
         len += 2 + prop->value.value.len;
         break;
     }
-    props->length += len;
+    props->length += len + 1; /* add identifier byte */
   }
 
   return rc;
@@ -133,32 +140,32 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
     {
       case BYTE:
         writeChar(pptr, prop->value.byte);
-        rc = 2;
+        rc = 1;
         break;
       case TWO_BYTE_INTEGER:
         writeInt(pptr, prop->value.integer2);
-        rc = 3;
+        rc = 2;
         break;
       case FOUR_BYTE_INTEGER:
         writeInt4(pptr, prop->value.integer4);
-        rc = 5;
+        rc = 4;
         break;
       case VARIABLE_BYTE_INTEGER:
-        MQTTPacket_encode(*pptr, prop->value.integer4);
+        rc = MQTTPacket_encode(*pptr, prop->value.integer4);
         break;
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
         writeMQTTLenString(pptr, prop->value.data);
-        rc = prop->value.data.len + 1;
+        rc = prop->value.data.len;
         break;
       case UTF_8_STRING_PAIR:
         writeMQTTLenString(pptr, prop->value.data);
         writeMQTTLenString(pptr, prop->value.value);
-        rc = prop->value.data.len + prop->value.value.len + 1;
+        rc = prop->value.data.len + prop->value.value.len;
         break;
     }
   }
-  return rc;
+  return rc + 1; /* include identifier byte */
 }
 
 
@@ -173,7 +180,8 @@ int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties)
   int rc = -1;
   int i = 0, len = 0;
 
-  writeChar(pptr, properties->length); /* write the entire property list length first */
+  /* write the entire property list length first */
+  *pptr += MQTTPacket_encode(*pptr, properties->length);
   len = 1;
   for (i = 0; i < properties->count; ++i)
   {
@@ -227,7 +235,7 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
         break;
     }
   }
-  return len;
+  return len + 1; /* 1 byte for identifier */
 }
 
 
@@ -236,11 +244,12 @@ int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsign
   int rc = 0;
   int remlength = 0;
 
-	if (enddata - (*pptr) > 0) /* enough length to read the integer? */
+	if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
     int i = 0;
 
-    remlength = properties->length = readChar(pptr);
+    *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
+    properties->length = remlength;
     while (remlength > 0)
     {
       remlength -= MQTTProperty_read(&properties->array[i], pptr, enddata);

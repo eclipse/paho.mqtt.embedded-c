@@ -72,9 +72,13 @@ typedef struct MQTTProperties
 {
   int count; /* number of property entries */
   int max_count;
-  int length; /* byte length of all properties */
+  int length; /* mbi: byte length of all properties */
   MQTTProperty *array;  /* array of properties */
 } MQTTProperties;
+
+#define MQTTProperties_initializer {0, 0, 0, NULL}
+
+int MQTTProperties_len(MQTTProperties* props);
 
 /**
  * Add the property pointer to the property array, no allocation, just a reference

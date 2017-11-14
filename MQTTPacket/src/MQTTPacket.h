@@ -30,7 +30,7 @@ extern "C" {
   #define DLLExport  __attribute__ ((visibility ("default")))
 #else
   #define DLLImport
-  #define DLLExport  
+  #define DLLExport
 #endif
 
 enum errors
@@ -97,6 +97,7 @@ int MQTTstrlen(MQTTString mqttstring);
 DLLExport int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char type, unsigned char dup, unsigned short packetid);
 DLLExport int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen);
 
+int MQTTPacket_VBIlen(int rem_len);
 int MQTTPacket_len(int rem_len);
 DLLExport int MQTTPacket_equals(MQTTString* a, char* b);
 
