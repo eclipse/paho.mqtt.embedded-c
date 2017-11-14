@@ -244,17 +244,15 @@ int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsign
   int rc = 0;
   int remlength = 0;
 
+  properties->count = 0;
 	if (enddata - (*pptr) > 0) /* enough length to read the VBI? */
   {
-    int i = 0;
-
     *pptr += MQTTPacket_decodeBuf(*pptr, &remlength);
     properties->length = remlength;
-    while (remlength > 0)
+    while (properties->count < properties->max_count && remlength > 0)
     {
-      remlength -= MQTTProperty_read(&properties->array[i], pptr, enddata);
+      remlength -= MQTTProperty_read(&properties->array[properties->count], pptr, enddata);
       properties->count++;
-      i++;
     }
     if (remlength == 0)
       rc = 1; /* data read successfully */

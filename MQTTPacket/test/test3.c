@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
-	char buf[200];
+	unsigned char buf[200];
 	int buflen = sizeof(buf);
 	int mysock = 0;
 	MQTTString topicString = MQTTString_initializer;
@@ -36,10 +36,8 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "localhost";
 	int port = 1883;
-	MQTTProperties connectProperties = MQTTProperties_initializer;
-	MQTTProperty connect_props[10];
-	MQTTProperties disconnectProperties = MQTTProperties_initializer;
-	MQTTProperty disconnect_props[10];
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperty props[10];
 	MQTTProperty one;
 
 	if (argc > 1)
@@ -61,29 +59,41 @@ int main(int argc, char *argv[])
 	data.password.cstring = "testpassword";
 	data.MQTTVersion = 5;
 
-	connectProperties.max_count = 10;
-	connectProperties.array = connect_props;
+	properties.max_count = 10;
+	properties.array = props;
 
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
-	rc = MQTTProperties_add(&connectProperties, &one);
+	rc = MQTTProperties_add(&properties, &one);
 
-	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &data, &connectProperties, NULL);
+	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &data, &properties, NULL);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
+
+	/* wait for connack */
+	if (MQTTPacket_read(buf, buflen, transport_getdata) == CONNACK)
+	{
+		unsigned char sessionPresent, reasonCode;
+
+		if (MQTTV5Deserialize_connack(&properties, &sessionPresent, &reasonCode, buf, buflen) != 1 || reasonCode != 0)
+		{
+			printf("Unable to connect, return code %d\n", reasonCode);
+			goto exit;
+		}
+	}
+	else
+	{
+		printf("Failed to read connack\n");
+		goto exit;
+	}
 
 	topicString.cstring = "mytopic";
-	//len += MQTTSerialize_publish((unsigned char *)(buf + len), buflen - len, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
+	//len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
+	//rc = transport_sendPacketBuffer(mysock, buf, len);
 
-	disconnectProperties.max_count = 10;
-	disconnectProperties.array = disconnect_props;
-
-	one.identifier = SESSION_EXPIRY_INTERVAL;
-	one.value.integer4 = 45;
-	rc = MQTTProperties_add(&disconnectProperties, &one);
-	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, 0, &disconnectProperties);
-
-	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
+	len = MQTTV5Serialize_disconnect(buf, buflen, 0, &properties);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
 	if (rc == len)
-		printf("Successfully published\n");
+		printf("Successful disconnect\n");
 	else
 		printf("Publish failed\n");
 
