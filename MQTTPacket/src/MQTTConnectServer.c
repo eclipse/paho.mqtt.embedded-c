@@ -142,17 +142,36 @@ exit:
   * @param buflen the length in bytes of the supplied buffer
   * @param connack_rc the integer connack return code to be used
   * @param sessionPresent the MQTT 3.1.1 sessionPresent flag
+	* @param connackProperties MQTT v5 properties, if NULL, then MQTT 3.1.1 connack
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+{
+	return MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, NULL);
+}
+
+int MQTTV5Serialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent,
+  MQTTProperties* connackProperties)
+#else
+int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = 0;
 	unsigned char *ptr = buf;
 	MQTTConnackFlags flags = {0};
+	int len = 0;
 
 	FUNC_ENTRY;
-	if (buflen < 2)
+
+#if defined(MQTTV5)
+	len = 2 + (connackProperties == NULL ? 0 : connackProperties->length);
+#else
+	len = 2;
+#endif
+
+	if (MQTTPacket_len(len) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -161,12 +180,17 @@ int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_
 	header.bits.type = CONNACK;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 
 	flags.all = 0;
 	flags.bits.sessionpresent = sessionPresent;
 	writeChar(&ptr, flags.all);
 	writeChar(&ptr, connack_rc);
+
+#if defined(MQTTV5)
+  if (connackProperties && MQTTProperties_write(&ptr, connackProperties) < 0)
+		goto exit;
+#endif
 
 	rc = ptr - buf;
 exit:

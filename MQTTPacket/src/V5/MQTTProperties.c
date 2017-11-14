@@ -133,12 +133,15 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
     {
       case BYTE:
         writeChar(pptr, prop->value.byte);
+        rc = 2;
         break;
       case TWO_BYTE_INTEGER:
         writeInt(pptr, prop->value.integer2);
+        rc = 3;
         break;
       case FOUR_BYTE_INTEGER:
         writeInt4(pptr, prop->value.integer4);
+        rc = 5;
         break;
       case VARIABLE_BYTE_INTEGER:
         MQTTPacket_encode(*pptr, prop->value.integer4);
@@ -146,10 +149,12 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
         writeMQTTLenString(pptr, prop->value.data);
+        rc = prop->value.data.len + 1;
         break;
       case UTF_8_STRING_PAIR:
         writeMQTTLenString(pptr, prop->value.data);
         writeMQTTLenString(pptr, prop->value.value);
+        rc = prop->value.data.len + prop->value.value.len + 1;
         break;
     }
   }
@@ -166,13 +171,20 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
 int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties)
 {
   int rc = -1;
-  int i = 0;
+  int i = 0, len = 0;
 
   writeChar(pptr, properties->length); /* write the entire property list length first */
+  len = 1;
   for (i = 0; i < properties->count; ++i)
   {
-    MQTTProperty_write(pptr, &properties->array[i]);
+    rc = MQTTProperty_write(pptr, &properties->array[i]);
+    if (rc < 0)
+      break;
+    else
+      len += rc;
   }
+  if (rc >= 0)
+    rc = len;
 
   return rc;
 }

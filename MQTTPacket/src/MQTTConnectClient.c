@@ -165,7 +165,17 @@ int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
+#if defined(MQTTV5)
 int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_connack(NULL, sessionPresent, connack_rc, buf, buflen);
+}
+
+int MQTTV5Deserialize_connack(MQTTProperties* connackProperties, unsigned char* sessionPresent, unsigned char* connack_rc,
+	unsigned char* buf, int buflen)
+#else
+int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen)
+#endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
@@ -187,6 +197,11 @@ int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connac
 	flags.all = readChar(&curdata);
 	*sessionPresent = flags.bits.sessionpresent;
 	*connack_rc = readChar(&curdata);
+
+#if defined(MQTTV5)
+	if (connackProperties && !MQTTProperties_read(connackProperties, &curdata, enddata))
+	  goto exit;
+#endif
 
 	rc = 1;
 exit:

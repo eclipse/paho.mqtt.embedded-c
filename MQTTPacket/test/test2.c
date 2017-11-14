@@ -630,6 +630,7 @@ int test5(struct Options options)
 	return failures;
 }
 
+#endif
 
 int test6(struct Options options)
 {
@@ -643,15 +644,31 @@ int test6(struct Options options)
 	unsigned char sessionPresent2 = 0;
 	unsigned char connack_rc2 = 0;
 
+	MQTTProperties connackProperties, outConnackProperties;
+	MQTTProperty connack_props[10], out_connack_props[10];
+
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - serialization of connack and back");
 
-	rc = MQTTSerialize_connack(buf, buflen, connack_rc, sessionPresent);
+	connackProperties.count = connackProperties.length = 0;
+	connackProperties.max_count = 10;
+	connackProperties.array = connack_props;
+
+	outConnackProperties.count = outConnackProperties.length = 0;
+	outConnackProperties.max_count = 10;
+	outConnackProperties.array = out_connack_props;
+
+  MQTTProperty one;
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&connackProperties, &one);
+
+	rc = MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, &connackProperties);
 	assert("good rc from serialize connack", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_connack(&sessionPresent2, &connack_rc2, buf, buflen);
+	rc = MQTTV5Deserialize_connack(&outConnackProperties, &sessionPresent2, &connack_rc2, buf, buflen);
 	assert("good rc from deserialize connack", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
@@ -659,19 +676,20 @@ int test6(struct Options options)
 	assert("session present flags should be the same", sessionPresent == sessionPresent2,
 			"session present flags were different %d\n", sessionPresent2);
 
+ 	rc = checkMQTTProperties(&connackProperties, &outConnackProperties);
+
 /* exit: */
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
 	return failures;
 }
-#endif
 
 
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, /*test2, test3, test4, test5, test6*/};
+ 	int (*tests[])() = {NULL, test1, /*test2, test3, test4, test5,*/ test6};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
