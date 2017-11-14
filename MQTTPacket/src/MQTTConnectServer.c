@@ -197,3 +197,44 @@ exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+
+
+/**
+  * Deserializes the supplied (wire) buffer into connack data - return code
+  * @param sessionPresent the session present flag returned (only for MQTT 3.1.1)
+  * @param connack_rc returned integer value of the connack return code
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+#if defined(MQTTV5)
+int MQTTV5Deserialize_disconnect(MQTTProperties* properties, short* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	MQTTHeader header = {0};
+	unsigned char* curdata = buf;
+	unsigned char* enddata = NULL;
+	int rc = 0;
+	int mylen;
+
+	FUNC_ENTRY;
+	header.byte = readChar(&curdata);
+	if (header.bits.type != DISCONNECT)
+		goto exit;
+
+	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
+	enddata = curdata + mylen;
+
+  if (mylen > 0)
+	{
+	  *reasonCode = readChar(&curdata);
+		if (mylen > 1 && !MQTTProperties_read(properties, &curdata, enddata))
+	    goto exit;
+	}
+
+	rc = 1;
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+#endif

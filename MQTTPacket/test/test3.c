@@ -36,8 +36,11 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "localhost";
 	int port = 1883;
-	MQTTProperties connectProperties;
+	MQTTProperties connectProperties = MQTTProperties_initializer;
 	MQTTProperty connect_props[10];
+	MQTTProperties disconnectProperties = MQTTProperties_initializer;
+	MQTTProperty disconnect_props[10];
+	MQTTProperty one;
 
 	if (argc > 1)
 		host = argv[1];
@@ -58,11 +61,9 @@ int main(int argc, char *argv[])
 	data.password.cstring = "testpassword";
 	data.MQTTVersion = 5;
 
-	connectProperties.count = connectProperties.length = 0;
 	connectProperties.max_count = 10;
 	connectProperties.array = connect_props;
 
-	MQTTProperty one;
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&connectProperties, &one);
@@ -72,7 +73,13 @@ int main(int argc, char *argv[])
 	topicString.cstring = "mytopic";
 	//len += MQTTSerialize_publish((unsigned char *)(buf + len), buflen - len, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
 
-	len += MQTTSerialize_disconnect((unsigned char *)(buf + len), buflen - len);
+	disconnectProperties.max_count = 10;
+	disconnectProperties.array = disconnect_props;
+
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&disconnectProperties, &one);
+	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, 0, &disconnectProperties);
 
 	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)

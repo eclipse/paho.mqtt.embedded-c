@@ -220,14 +220,36 @@ exit:
   * @param packettype the message type
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
+int MQTTV5Serialize_zero(unsigned char* buf, int buflen, unsigned char packettype,
+  short reasonCode, MQTTProperties* properties);
+
 int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
+{
+	return MQTTV5Serialize_zero(buf, buflen, packettype, -1, NULL);
+}
+
+int MQTTV5Serialize_zero(unsigned char* buf, int buflen, unsigned char packettype,
+  short reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = -1;
 	unsigned char *ptr = buf;
+	int len = 0;
 
 	FUNC_ENTRY;
-	if (buflen < 2)
+#if defined(MQTTV5)
+  if (reasonCode >= 0 && reasonCode <= 162)
+	{
+		len += 1;
+    if (properties)
+	    len += MQTTProperties_len(properties);
+	}
+#endif
+	if (MQTTPacket_len(len) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -236,7 +258,15 @@ int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 	header.bits.type = packettype;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 0); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
+#if defined(MQTTV5)
+  if (reasonCode >= 0 && reasonCode <= 162)
+	{
+		writeChar(&ptr, reasonCode); /* must have reasonCode before properties */
+	  if (properties)
+		  MQTTProperties_write(&ptr, properties);
+	}
+#endif
 	rc = ptr - buf;
 exit:
 	FUNC_EXIT_RC(rc);
@@ -250,9 +280,23 @@ exit:
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
 {
+  return MQTTV5Serialize_disconnect(buf, buflen, -1, NULL);
+}
+
+int MQTTV5Serialize_disconnect(unsigned char* buf, int buflen,
+	             short reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
+#endif
+{
+#if defined(MQTTV5)
+	return MQTTV5Serialize_zero(buf, buflen, DISCONNECT, reasonCode, properties);
+#else
 	return MQTTSerialize_zero(buf, buflen, DISCONNECT);
+#endif
 }
 
 

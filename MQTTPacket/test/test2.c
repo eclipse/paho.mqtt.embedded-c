@@ -421,7 +421,7 @@ int test1(struct Options options)
 	return failures;
 }
 
-#if 0
+
 int test2(struct Options options)
 {
 	int rc = 0;
@@ -481,7 +481,7 @@ int test2(struct Options options)
 }
 
 
-
+#if 0
 int test3(struct Options options)
 {
 	int i = 0;
@@ -683,11 +683,57 @@ int test6(struct Options options)
 	return failures;
 }
 
+int test7(struct Options options)
+{
+	int rc = 0;
+	unsigned char buf[100];
+	int buflen = sizeof(buf);
+	short reasonCode = -1, outReasonCode = -1;
+	MQTTProperties disconnectProperties = MQTTProperties_initializer,
+	               outdisconnectProperties = MQTTProperties_initializer;
+	MQTTProperty disconnect_props[10], out_disconnect_props[10];
+	MQTTProperty one;
+
+	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 2 - serialization of disconnect and back");
+
+	disconnectProperties.max_count = 10;
+	disconnectProperties.array = disconnect_props;
+
+	outdisconnectProperties.max_count = 10;
+	outdisconnectProperties.array = out_disconnect_props;
+
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&disconnectProperties, &one);
+	reasonCode = 0;
+
+	rc = MQTTV5Serialize_disconnect(buf, buflen, reasonCode, &disconnectProperties);
+	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);
+
+	rc = MQTTV5Deserialize_disconnect(&outdisconnectProperties, &outReasonCode, buf, buflen);
+	assert("good rc from deserialize disconnect", rc == 1, "rc was %d\n", rc);
+
+	/* data after should be the same as data before */
+	assert("disconnect rcs should be the same", reasonCode == outReasonCode,
+	    "disconnect rcs were different %d\n", outReasonCode);
+
+ 	rc = checkMQTTProperties(&disconnectProperties, &outdisconnectProperties);
+
+/* exit: */
+	MyLog(LOGA_INFO, "TEST7: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
 
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, /*test2, test3, test4, test5,*/ test6};
+ 	int (*tests[])() = {NULL, test1, test2, /*test3, test4, test5,*/ test6, test7};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
