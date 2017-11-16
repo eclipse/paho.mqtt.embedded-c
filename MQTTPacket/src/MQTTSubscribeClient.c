@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,9 +12,15 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - MQTT v5 implementation
  *******************************************************************************/
 
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
+
 #include "StackTrace.h"
 
 #include <string.h>
@@ -25,13 +31,21 @@
   * @param topicFilters the array of topic filter strings to be used in the publish
   * @return the length of buffer needed to contain the serialized version of the packet
   */
+#if defined(MQTTV5)
+int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[], MQTTProperties* properties)
+#else
 int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
+#endif
 {
 	int i;
 	int len = 2; /* packetid */
 
 	for (i = 0; i < count; ++i)
 		len += 2 + MQTTstrlen(topicFilters[i]) + 1; /* length + topic + req_qos */
+#if defined(MQTTV5)
+  if (properties)
+	  len += MQTTProperties_len(properties);
+#endif
 	return len;
 }
 
@@ -47,8 +61,20 @@ int MQTTSerialize_subscribeLength(int count, MQTTString topicFilters[])
   * @param requestedQoSs - array of requested QoS
   * @return the length of the serialized data.  <= 0 indicates error
   */
+#if defined(MQTTV5)
 int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid, int count,
 		MQTTString topicFilters[], int requestedQoSs[])
+{
+	/* need to pack requestedQoSs into subscribeOptions */
+	return MQTTV5Serialize_subscribe(buf, buflen, dup, packetid, NULL, count, topicFilters, requestedQoSs, NULL);
+}
+
+int MQTTV5Serialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+		MQTTProperties* properties, int count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[])
+#else
+int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid, int count,
+		MQTTString topicFilters[], int requestedQoSs[])
+#endif
 {
 	unsigned char *ptr = buf;
 	MQTTHeader header = {0};
@@ -57,7 +83,11 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 	int i = 0;
 
 	FUNC_ENTRY;
+#if defined(MQTTV5)
+	if (MQTTPacket_len(rem_len = MQTTSerialize_subscribeLength(count, topicFilters, properties)) > buflen)
+#else
 	if (MQTTPacket_len(rem_len = MQTTSerialize_subscribeLength(count, topicFilters)) > buflen)
+#endif
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -73,10 +103,21 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 
 	writeInt(&ptr, packetid);
 
+#if defined(MQTTV5)
+  if (properties && MQTTProperties_write(&ptr, properties) < 0)
+	  goto exit;
+#endif
+
 	for (i = 0; i < count; ++i)
 	{
+		unsigned char opts = requestedQoSs[i];
+#if defined(MQTTV5)
+		opts |= (options[i].noLocal << 2); /* 1 bit */
+		opts |= (options[i].retainAsPublished << 3); /* 1 bit */
+    opts |= (options[i].retainHandling << 4); /* 2 bits */
+#endif
 		writeMQTTString(&ptr, topicFilters[i]);
-		writeChar(&ptr, requestedQoSs[i]);
+		writeChar(&ptr, opts);
 	}
 
 	rc = ptr - buf;
@@ -133,5 +174,3 @@ exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-
-

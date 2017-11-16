@@ -37,6 +37,4 @@ DLLExport int MQTTV5Serialize_disconnect(unsigned char* buf, int buflen, short r
 DLLExport int MQTTV5Deserialize_disconnect(MQTTProperties* properties, short* reasonCode,
   unsigned char* buf, int buflen);
 
-DLLExport int MQTTV5Serialize_pingreq(unsigned char* buf, int buflen);
-
 #endif /* MQTTV5CONNECT_H_ */

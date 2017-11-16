@@ -444,18 +444,33 @@ int test2(struct Options options)
 	unsigned char *payload2 = NULL;
 	int payloadlen2 = 0;
 
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&properties, &one);
+
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - serialization of publish and back");
 
 	topicString.cstring = "mytopic";
-	rc = MQTTSerialize_publish(buf, buflen, dup, qos, retained, msgid, topicString,
-			payload, payloadlen);
+	rc = MQTTV5Serialize_publish(buf, buflen, dup, qos, retained, msgid, topicString,
+			&properties, payload, payloadlen);
 	assert("good rc from serialize publish", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_publish(&dup2, &qos2, &retained2, &msgid2, &topicString2,
-			&payload2, &payloadlen2, buf, buflen);
+	rc = MQTTV5Deserialize_publish(&dup2, &qos2, &retained2, &msgid2, &topicString2,
+			&outProperties, &payload2, &payloadlen2, buf, buflen);
 	assert("good rc from deserialize publish", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
@@ -708,7 +723,7 @@ int test7(struct Options options)
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&disconnectProperties, &one);
-	reasonCode = 0;
+	reasonCode = SUCCESS;
 
 	rc = MQTTV5Serialize_disconnect(buf, buflen, reasonCode, &disconnectProperties);
 	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);

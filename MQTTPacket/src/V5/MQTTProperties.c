@@ -57,6 +57,7 @@ struct nameToType
 int MQTTProperty_getType(int identifier)
 {
   int i, rc = -1;
+
   for (i = 0; i < ARRAY_SIZE(namesToTypes); ++i)
   {
     if (namesToTypes[i].name == identifier)
@@ -82,7 +83,7 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
 
   if (props->count == props->max_count)
     rc = -1;  /* max number of properties already in structure */
-  else if ((type = MQTTProperty_getType(prop->identifier)) <= 0)
+  else if ((type = MQTTProperty_getType(prop->identifier)) < 0)
     rc = -2;
   else
   {
@@ -133,7 +134,7 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
       type = -1;
 
   type = MQTTProperty_getType(prop->identifier);
-  if (type > 0)
+  if (type >= BYTE && type <= UTF_8_STRING_PAIR)
   {
     writeChar(pptr, prop->identifier);
     switch (type)
@@ -182,7 +183,7 @@ int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties)
 
   /* write the entire property list length first */
   *pptr += MQTTPacket_encode(*pptr, properties->length);
-  len = 1;
+  len = rc = 1;
   for (i = 0; i < properties->count; ++i)
   {
     rc = MQTTProperty_write(pptr, &properties->array[i]);

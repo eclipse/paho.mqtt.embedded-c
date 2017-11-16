@@ -16,11 +16,19 @@
 
 #include "MQTTPacket.h"
 
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+extern "C" {
+#endif
+
 #include "MQTTReasonCodes.h"
 
 #include "MQTTProperties.h"
 
 #include "MQTTV5Connect.h"
+
+#include "MQTTV5Publish.h"
+
+#include "MQTTV5Subscribe.h"
 
 void writeInt4(unsigned char** pptr, int anInt);
 int readInt4(unsigned char** pptr);
@@ -28,3 +36,7 @@ int readInt4(unsigned char** pptr);
 void writeMQTTLenString(unsigned char** pptr, MQTTLenString lenstring);
 
 int MQTTLenStringRead(MQTTLenString* lenstring, unsigned char** pptr, unsigned char* enddata);
+
+#if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
+}
+#endif

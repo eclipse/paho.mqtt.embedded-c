@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 	MQTTProperties properties = MQTTProperties_initializer;
 	MQTTProperty props[10];
 	MQTTProperty one;
+  int msgid = 0;
 
 	if (argc > 1)
 		host = argv[1];
@@ -86,9 +87,41 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
+	/* subscribe */
+	properties.length = properties.count = 0; /* remove existing properties */
+	topicString.cstring = "substopic";
+	struct subscribeOptions opts = {0, 0, 0};
+	opts.noLocal = 1;
+	opts.retainAsPublished = 0;
+	opts.retainHandling = 2;
+	int req_qos = 2;
+	len = MQTTV5Serialize_subscribe(buf, buflen, 0, ++msgid, &properties, 1, &topicString, &req_qos, &opts);
+
+	rc = transport_sendPacketBuffer(mysock, buf, len);
+	if (MQTTPacket_read(buf, buflen, transport_getdata) == SUBACK) 	/* wait for suback */
+	{
+		unsigned short submsgid;
+		int subcount;
+		int granted_qos;
+
+		//rc = MQTTV5Deserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
+		if (granted_qos != 0)
+		{
+			printf("granted qos != 0, %d\n", granted_qos);
+			goto exit;
+		}
+	}
+	else
+		goto exit;
+
+  properties.length = properties.count = 0; /* remove existing properties */
+	one.identifier = PAYLOAD_FORMAT_INDICATOR;
+	one.value.byte = 3;
+	rc = MQTTProperties_add(&properties, &one);
+
 	topicString.cstring = "mytopic";
-	//len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
-	//rc = transport_sendPacketBuffer(mysock, buf, len);
+	len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &properties, (unsigned char *)payload, payloadlen);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	len = MQTTV5Serialize_disconnect(buf, buflen, 0, &properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
