@@ -38,9 +38,11 @@ DLLExport int MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* pa
 		int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
     unsigned char* buf, int len);
 
-DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid, int count, int* grantedQoSs);
+DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid,
+  MQTTProperties* properties, int count, int* reasonCodes);
 
-DLLExport int MQTTV5Deserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int len);
+DLLExport int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
+  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int len);
 
 
 #endif /* MQTTV5SUBSCRIBE_H_ */

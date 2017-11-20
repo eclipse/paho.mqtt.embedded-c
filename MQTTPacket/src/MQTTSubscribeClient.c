@@ -138,7 +138,19 @@ exit:
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[], unsigned char* buf, int buflen)
+#if defined(MQTTV5)
+int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[],
+	unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_suback(packetid, NULL, maxcount, count, grantedQoSs, buf, buflen);
+}
+
+int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
+	  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
+#else
+int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[],
+	unsigned char* buf, int buflen)
+#endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
@@ -158,6 +170,11 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 
 	*packetid = readInt(&curdata);
 
+#if defined(MQTTV5)
+	if (properties && !MQTTProperties_read(properties, &curdata, enddata))
+	  goto exit;
+#endif
+
 	*count = 0;
 	while (curdata < enddata)
 	{
@@ -166,7 +183,12 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 			rc = -1;
 			goto exit;
 		}
-		grantedQoSs[(*count)++] = readChar(&curdata);
+#if defined(MQTTV5)
+    reasonCodes[(*count)++]
+#else
+		grantedQoSs[(*count)++]
+#endif
+                            = readChar(&curdata);
 	}
 
 	rc = 1;

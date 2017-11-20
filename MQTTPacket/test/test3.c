@@ -102,12 +102,13 @@ int main(int argc, char *argv[])
 	{
 		unsigned short submsgid;
 		int subcount;
-		int granted_qos;
+		int reasonCode;
 
-		//rc = MQTTV5Deserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
-		if (granted_qos != 0)
+	  properties.length = properties.count = 0; /* remove existing properties */
+		rc = MQTTV5Deserialize_suback(&submsgid, &properties, 1, &subcount, &reasonCode, buf, buflen);
+		if (reasonCode != req_qos)
 		{
-			printf("granted qos != 0, %d\n", granted_qos);
+			printf("reasonCode != %d, %d\n", req_qos, reasonCode);
 			goto exit;
 		}
 	}
