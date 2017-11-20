@@ -51,6 +51,25 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 }
 
 
+
+#if defined(MQTTV5)
+int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+{
+	return MQTTV5Deserialize_connect(NULL, NULL, data, buf, len);
+}
+
+/**
+  * Deserializes the supplied (wire) buffer into connect data structure
+  * @param willProperties the V5 properties to be applied to the will message, if it exists
+  * @param connectProperties the V5 properties for the connect packet
+  * @param data the connect data structure to be filled out
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
+	MQTTPacket_connectData* data, unsigned char* buf, int len)
+#else
 /**
   * Deserializes the supplied (wire) buffer into connect data structure
   * @param data the connect data structure to be filled out
@@ -58,10 +77,6 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-#if defined(MQTTV5)
-int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
-	MQTTPacket_connectData* data, unsigned char* buf, int len)
-#else
 int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
 #endif
 {

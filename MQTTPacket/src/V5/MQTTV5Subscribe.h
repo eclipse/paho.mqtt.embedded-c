@@ -32,11 +32,11 @@ struct subscribeOptions
 };
 
 DLLExport int MQTTV5Serialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-		MQTTProperties* properties, int count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[]);
+	MQTTProperties* properties, int count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[]);
 
 DLLExport int MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-		int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
-    unsigned char* buf, int len);
+	int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
+  unsigned char* buf, int len);
 
 DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid,
   MQTTProperties* properties, int count, int* reasonCodes);

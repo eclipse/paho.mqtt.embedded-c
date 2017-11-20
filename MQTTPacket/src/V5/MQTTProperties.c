@@ -46,7 +46,7 @@ struct nameToType
   {TOPIC_ALIAS, TWO_BYTE_INTEGER},
   {MAXIMUM_QOS, BYTE},
   {RETAIN_AVAILABLE, BYTE},
-  {USER_PROPERTY, UTF_8_ENCODED_STRING},
+  {USER_PROPERTY, UTF_8_STRING_PAIR},
   {MAXIMUM_PACKET_SIZE, FOUR_BYTE_INTEGER},
   {WILDCARD_SUBSCRIPTION_AVAILABLE, BYTE},
   {SUBSCRIPTION_IDENTIFIER_AVAILABLE, BYTE},
@@ -157,12 +157,12 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
       case BINARY_DATA:
       case UTF_8_ENCODED_STRING:
         writeMQTTLenString(pptr, prop->value.data);
-        rc = prop->value.data.len;
+        rc = prop->value.data.len + 2; /* include length field */
         break;
       case UTF_8_STRING_PAIR:
         writeMQTTLenString(pptr, prop->value.data);
         writeMQTTLenString(pptr, prop->value.value);
-        rc = prop->value.data.len + prop->value.value.len;
+        rc = prop->value.data.len + prop->value.value.len + 4; /* include length fields */
         break;
     }
   }
@@ -206,7 +206,7 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
 
   prop->identifier = readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
-  if (type > 0)
+  if (type >= BYTE && type <= UTF_8_STRING_PAIR)
   {
     switch (type)
     {

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,9 +12,14 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - MQTT V5.0 support
  *******************************************************************************/
 
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
 #include "StackTrace.h"
 
 #include <string.h>
@@ -32,8 +37,22 @@
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return the length of the serialized data.  <= 0 indicates error
   */
+#if defined(MQTTV5)
+int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid,
+	int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[],
+	unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_subscribe(dup, packetid, NULL,
+			maxcount, count, topicFilters, requestedQoSs, NULL, buf, buflen);
+}
+
+int MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
+		int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
+	  unsigned char* buf, int buflen)
+#else
 int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid, int maxcount, int* count, MQTTString topicFilters[],
 	int requestedQoSs[], unsigned char* buf, int buflen)
+#endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
@@ -52,6 +71,11 @@ int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid, int 
 
 	*packetid = readInt(&curdata);
 
+#if defined(MQTTV5)
+	if (properties && !MQTTProperties_read(properties, &curdata, enddata))
+	  goto exit;
+#endif
+
 	*count = 0;
 	while (curdata < enddata)
 	{
@@ -60,6 +84,12 @@ int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid, int 
 		if (curdata >= enddata) /* do we have enough data to read the req_qos version byte? */
 			goto exit;
 		requestedQoSs[*count] = readChar(&curdata);
+#if defined(MQTTV5)
+		options[*count].noLocal = (requestedQoSs[*count] >> 2) & 0x01; /* 1 bit */
+		options[*count].retainAsPublished = (requestedQoSs[*count] >> 3) & 0x01; /* 1 bit */
+    options[*count].retainHandling = (requestedQoSs[*count] >> 4) & 0x03; /* 2 bits */
+		requestedQoSs[*count] &= 0x03; /* 0 all except qos bits */
+#endif
 		(*count)++;
 	}
 
@@ -79,15 +109,31 @@ exit:
   * @param grantedQoSs - array of granted QoS
   * @return the length of the serialized data.  <= 0 indicates error
   */
+#if defined(MQTTV5)
 int MQTTSerialize_suback(unsigned char* buf, int buflen, unsigned short packetid, int count, int* grantedQoSs)
+{
+	return MQTTV5Serialize_suback(buf, buflen, packetid, NULL, count, grantedQoSs);
+}
+
+int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid,
+	  MQTTProperties* properties, int count, int* reasonCodes)
+#else
+int MQTTSerialize_suback(unsigned char* buf, int buflen, unsigned short packetid, int count, int* grantedQoSs)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = -1;
 	unsigned char *ptr = buf;
 	int i;
+	int len = 0;
 
 	FUNC_ENTRY;
-	if (buflen < 2 + count)
+#if defined(MQTTV5)
+	if (properties)
+	  len += MQTTProperties_len(properties);
+#endif
+  len += count + 2;
+	if (buflen < len)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -96,17 +142,24 @@ int MQTTSerialize_suback(unsigned char* buf, int buflen, unsigned short packetid
 	header.bits.type = SUBACK;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 2 + count); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 
 	writeInt(&ptr, packetid);
 
+#if defined(MQTTV5)
+  if (properties && MQTTProperties_write(&ptr, properties) < 0)
+		goto exit;
+#endif
+
 	for (i = 0; i < count; ++i)
+#if defined(MQTTV5)
+    writeChar(&ptr, reasonCodes[i]);
+#else
 		writeChar(&ptr, grantedQoSs[i]);
+#endif
 
 	rc = ptr - buf;
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-
-

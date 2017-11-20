@@ -190,7 +190,6 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 #endif
                             = readChar(&curdata);
 	}
-
 	rc = 1;
 exit:
 	FUNC_EXIT_RC(rc);
