@@ -112,9 +112,12 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 	{
 		unsigned char opts = requestedQoSs[i];
 #if defined(MQTTV5)
-		opts |= (options[i].noLocal << 2); /* 1 bit */
-		opts |= (options[i].retainAsPublished << 3); /* 1 bit */
-    opts |= (options[i].retainHandling << 4); /* 2 bits */
+    if (options)
+		{
+		  opts |= (options[i].noLocal << 2); /* 1 bit */
+		  opts |= (options[i].retainAsPublished << 3); /* 1 bit */
+      opts |= (options[i].retainHandling << 4); /* 2 bits */
+	  }
 #endif
 		writeMQTTString(&ptr, topicFilters[i]);
 		writeChar(&ptr, opts);
@@ -147,6 +150,13 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 
 int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
 	  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_subunsuback(SUBACK, packetid, properties,
+		maxcount, count, reasonCodes, buf, buflen);
+}
+
+int MQTTV5Deserialize_subunsuback(int type, unsigned short* packetid, MQTTProperties* properties,
+	  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
 #else
 int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[],
 	unsigned char* buf, int buflen)
@@ -160,7 +170,11 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
+#if defined(MQTTV5)
+	if (header.bits.type != type)
+#else
 	if (header.bits.type != SUBACK)
+#endif
 		goto exit;
 
 	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
@@ -174,22 +188,24 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 	if (properties && !MQTTProperties_read(properties, &curdata, enddata))
 	  goto exit;
 #endif
-
-	*count = 0;
-	while (curdata < enddata)
+  if (maxcount > 0)
 	{
-		if (*count > maxcount)
-		{
-			rc = -1;
-			goto exit;
-		}
+	  *count = 0;
+	  while (curdata < enddata)
+  	{
+	  	if (*count > maxcount)
+		  {
+			  rc = -1;
+			  goto exit;
+	  	}
 #if defined(MQTTV5)
-    reasonCodes[(*count)++]
+      reasonCodes[(*count)++]
 #else
-		grantedQoSs[(*count)++]
+		  grantedQoSs[(*count)++]
 #endif
-                            = readChar(&curdata);
-	}
+                              = readChar(&curdata);
+	  }
+  }
 	rc = 1;
 exit:
 	FUNC_EXIT_RC(rc);

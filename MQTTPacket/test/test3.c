@@ -108,12 +108,16 @@ int main(int argc, char *argv[])
 		rc = MQTTV5Deserialize_suback(&submsgid, &properties, 1, &subcount, &reasonCode, buf, buflen);
 		if (reasonCode != req_qos)
 		{
-			printf("reasonCode != %d, %d\n", req_qos, reasonCode);
+			printf("Suback reasonCode != %d, %d\n", req_qos, reasonCode);
 			goto exit;
 		}
+		printf("Subscribe completed\n");
 	}
 	else
+	{
+		printf("Subscribe failed\n");
 		goto exit;
+	}
 
   properties.length = properties.count = 0; /* remove existing properties */
 	one.identifier = PAYLOAD_FORMAT_INDICATOR;
@@ -123,6 +127,33 @@ int main(int argc, char *argv[])
 	topicString.cstring = "mytopic";
 	len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &properties, (unsigned char *)payload, payloadlen);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
+
+	/* unsubscribe */
+	properties.length = properties.count = 0; /* remove existing properties */
+	topicString.cstring = "substopic";
+	len = MQTTV5Serialize_unsubscribe(buf, buflen, 0, ++msgid, &properties, 1, &topicString);
+
+	rc = transport_sendPacketBuffer(mysock, buf, len);
+	if (MQTTPacket_read(buf, buflen, transport_getdata) == UNSUBACK) 	/* wait for unsuback */
+	{
+		unsigned short submsgid;
+		int subcount;
+		int reasonCode;
+
+	  properties.length = properties.count = 0; /* remove existing properties */
+		rc = MQTTV5Deserialize_unsuback(&submsgid, &properties, 1, &subcount, &reasonCode, buf, buflen);
+		if (reasonCode != req_qos)
+		{
+			printf("reasonCode != %d, %d\n", req_qos, reasonCode);
+			goto exit;
+		}
+		printf("Unsubscribe succeeded\n");
+	}
+	else
+	{
+		printf("Unsubscribe failed\n");
+		goto exit;
+	}
 
 	len = MQTTV5Serialize_disconnect(buf, buflen, 0, &properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);

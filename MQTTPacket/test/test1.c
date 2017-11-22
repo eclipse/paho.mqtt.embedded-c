@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -606,10 +606,66 @@ int test6(struct Options options)
 }
 
 
+int test7(struct Options options)
+{
+	int rc = 0;
+	unsigned char buf[100];
+	int buflen = sizeof(buf);
+
+	fprintf(xml, "<testcase classname=\"test7\" name=\"de/serialization\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 7 - serialization of disconnect and back");
+
+	rc = MQTTSerialize_disconnect(buf, buflen);
+	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);
+
+	rc = MQTTDeserialize_disconnect(buf, buflen);
+	assert("good rc from deserialize disconnect", rc == 1, "rc was %d\n", rc);
+
+	/* data after should be the same as data before */
+
+/* exit: */
+	MyLog(LOGA_INFO, "TEST7: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+int test8(struct Options options)
+{
+	int rc = 0;
+	unsigned char buf[100];
+	int buflen = sizeof(buf);
+	unsigned short msgid = 23;
+	unsigned short msgid2 = 2223;
+
+	fprintf(xml, "<testcase classname=\"test8\" name=\"de/serialization\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - serialization of unsuback and back");
+
+	rc = MQTTSerialize_unsuback(buf, buflen, msgid);
+	assert("good rc from serialize unsuback", rc > 0, "rc was %d\n", rc);
+
+	rc = MQTTDeserialize_unsuback(&msgid2, buf, buflen);
+	assert("good rc from deserialize unsuback", rc == 1, "rc was %d\n", rc);
+
+	/* data after should be the same as data before */
+	assert("msgids should be the same", msgid == msgid2, "msgids were different %d\n", msgid2);
+
+/* exit: */
+	MyLog(LOGA_INFO, "TEST8: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6};
+ 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));

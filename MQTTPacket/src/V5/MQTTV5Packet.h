@@ -30,6 +30,8 @@ extern "C" {
 
 #include "MQTTV5Subscribe.h"
 
+#include "MQTTV5Unsubscribe.h"
+
 void writeInt4(unsigned char** pptr, int anInt);
 int readInt4(unsigned char** pptr);
 

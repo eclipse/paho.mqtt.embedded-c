@@ -85,9 +85,12 @@ int MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid, int 
 			goto exit;
 		requestedQoSs[*count] = readChar(&curdata);
 #if defined(MQTTV5)
-		options[*count].noLocal = (requestedQoSs[*count] >> 2) & 0x01; /* 1 bit */
-		options[*count].retainAsPublished = (requestedQoSs[*count] >> 3) & 0x01; /* 1 bit */
-    options[*count].retainHandling = (requestedQoSs[*count] >> 4) & 0x03; /* 2 bits */
+    if (options)
+		{
+		  options[*count].noLocal = (requestedQoSs[*count] >> 2) & 0x01; /* 1 bit */
+		  options[*count].retainAsPublished = (requestedQoSs[*count] >> 3) & 0x01; /* 1 bit */
+      options[*count].retainHandling = (requestedQoSs[*count] >> 4) & 0x03; /* 2 bits */
+	  }
 		requestedQoSs[*count] &= 0x03; /* 0 all except qos bits */
 #endif
 		(*count)++;

@@ -14,8 +14,8 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
-#ifndef MQTTV5SUBSCRIBE_H_
-#define MQTTV5SUBSCRIBE_H_
+#ifndef MQTTV5UNSUBSCRIBE_H_
+#define MQTTV5UNSUBSCRIBE_H_
 
 #if !defined(DLLImport)
   #define DLLImport
@@ -24,25 +24,20 @@
   #define DLLExport
 #endif
 
-struct subscribeOptions
-{
-	unsigned char noLocal; /* 0 or 1 */
-  unsigned char retainAsPublished; /* 0 or 1 */
-	unsigned char retainHandling; /* 0, 1 or 2 */
-};
+DLLExport int MQTTV5Serialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+	MQTTProperties* properties, int count, MQTTString topicFilters[]);
 
-DLLExport int MQTTV5Serialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-	MQTTProperties* properties, int count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[]);
+DLLExport int MQTTV5Deserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
+	int maxcount, int* count, MQTTString topicFilters[], unsigned char* buf, int len);
 
-DLLExport int MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-	int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
-  unsigned char* buf, int len);
-
-DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid,
+DLLExport int MQTTV5Serialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid,
   MQTTProperties* properties, int count, int* reasonCodes);
 
-DLLExport int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
+DLLExport int MQTTV5Deserialize_unsuback(unsigned short* packetid, MQTTProperties* properties,
   int maxcount, int* count, int reasonCodes[], unsigned char* buf, int len);
 
+int MQTTV5Deserialize_subunsuback(int type, unsigned short* packetid, MQTTProperties* properties,
+  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen);
 
-#endif /* MQTTV5SUBSCRIBE_H_ */
+
+#endif /* MQTTV5UNSUBSCRIBE_H_ */

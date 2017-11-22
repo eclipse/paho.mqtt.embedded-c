@@ -12,7 +12,7 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Ian Craggs - add connack return code definitions 
+ *    Ian Craggs - add connack return code definitions
  *    Xiang Rong - 442039 Add makefile to Embedded C client
  *    Ian Craggs - fix for issue #64, bit order in connack response
  *******************************************************************************/
@@ -143,6 +143,7 @@ DLLExport int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned cha
 DLLExport int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
 
 DLLExport int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
+DLLExport int MQTTDeserialize_disconnect(unsigned char* buf, int buflen);
 DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int buflen);
 
 #endif /* MQTTCONNECT_H_ */
