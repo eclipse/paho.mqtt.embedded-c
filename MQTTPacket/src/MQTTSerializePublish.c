@@ -135,13 +135,35 @@ exit:
   * @param packetid the MQTT packet identifier
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
+int MQTTV5Serialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
+	int reasonCode, MQTTProperties* properties);
+
 int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
+{
+	return MQTTV5Serialize_ack(buf, buflen, packettype, dup, packetid, -1, NULL);
+}
+
+int MQTTV5Serialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
+	int reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = 0;
 	unsigned char *ptr = buf;
+	int len = 2;
 
 	FUNC_ENTRY;
+#if defined(MQTTV5)
+  if (reasonCode >= 0)
+	{
+		len += 1;
+		if (properties)
+		  len += MQTTProperties_len(properties);
+	}
+#endif
 	if (buflen < 4)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
@@ -152,8 +174,18 @@ int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, 
 	header.bits.qos = (packettype == PUBREL) ? 1 : 0;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 	writeInt(&ptr, packetid);
+
+#if defined(MQTTV5)
+  if (reasonCode >= 0)
+	{
+		writeChar(&ptr, reasonCode);
+    if (properties && MQTTProperties_write(&ptr, properties) < 0)
+		  goto exit;
+	}
+#endif
+
 	rc = ptr - buf;
 exit:
 	FUNC_EXIT_RC(rc);
@@ -168,9 +200,23 @@ exit:
   * @param packetid integer - the MQTT packet identifier
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid)
 {
+	return MQTTV5Serialize_puback(buf, buflen, packetid, -1, NULL);
+}
+
+int MQTTV5Serialize_puback(unsigned char* buf, int buflen, unsigned short packetid,
+	  int reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid)
+#endif
+{
+#if defined(MQTTV5)
+	return MQTTV5Serialize_ack(buf, buflen, PUBACK, 0, packetid, reasonCode, properties);
+#else
 	return MQTTSerialize_ack(buf, buflen, PUBACK, 0, packetid);
+#endif
 }
 
 
@@ -182,9 +228,23 @@ int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid
   * @param packetid integer - the MQTT packet identifier
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid)
 {
-	return MQTTSerialize_ack(buf, buflen, PUBREL, dup, packetid);
+	return MQTTV5Serialize_pubrel(buf, buflen, dup, packetid, -1, NULL);
+}
+
+int MQTTV5Serialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+	  int reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid)
+#endif
+{
+#if defined(MQTTV5)
+	return MQTTV5Serialize_ack(buf, buflen, PUBREL, 0, packetid, reasonCode, properties);
+#else
+	return MQTTSerialize_ack(buf, buflen, PUBREL, 0, packetid);
+#endif
 }
 
 
@@ -195,7 +255,21 @@ int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsi
   * @param packetid integer - the MQTT packet identifier
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid)
 {
+	return MQTTV5Serialize_pubcomp(buf, buflen, packetid, -1, NULL);
+}
+
+int MQTTV5Serialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid,
+	  int reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid)
+#endif
+{
+#if defined(MQTTV5)
+	return MQTTV5Serialize_ack(buf, buflen, PUBCOMP, 0, packetid, reasonCode, properties);
+#else
 	return MQTTSerialize_ack(buf, buflen, PUBCOMP, 0, packetid);
+#endif
 }

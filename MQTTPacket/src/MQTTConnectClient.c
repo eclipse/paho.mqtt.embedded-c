@@ -222,7 +222,7 @@ exit:
   */
 #if defined(MQTTV5)
 int MQTTV5Serialize_zero(unsigned char* buf, int buflen, unsigned char packettype,
-  short reasonCode, MQTTProperties* properties);
+  int reasonCode, MQTTProperties* properties);
 
 int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 {
@@ -230,7 +230,7 @@ int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 }
 
 int MQTTV5Serialize_zero(unsigned char* buf, int buflen, unsigned char packettype,
-  short reasonCode, MQTTProperties* properties)
+  int reasonCode, MQTTProperties* properties)
 #else
 int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 #endif
@@ -287,7 +287,7 @@ int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
 }
 
 int MQTTV5Serialize_disconnect(unsigned char* buf, int buflen,
-	             short reasonCode, MQTTProperties* properties)
+	             int reasonCode, MQTTProperties* properties)
 #else
 int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
 #endif

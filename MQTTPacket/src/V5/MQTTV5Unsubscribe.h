@@ -25,19 +25,19 @@
 #endif
 
 DLLExport int MQTTV5Serialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-	MQTTProperties* properties, int count, MQTTString topicFilters[]);
+	MQTTProperties* properties, int count, MQTTString* topicFilters);
 
 DLLExport int MQTTV5Deserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-	int maxcount, int* count, MQTTString topicFilters[], unsigned char* buf, int len);
+	int maxcount, int* count, MQTTString* topicFilters, unsigned char* buf, int len);
 
 DLLExport int MQTTV5Serialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid,
   MQTTProperties* properties, int count, int* reasonCodes);
 
 DLLExport int MQTTV5Deserialize_unsuback(unsigned short* packetid, MQTTProperties* properties,
-  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int len);
+  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int len);
 
 int MQTTV5Deserialize_subunsuback(int type, unsigned short* packetid, MQTTProperties* properties,
-  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen);
+  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int buflen);
 
 
 #endif /* MQTTV5UNSUBSCRIBE_H_ */

@@ -780,7 +780,7 @@ int test7(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	short reasonCode = -1, outReasonCode = -1;
+	int reasonCode = -1, outReasonCode = -1;
 	MQTTProperties disconnectProperties = MQTTProperties_initializer,
 	               outdisconnectProperties = MQTTProperties_initializer;
 	MQTTProperty disconnect_props[10], out_disconnect_props[10];

@@ -223,7 +223,7 @@ exit:
   * @return error code.  1 is success, 0 is failure
   */
 #if defined(MQTTV5)
-int MQTTV5Deserialize_disconnect(MQTTProperties* properties, short* reasonCode,
+int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
 	    unsigned char* buf, int buflen)
 {
 	MQTTHeader header = {0};

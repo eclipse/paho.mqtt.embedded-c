@@ -149,14 +149,14 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 }
 
 int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
-	  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
+	  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int buflen)
 {
 	return MQTTV5Deserialize_subunsuback(SUBACK, packetid, properties,
 		maxcount, count, reasonCodes, buf, buflen);
 }
 
 int MQTTV5Deserialize_subunsuback(int type, unsigned short* packetid, MQTTProperties* properties,
-	  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
+	  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int buflen)
 #else
 int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, int grantedQoSs[],
 	unsigned char* buf, int buflen)

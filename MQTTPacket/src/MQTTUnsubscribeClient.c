@@ -130,7 +130,7 @@ int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int b
 }
 
 int MQTTV5Deserialize_unsuback(unsigned short* packetid, MQTTProperties* properties,
-		int maxcount, int* count, int reasonCodes[], unsigned char* buf, int buflen)
+		int maxcount, int* count, int* reasonCodes, unsigned char* buf, int buflen)
 #else
 int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int buflen)
 #endif

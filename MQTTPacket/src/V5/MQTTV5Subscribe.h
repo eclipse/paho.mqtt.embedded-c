@@ -42,7 +42,7 @@ DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned sh
   MQTTProperties* properties, int count, int* reasonCodes);
 
 DLLExport int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
-  int maxcount, int* count, int reasonCodes[], unsigned char* buf, int len);
+  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int len);
 
 
 #endif /* MQTTV5SUBSCRIBE_H_ */
