@@ -300,6 +300,15 @@ int MQTTSerialize_disconnect(unsigned char* buf, int buflen)
 }
 
 
+#if defined(MQTTV5)
+int MQTTV5Serialize_auth(unsigned char* buf, int buflen,
+	             int reasonCode, MQTTProperties* properties)
+{
+  return MQTTV5Serialize_zero(buf, buflen, AUTH, reasonCode, properties);
+}
+#endif
+
+
 /**
   * Serializes a disconnect packet into the supplied buffer, ready for writing to a socket
   * @param buf the buffer into which the packet will be serialized

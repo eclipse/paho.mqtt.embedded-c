@@ -214,16 +214,8 @@ exit:
 }
 
 
-/**
-  * Deserializes the supplied (wire) buffer into connack data - return code
-  * @param sessionPresent the session present flag returned (only for MQTT 3.1.1)
-  * @param connack_rc returned integer value of the connack return code
-  * @param buf the raw buffer data, of the correct length determined by the remaining length field
-  * @param len the length in bytes of the data in the supplied buffer
-  * @return error code.  1 is success, 0 is failure
-  */
 #if defined(MQTTV5)
-int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
+int MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties, int* reasonCode,
 	    unsigned char* buf, int buflen)
 {
 	MQTTHeader header = {0};
@@ -234,7 +226,7 @@ int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
-	if (header.bits.type != DISCONNECT)
+	if (header.bits.type != packettype)
 		goto exit;
 
 	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
@@ -251,6 +243,28 @@ int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
+}
+#endif
+
+/**
+  * Deserializes the supplied (wire) buffer into connack data - return code
+  * @param sessionPresent the session present flag returned (only for MQTT 3.1.1)
+  * @param connack_rc returned integer value of the connack return code
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+#if defined(MQTTV5)
+int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_zero(DISCONNECT, properties, reasonCode, buf, buflen);
+}
+
+int MQTTV5Deserialize_auth(MQTTProperties* properties, int* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_zero(AUTH, properties, reasonCode, buf, buflen);
 }
 #endif
 

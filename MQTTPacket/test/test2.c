@@ -884,10 +884,60 @@ int test8(struct Options options)
 	return failures;
 }
 
+
+int test9(struct Options options)
+{
+	int rc = 0;
+	unsigned char buf[100];
+	int buflen = sizeof(buf);
+	int reasonCode = 33, reasonCode2 = 44;
+
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test9\" name=\"de/serialization\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - serialization of auth and back");
+
+	rc = MQTTV5Serialize_auth(buf, buflen, reasonCode, &properties);
+	assert("good rc from serialize auth", rc > 0, "rc was %d\n", rc);
+
+	rc = MQTTV5Deserialize_auth(&outProperties, &reasonCode2, buf, buflen);
+	assert("good rc from deserialize auth", rc == 1, "rc was %d\n", rc);
+
+	/* data after should be the same as data before */
+	assert("reason codes should be the same", reasonCode == reasonCode2, "reasonCodes were different %d\n", reasonCode2);
+
+	rc = checkMQTTProperties(&properties, &outProperties);
+
+/* exit: */
+	MyLog(LOGA_INFO, "TEST9: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8};
+ 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8, test9};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));

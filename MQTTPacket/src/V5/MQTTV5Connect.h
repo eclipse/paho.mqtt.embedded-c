@@ -37,4 +37,10 @@ DLLExport int MQTTV5Serialize_disconnect(unsigned char* buf, int buflen, int rea
 DLLExport int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
   unsigned char* buf, int buflen);
 
+DLLExport int MQTTV5Serialize_auth(unsigned char* buf, int buflen, int reasonCode,
+  MQTTProperties* properties);
+
+DLLExport int MQTTV5Deserialize_auth(MQTTProperties* properties, int* reasonCode,
+  unsigned char* buf, int buflen);
+
 #endif /* MQTTV5CONNECT_H_ */

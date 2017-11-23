@@ -276,7 +276,7 @@ int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsi
 
 
 /**
-  * Serializes a pubrel packet into the supplied buffer.
+  * Serializes a pubcomp packet into the supplied buffer.
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer
   * @param packetid integer - the MQTT packet identifier
