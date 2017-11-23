@@ -357,6 +357,7 @@ int test1(struct Options options)
 		       "topic was not test_topic %s\n", topicString2.cstring);
 	}
 
+	/* Publish QoS 1 this time */
 	topicString.cstring = test_topic;
 	len = MQTTV5Serialize_publish(buf, buflen, 0, 1, 0, ++msgid, topicString, &properties, (unsigned char *)payload, payloadlen);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
@@ -382,6 +383,8 @@ int test1(struct Options options)
 			rc = MQTTV5Deserialize_publish(&dup2, &qos2, &retained2, &msgid2, &topicString2,
 					&properties, &payload2, &payloadlen2, buf, buflen);
 
+			assert("qos should be 1", qos2 == 1, "qos was not 1 %d\n", qos2);
+
 			properties.length = properties.count = 0; /* remove existing properties */
 			len = MQTTV5Serialize_puback(buf, buflen, msgid2, 0, &properties);
 			rc = transport_sendPacketBuffer(mysock, buf, len);
@@ -402,6 +405,104 @@ int test1(struct Options options)
 		  assert("reasonCode should be 0", reasonCode == 0, "reasonCode was %d\n", reasonCode);
 			assert("msgid should be msgid2", msgid == msgid2, "msgid was not msgid2 %d\n", msgid2);
     }
+		++i;
+	}
+
+	/* Publish QoS 2 this time */
+	topicString.cstring = test_topic;
+	len = MQTTV5Serialize_publish(buf, buflen, 0, 2, 0, ++msgid, topicString, &properties, (unsigned char *)payload, payloadlen);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
+	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
+
+	i = 0;
+	while (i < 4)
+	{
+		static unsigned short pubmsgid = 999;
+
+		rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for publish, pubrel and pubcomp */
+		assert("Should receive publish, pubrec, pubrel or pubcomp", rc == PUBREC || rc == PUBREL || rc == PUBLISH || rc == PUBCOMP,
+		       "did not get pubrec, pubrel, pubcomp or publish %d\n", rc);
+		if (rc == PUBLISH)
+		{
+			unsigned char* payload2;
+			MQTTString topicString2;
+			int payloadlen2 = 0, qos2 = -1;
+			unsigned char retained2 = 0, dup2 = 0;
+			static int pubcount = 0;
+
+			++pubcount;
+			assert("should get only 1 publish",  pubcount == 1, "pubcount %d\n", pubcount);
+			properties.length = properties.count = 0; /* remove existing properties */
+			rc = MQTTV5Deserialize_publish(&dup2, &qos2, &retained2, &pubmsgid, &topicString2,
+					&properties, &payload2, &payloadlen2, buf, buflen);
+			assert("qos should be 2", qos2 == 2, "qos was not 2 %d\n", qos2);
+
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Serialize_pubrec(buf, buflen, pubmsgid, 0, &properties);
+			rc = transport_sendPacketBuffer(mysock, buf, len);
+			assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
+		}
+		else if (rc == PUBREL)
+		{
+			unsigned char* payload2;
+			MQTTString topicString2;
+			int reasonCode = -1;
+			unsigned char dup2 = 0;
+			unsigned char packettype = 99;
+			unsigned short msgid2 = 999;
+			static int pubrelcount = 0;
+
+			++pubrelcount;
+			assert("should get only 1 pubrel",  pubrelcount == 1, "pubrelcount %d\n", pubrelcount);
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Deserialize_ack(&packettype, &dup2, &msgid2, &reasonCode, &properties, buf, buflen);
+			assert("packettype should be PUBREL", packettype == PUBREL, "packettype was %d\n", packettype);
+			assert("reasonCode should be 0", reasonCode == 0, "reasonCode was %d\n", reasonCode);
+			assert("pubmsgid should be msgid2", pubmsgid == msgid2, "pubmsgid was not msgid2 %d\n", msgid2);
+
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Serialize_pubcomp(buf, buflen, msgid2, 0, &properties);
+			rc = transport_sendPacketBuffer(mysock, buf, len);
+			assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
+		}
+		else if (rc == PUBREC)
+		{
+			unsigned char* payload2;
+			MQTTString topicString2;
+			int reasonCode = -1;
+			unsigned char dup2 = 0;
+			unsigned short msgid2 = 999;
+			unsigned char packettype = 99;
+			static int pubreccount = 0;
+
+			++pubreccount;
+			assert("should get only 1 pubrec",  pubreccount == 1, "pubreccount %d\n", pubreccount);
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Deserialize_ack(&packettype, &dup2, &msgid2, &reasonCode, &properties, buf, buflen);
+			assert("packettype should be PUBREC", packettype == PUBREC, "packettype was %d\n", packettype);
+			assert("reasonCode should be 0", reasonCode == 0, "reasonCode was %d\n", reasonCode);
+			assert("msgid should be msgid2", msgid == msgid2, "msgid was not msgid2 %d\n", msgid2);
+
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Serialize_pubrel(buf, buflen, 0, msgid2, 0, &properties);
+			rc = transport_sendPacketBuffer(mysock, buf, len);
+			assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
+		}
+		else
+		{
+			static int pubcompcount = 0;
+			unsigned short msgid2 = 999;
+			unsigned char packettype = 99, dup = 8;
+			int reasonCode;
+
+			pubcompcount++;
+			assert("should get only 1 puback", pubcompcount == 1, "pubcompcount %d\n", pubcompcount);
+			properties.length = properties.count = 0; /* remove existing properties */
+			len = MQTTV5Deserialize_ack(&packettype, &dup, &msgid2, &reasonCode, &properties, buf, buflen);
+			assert("packettype should be PUBCOMP", packettype == PUBCOMP, "packettype was %d\n", packettype);
+			assert("reasonCode should be 0", reasonCode == 0, "reasonCode was %d\n", reasonCode);
+			assert("msgid should be msgid2", msgid == msgid2, "msgid was not msgid2 %d\n", msgid2);
+		}
 		++i;
 	}
 

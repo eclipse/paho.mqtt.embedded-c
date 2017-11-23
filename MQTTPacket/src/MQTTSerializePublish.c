@@ -219,6 +219,33 @@ int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid
 #endif
 }
 
+/**
+  * Serializes a pubrec packet into the supplied buffer.
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param dup integer - the MQTT dup flag
+  * @param packetid integer - the MQTT packet identifier
+  * @return serialized length, or error if 0
+  */
+#if defined(MQTTV5)
+int MQTTSerialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid)
+{
+	return MQTTV5Serialize_pubrec(buf, buflen, packetid, -1, NULL);
+}
+
+int MQTTV5Serialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid,
+	  int reasonCode, MQTTProperties* properties)
+#else
+int MQTTSerialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid)
+#endif
+{
+#if defined(MQTTV5)
+	return MQTTV5Serialize_ack(buf, buflen, PUBREC, 0, packetid, reasonCode, properties);
+#else
+	return MQTTSerialize_ack(buf, buflen, PUBREC, 0, packetid);
+#endif
+}
+
 
 /**
   * Serializes a pubrel packet into the supplied buffer.
@@ -241,9 +268,9 @@ int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsi
 #endif
 {
 #if defined(MQTTV5)
-	return MQTTV5Serialize_ack(buf, buflen, PUBREL, 0, packetid, reasonCode, properties);
+	return MQTTV5Serialize_ack(buf, buflen, PUBREL, dup, packetid, reasonCode, properties);
 #else
-	return MQTTSerialize_ack(buf, buflen, PUBREL, 0, packetid);
+	return MQTTSerialize_ack(buf, buflen, PUBREL, dup, packetid);
 #endif
 }
 

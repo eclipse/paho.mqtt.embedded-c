@@ -35,6 +35,9 @@ DLLExport int MQTTV5Deserialize_publish(unsigned char* dup, int* qos, unsigned c
 DLLExport int MQTTV5Serialize_puback(unsigned char* buf, int buflen, unsigned short packetid,
   int reasonCode, MQTTProperties* properties);
 
+DLLExport int MQTTV5Serialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid,
+  int reasonCode, MQTTProperties* properties);
+
 DLLExport int MQTTV5Serialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
   int reasonCode, MQTTProperties* properties);
 
