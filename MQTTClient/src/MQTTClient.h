@@ -595,6 +595,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
         case CONNACK:
         case PUBACK:
         case SUBACK:
+        case UNSUBACK:
             break;
         case PUBLISH:
         {
