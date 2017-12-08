@@ -269,6 +269,7 @@ int cycle(MQTTClient* c, Timer* timer)
         case CONNACK:
         case PUBACK:
         case SUBACK:
+        case UNSUBACK:
             break;
         case PUBLISH:
         {
