@@ -36,6 +36,7 @@
 
 #include "MQTTPacket.h"
 #include "stdio.h"
+#include "string.h"
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
 /* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
