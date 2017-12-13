@@ -17,6 +17,9 @@
  *******************************************************************************/
 #include "MQTTClient.h"
 
+#include <stdio.h>
+#include <string.h>
+
 static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) {
     md->topicName = aTopicName;
     md->message = aMessage;
