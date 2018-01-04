@@ -16,8 +16,8 @@
  *    Ian Craggs - add setMessageHandler function
  *******************************************************************************/
 
-#if !defined(__MQTT_CLIENT_C_)
-#define __MQTT_CLIENT_C_
+#if !defined(MQTT_CLIENT_H)
+#define MQTT_CLIENT_H
 
 #if defined(__cplusplus)
  extern "C" {
