@@ -76,6 +76,7 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 	 */
 	if (MQTTPacket_checkVersion(&Protocol, version))
 	{
+		data->MQTTVersion = version;
 		flags.all = readChar(&curdata);
 		data->cleansession = flags.bits.cleansession;
 		data->keepAliveInterval = readInt(&curdata);

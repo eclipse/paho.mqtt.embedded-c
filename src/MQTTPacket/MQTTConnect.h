@@ -19,7 +19,7 @@
 #define MQTTCONNECT_H_
 
 #if !defined(DLLImport)
-  #define DLLImport 
+  #define DLLImport
 #endif
 #if !defined(DLLExport)
   #define DLLExport
@@ -123,6 +123,8 @@ typedef union
 
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
+
+DLLExport int MQTTSerialize_connectLength(MQTTPacket_connectData* options);
 
 DLLExport int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
 DLLExport int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
