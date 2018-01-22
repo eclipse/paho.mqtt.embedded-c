@@ -172,7 +172,7 @@ void loop() {
 			message.retained = false;
 			message.dup = false;
 			message.payload = (void*) buf;
-			message.payloadLen = strlen(buf) + 1;
+			message.payloadLen = strlen(buf);
 			mqtt->publish(MQTT_TOPIC_PUB, message);
 		}
 		// Idle for 30 seconds
