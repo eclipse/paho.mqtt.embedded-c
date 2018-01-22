@@ -35,6 +35,23 @@ It allows the full control and limiting of the used resources externally:
 you going to put board/radio into low-power mode between data transmissions
 
 
+Installation
+============
+
+Arduino IDE
+-----------
+
+Search for `ArduinoMqtt` using official [Library Manager](https://www.arduino.cc/en/Guide/Libraries).
+
+PlatformIO
+----------
+
+Add `ArduinoMqtt` to the `platformio.ini` file to enable automatic installation:
+```ini
+lib_deps = ArduinoMqtt
+```
+
+
 Usage
 =====
 
@@ -239,6 +256,7 @@ MqttClient::MessageHandlers *mqttMessageHandlers = new MqttClient::MessageHandle
 This implementation allocates buffer to store topic string at the moment of `subscribe` call.
 This implementation does copy the topic string.
 
+
 Development
 ===========
 
@@ -271,6 +289,7 @@ Add next mappings:
 Navigate to `Project` -> `Properties` -> `C/C++ General` -> `Preprocessor Include Paths, Macros etc`
 -> `Providers`. Select the `CDT Cross GCC Built-in Compiler Settings` item.
 Add `-std=c++11` to the end of the line in edit-box named as `Command to get compiler specs`.
+
 
 Useful links
 ============
