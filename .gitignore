@@ -12,3 +12,5 @@ lib
 .cproject
 .settings
 
+*.swp
+*.pyc
