@@ -358,6 +358,10 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     return rc;
 }
 
+int MQTTIsConnected(MQTTClient* client)
+{
+  return client->isconnected;
+}
 
 void MQTTRun(void* parm)
 {
