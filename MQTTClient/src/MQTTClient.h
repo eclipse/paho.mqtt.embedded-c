@@ -199,6 +199,16 @@ public:
     int subscribe(const char* topicFilter, enum QoS qos, messageHandler mh);
 
     /** MQTT Subscribe - send an MQTT subscribe packet and wait for the suback
+        *  @param topicFilter - a topic pattern which can include wildcards
+        *  @param qos - the MQTT QoS to subscribe at
+        *  @param mh - the callback function to be invoked when a message is received for this subscription
+        *  @return success code -
+        */
+    template<class T>
+    int subscribe(const char* topicFilter, enum QoS qos, T *item, void (T::*method)(MessageData&) );
+
+
+    /** MQTT Subscribe - send an MQTT subscribe packet and wait for the suback
      *  @param topicFilter - a topic pattern which can include wildcards
      *  @param qos - the MQTT QoS to subscribe at©
      *  @param mh - the callback function to be invoked when a message is received for this subscription
@@ -895,6 +905,54 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
     return subscribe(topicFilter, qos, messageHandler, data);
 }
 
+
+
+template<class Network, class Timer,int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
+template<class T>
+int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::subscribe(const char* topicFilter, enum QoS qos, T *item, void (T::*method)(MessageData&) )
+{
+    int rc = FAILURE;
+    Timer timer(command_timeout_ms);
+    int len = 0;
+    MQTTString topic = {(char*)topicFilter, {0, 0}};
+
+    if (!isconnected)
+        goto exit;
+
+    len = MQTTSerialize_subscribe(sendbuf, MAX_MQTT_PACKET_SIZE, 0, packetid.getNext(), 1, &topic, (int*)&qos);
+    if (len <= 0)
+        goto exit;
+    if ((rc = sendPacket(len, timer)) != SUCCESS) // send the subscribe packet
+        goto exit;             // there was a problem
+
+    if (waitfor(SUBACK, timer) == SUBACK)      // wait for suback
+    {
+        int count = 0, grantedQoS = -1;
+        unsigned short mypacketid;
+        if (MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
+            rc = grantedQoS; // 0, 1, 2 or 0x80
+        if (rc != 0x80)
+        {
+            for (int i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+            {
+                if (messageHandlers[i].topicFilter == 0)
+                {
+                    messageHandlers[i].topicFilter = topicFilter;
+                    messageHandlers[i].fp.attach(item,method);
+                    rc = 0;
+                    break;
+                }
+            }
+        }
+    }
+    else
+        rc = FAILURE;
+
+exit:
+    if (rc != SUCCESS)
+		cleanSession();
+    return rc;
+}
 
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int MAX_MESSAGE_HANDLERS>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::unsubscribe(const char* topicFilter)
