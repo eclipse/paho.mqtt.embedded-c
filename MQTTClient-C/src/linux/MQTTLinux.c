@@ -154,8 +154,6 @@ int NetworkConnect(Network* n, char* addr, int port)
 		n->my_socket = socket(family, type, 0);
 		if (n->my_socket != -1)
 			rc = connect(n->my_socket, (struct sockaddr*)&address, sizeof(address));
-		else
-			rc = -1;
 	}
 
 	return rc;
