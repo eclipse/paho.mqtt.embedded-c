@@ -1,5 +1,5 @@
 #*******************************************************************************
-#  Copyright (c) 2017 IBM Corp.
+#  Copyright (c) 2017, 2018 IBM Corp.
 #
 #  All rights reserved. This program and the accompanying materials
 #  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,13 @@ add_executable(
 )
 target_include_directories(hello PRIVATE "../../src" "../../src/linux")
 target_link_libraries(hello MQTTPacketClient)
+
+add_executable(
+  hello_class
+  hello_class.cpp
+)
+target_include_directories(hello_class PRIVATE "../../src" "../../src/linux")
+target_link_libraries(hello_class MQTTPacketClient)
 
 add_executable(
   stdoutsub
