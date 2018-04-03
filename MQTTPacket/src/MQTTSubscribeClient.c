@@ -112,12 +112,12 @@ int MQTTSerialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, u
 	{
 		unsigned char opts = requestedQoSs[i];
 #if defined(MQTTV5)
-    if (options)
+		if (options)
 		{
-		  opts |= (options[i].noLocal << 2); /* 1 bit */
-		  opts |= (options[i].retainAsPublished << 3); /* 1 bit */
-      opts |= (options[i].retainHandling << 4); /* 2 bits */
-	  }
+			opts |= (options[i].noLocal << 2); /* 1 bit */
+			opts |= (options[i].retainAsPublished << 3); /* 1 bit */
+			opts |= (options[i].retainHandling << 4); /* 2 bits */
+		}
 #endif
 		writeMQTTString(&ptr, topicFilters[i]);
 		writeChar(&ptr, opts);
