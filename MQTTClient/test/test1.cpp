@@ -761,27 +761,26 @@ exit:
   return failures;
 }
 
-static volatile MQTT::MessageData* test4_message_data = NULL;
-static volatile int test4_qos = -1;
 
-class messageArrivedClass
+
+/*********************************************************************
+
+Test 4: queued messages
+
+*********************************************************************/
+#define NO_QUEUED_MESSAGES 5
+
+int test4_no_queued_messages = 0;
+
+void messageArrived4(MQTT::MessageData& md)
 {
-public:
-  void messageArrived(MQTT::MessageData& md)
-  {
-    test4_message_data = &md;
+    test2_message_data = &md;
 	  MQTT::Message &m = md.message;
 
-    test4_qos = md.message.qos;
+    printf("Message received %.*s\n", (int)m.payloadlen, m.payload);
 
-    assert("Good message lengths", pubmsg.payloadlen == m.payloadlen,
-         "payloadlen was %d", m.payloadlen);
-
-    if (pubmsg.payloadlen == m.payloadlen)
-        assert("Good message contents", memcmp(m.payload, pubmsg.payload, m.payloadlen) == 0,
-          "payload was %s", m.payload);
-  }
-};
+    test4_no_queued_messages++;
+}
 
 int test4(struct Options options)
 {
@@ -789,20 +788,20 @@ int test4(struct Options options)
 	int rc;
   const char* test_topic = "C client test4";
   int wait_seconds = 0;
-  messageArrivedClass messageArrivedObject;
 
-  fprintf(xml, "<testcase classname=\"test4\" name=\"object \"");
+  fprintf(xml, "<testcase classname=\"test4\" name=\"queued messages\"");
   global_start_time = start_clock();
   failures = 0;
-  MyLog(LOGA_INFO, "Starting test 4 - class message arrived");
+  MyLog(LOGA_INFO, "Starting test 4 - queued messages");
 
   IPStack ipstack = IPStack();
   MQTT::Client<IPStack, Countdown, 1000> client = MQTT::Client<IPStack, Countdown, 1000>(ipstack);
 
+  // connect cleansession=true to clean up previous state
   MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
   data.willFlag = 1;
   data.MQTTVersion = options.MQTTVersion;
-  data.clientID.cstring = (char*)"message-arrived-class";
+  data.clientID.cstring = (char*)"queued-messages-1";
   data.username.cstring = (char*)"testuser";
   data.password.cstring = (char*)"testpassword";
 
@@ -814,7 +813,7 @@ int test4(struct Options options)
   data.will.retained = 0;
   data.will.topicName.cstring = (char*)"will topic";
 
-  assert("Client is not connected", client.isConnected() == false,
+  assert("Good rc in connack", client.isConnected() == false,
          "isconnected was %d", client.isConnected());
 
   MyLog(LOGA_DEBUG, "Connecting");
@@ -836,40 +835,100 @@ int test4(struct Options options)
   assert("Good rc in connack", client.isConnected() == true,
                 "isconnected was %d", client.isConnected());
 
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
+
+  /* reconnect with cleansession false */
+  data.cleansession = 0;
+  rc = ipstack.connect(options.proxy_host, options.proxy_port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+           "sessionPresent was %d", connack.sessionPresent);
+
   MQTT::subackData suback;
-  rc = client.subscribe(test_topic, subsqos, &messageArrivedObject,
-      &messageArrivedClass::messageArrived, suback);
+  rc = client.subscribe(test_topic, subsqos, messageArrived4, suback);
   assert("Good rc from subscribe", rc == MQTT::SUCCESS, "rc was %d", rc);
   assert("Granted QoS rc from subscribe", suback.grantedQoS == MQTT::QOS2,
          "rc was %d", suback.grantedQoS);
 
-  memset(&pubmsg, '\0', sizeof(pubmsg));
-  pubmsg.payload = (void*)"a much longer message that we can shorten to the extent that we need to payload up to 11";
-  pubmsg.payloadlen = 11;
-  pubmsg.retained = false;
-  pubmsg.dup = false;
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
 
-  for (int i = 0; i < 3; ++i)
+  // connect with another client and send some messages
+  data.clientID.cstring = (char*)"queued-messages-2";
+  data.cleansession = 1;
+  rc = ipstack.connect(options.proxy_host, options.proxy_port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  for (int i = 0; i < NO_QUEUED_MESSAGES; ++i)
   {
-    pubmsg.qos = (MQTT::QoS)i;
-    test4_message_data = NULL;
+    char pub_buffer[50];
+
+    memset(&pubmsg, '\0', sizeof(pubmsg));
+    pubmsg.payload = pub_buffer;
+    sprintf(pub_buffer, "Message no %d", i);
+    pubmsg.payloadlen = strlen((char*)pubmsg.payload);
+    pubmsg.qos = MQTT::QOS1;
+    pubmsg.retained = false;
+    pubmsg.dup = false;
     rc = client.publish(test_topic, pubmsg);
-
-    /* wait for the message to be received */
-    wait_seconds = 10;
-    while ((test4_message_data == NULL) && (wait_seconds-- > 0))
-    {
-      client.yield(100);
-    }
-    assert("Message Arrived", wait_seconds > 0, "Time out waiting for message %d\n", i);
-
-    if (!test4_message_data)
-      printf("No message received within timeout period\n");
-    else
-    {
-      assert("Correct qos", test4_qos == i, "Qos was %d\n", test4_qos);
-    }
+    assert("Good rc from publish", rc == MQTT::SUCCESS, "rc was %d", rc);
   }
+
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
+
+  /* reconnect with cleansession false */
+  data.clientID.cstring = (char*)"queued-messages-1";
+  data.cleansession = 0;
+  rc = ipstack.connect(options.proxy_host, options.proxy_port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  client.setMessageHandler(test_topic, messageArrived4);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 1", connack.sessionPresent == 1,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  // wait until all messages received
+  wait_seconds = 10;
+  while (test4_no_queued_messages < NO_QUEUED_MESSAGES && (wait_seconds-- > 0))
+    client.yield(1000);
+  assert("Messages Arrived", wait_seconds > 0, "Time out waiting for messages %d\n", test4_no_queued_messages);
+
+  rc = client.disconnect();
+  assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
+  ipstack.disconnect();
+
+  /* reconnect with cleansession true to clean up both server and client state */
+  data.cleansession = 1;
+  rc = ipstack.connect(options.host, options.port);
+  assert("TCP connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+  rc = client.connect(data, connack);
+  assert("Connect successful",  rc == MQTT::SUCCESS, "rc was %d", rc);
+
+  assert("Good rc in connack", connack.rc == 0, "rc was %d", connack.rc);
+  assert("Session present is 0", connack.sessionPresent == 0,
+           "sessionPresent was %d", connack.sessionPresent);
+
+  rc = client.subscribe(test_topic, subsqos, messageArrived2, suback);
+  assert("Good rc from subscribe", rc == MQTT::SUCCESS, "rc was %d", rc);
+  assert("Granted QoS rc from subscribe", suback.grantedQoS == MQTT::QOS2,
+                  "rc was %d", suback.grantedQoS);
 
   rc = client.disconnect();
   assert("Disconnect successful", rc == MQTT::SUCCESS, "rc was %d", rc);
@@ -882,15 +941,162 @@ exit:
   return failures;
 }
 
+#if 0
+/*********************************************************************
+
+Test 4: connectionLost and will message
+
+*********************************************************************/
+MQTTClient test6_c1, test6_c2;
+volatile int test6_will_message_arrived = 0;
+volatile int test6_connection_lost_called = 0;
+
+void test6_connectionLost(void* context, char* cause)
+{
+	MQTTClient c = (MQTTClient)context;
+	printf("%s -> Callback: connection lost\n", (c == test6_c1) ? "Client-1" : "Client-2");
+	test6_connection_lost_called = 1;
+}
+
+void test6_deliveryComplete(void* context, MQTTClient_deliveryToken token)
+{
+	printf("Client-2 -> Callback: publish complete for token %d\n", token);
+}
+
+char* test6_will_topic = "C Test 2: will topic";
+char* test6_will_message = "will message from Client-1";
+
+int test6_messageArrived(void* context, char* topicName, int topicLen, MQTTClient_message* m)
+{
+	MQTTClient c = (MQTTClient)context;
+	printf("%s -> Callback: message received on topic '%s' is '%.*s'.\n",
+			 (c == test6_c1) ? "Client-1" : "Client-2", topicName, m->payloadlen, (char*)(m->payload));
+	if (c == test6_c2 && strcmp(topicName, test6_will_topic) == 0 && memcmp(m->payload, test6_will_message, m->payloadlen) == 0)
+		test6_will_message_arrived = 1;
+	MQTTClient_free(topicName);
+	MQTTClient_freeMessage(&m);
+	return 1;
+}
+
+
+int test6(struct Options options)
+{
+	char* testname = "test6";
+	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
+	MQTTClient_willOptions wopts =  MQTTClient_willOptions_initializer;
+	MQTTClient_connectOptions opts2 = MQTTClient_connectOptions_initializer;
+	int rc, count;
+	char* mqttsas_topic = "MQTTSAS topic";
+
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 6 - connectionLost and will messages");
+	fprintf(xml, "<testcase classname=\"test1\" name=\"connectionLost and will messages\"");
+	global_start_time = start_clock();
+
+	opts.keepAliveInterval = 2;
+	opts.cleansession = 1;
+	opts.MQTTVersion = MQTTVERSION_3_1_1;
+	opts.will = &wopts;
+	opts.will->message = test6_will_message;
+	opts.will->qos = 1;
+	opts.will->retained = 0;
+	opts.will->topicName = test6_will_topic;
+	if (options.haconnections != NULL)
+	{
+		opts.serverURIs = options.haconnections;
+		opts.serverURIcount = options.hacount;
+	}
+
+	/* Client-1 with Will options */
+	rc = MQTTClient_create(&test6_c1, options.proxy_connection, "Client_1", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	rc = MQTTClient_setCallbacks(test6_c1, (void*)test6_c1, test6_connectionLost, test6_messageArrived, test6_deliveryComplete);
+	assert("good rc from setCallbacks",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	/* Connect to the broker */
+	rc = MQTTClient_connect(test6_c1, &opts);
+	assert("good rc from connect",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+	if (rc != MQTTCLIENT_SUCCESS)
+		goto exit;
+
+	/* Client - 2 (multi-threaded) */
+	rc = MQTTClient_create(&test6_c2, options.connection, "Client_2", MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+	assert("good rc from create",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* Set the callback functions for the client */
+	rc = MQTTClient_setCallbacks(test6_c2, (void*)test6_c2, test6_connectionLost, test6_messageArrived, test6_deliveryComplete);
+	assert("good rc from setCallbacks",  rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* Connect to the broker */
+	opts2.keepAliveInterval = 20;
+	opts2.cleansession = 1;
+	MyLog(LOGA_INFO, "Connecting Client_2 ...");
+	rc = MQTTClient_connect(test6_c2, &opts2);
+	assert("Good rc from connect", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	rc = MQTTClient_subscribe(test6_c2, test6_will_topic, 2);
+	assert("Good rc from subscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	/* now send the command which will break the connection and cause the will message to be sent */
+	rc = MQTTClient_publish(test6_c1, mqttsas_topic, (int)strlen("TERMINATE"), "TERMINATE", 0, 0, NULL);
+	assert("Good rc from publish", rc == MQTTCLIENT_SUCCESS, "rc was %d\n", rc);
+
+	MyLog(LOGA_INFO, "Waiting to receive the will message");
+	count = 0;
+	while (++count < 40)
+	{
+		#if defined(WIN32)
+			Sleep(1000L);
+		#else
+			sleep(1);
+		#endif
+		if (test6_will_message_arrived == 1 && test6_connection_lost_called == 1)
+			break;
+	}
+	assert("will message arrived", test6_will_message_arrived == 1,
+							"will_message_arrived was %d\n", test6_will_message_arrived);
+	assert("connection lost called", test6_connection_lost_called == 1,
+			         "connection_lost_called %d\n", test6_connection_lost_called);
+
+	rc = MQTTClient_unsubscribe(test6_c2, test6_will_topic);
+	assert("Good rc from unsubscribe", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	rc = MQTTClient_isConnected(test6_c2);
+	assert("Client-2 still connected", rc == 1, "isconnected is %d", rc);
+
+	rc = MQTTClient_isConnected(test6_c1);
+	assert("Client-1 not connected", rc == 0, "isconnected is %d", rc);
+
+	rc = MQTTClient_disconnect(test6_c2, 100L);
+	assert("Good rc from disconnect", rc == MQTTCLIENT_SUCCESS, "rc was %d", rc);
+
+	MQTTClient_destroy(&test6_c1);
+	MQTTClient_destroy(&test6_c2);
+
+exit:
+	MyLog(LOGA_INFO, "%s: test %s. %d tests run, %d failures.\n",
+			(failures == 0) ? "passed" : "failed", testname, tests, failures);
+	write_test_result();
+	return failures;
+}
+#endif
 
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])(Options) = {NULL, test1, test2, test3, test4};
+ 	int (*tests[])(Options) = {NULL, test1, test2, test3, test4/*, test5, test6, test6a*/};
 	int i;
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
+
+	//setenv("MQTT_C_CLIENT_TRACE", "ON", 1);
+	//setenv("MQTT_C_CLIENT_TRACE_LEVEL", "ERROR", 0);
 
 	getopts(argc, argv);
 
