@@ -175,6 +175,10 @@ int NetworkConnect(Network* n, char* addr, int port)
 	if ((n->my_socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP)) < 0)
 		goto exit;
 
+	// Set a timeout so the connect does not hang forever if the socket is in close_wait
+	uint32_t tmo = 2000;
+	FreeRTOS_setsockopt( n->my_socket, 1, FREERTOS_SO_RCVTIMEO, (void *)&tmo, sizeof(uint32_t) );
+
 	if ((retVal = FreeRTOS_connect(n->my_socket, &sAddr, sizeof(sAddr))) < 0)
 	{
 		FreeRTOS_closesocket(n->my_socket);
