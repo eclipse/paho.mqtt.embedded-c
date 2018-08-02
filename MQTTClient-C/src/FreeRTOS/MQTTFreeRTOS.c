@@ -155,13 +155,22 @@ int NetworkConnect(Network* n, char* addr, int port)
 {
 	struct freertos_sockaddr sAddr;
 	int retVal = -1;
-	uint32_t ipAddress;
 
-	if ((ipAddress = FreeRTOS_gethostbyname(addr)) == 0)
-		goto exit;
+	// FreeRTOS_gethostbyname does not check if its the addr is already
+	// an IP address so do that first, otherwise valid IP addresses will fail.
+	sAddr.sin_addr = FreeRTOS_inet_addr( addr );
+	if ( sAddr.sin_addr == 0 )
+	{
+		// addr was not a valid IP address so do a lookup.
+		sAddr.sin_addr = FreeRTOS_gethostbyname(addr);
+		if ( sAddr.sin_addr == 0 )
+		{
+			// Lookup failed.
+			goto exit;
+		}
+	}
 
 	sAddr.sin_port = FreeRTOS_htons(port);
-	sAddr.sin_addr = ipAddress;
 
 	if ((n->my_socket = FreeRTOS_socket(FREERTOS_AF_INET, FREERTOS_SOCK_STREAM, FREERTOS_IPPROTO_TCP)) < 0)
 		goto exit;
