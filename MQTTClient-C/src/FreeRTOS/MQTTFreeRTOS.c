@@ -156,7 +156,7 @@ int NetworkConnect(Network* n, char* addr, int port)
 	struct freertos_sockaddr sAddr;
 	int retVal = -1;
 
-	// FreeRTOS_gethostbyname does not check if its the addr is already
+	// FreeRTOS_gethostbyname does not check if addr is already
 	// an IP address so do that first, otherwise valid IP addresses will fail.
 	sAddr.sin_addr = FreeRTOS_inet_addr( addr );
 	if ( sAddr.sin_addr == 0 )
