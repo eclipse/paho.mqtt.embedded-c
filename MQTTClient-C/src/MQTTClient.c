@@ -74,6 +74,7 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
 	  c->next_packetid = 1;
     TimerInit(&c->last_sent);
     TimerInit(&c->last_received);
+    TimerInit(&c->pingresp_timer);
 #if defined(MQTT_TASK)
 	  MutexInit(&c->mutex);
 #endif
@@ -216,18 +217,28 @@ int keepalive(MQTTClient* c)
     if (c->keepAliveInterval == 0)
         goto exit;
 
-    if (TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received))
-    {
-        if (c->ping_outstanding)
+    // If we are waiting for a ping response, check if it has been too long
+    if ( c->ping_outstanding == 1 ){
+        if ( TimerIsExpired(&c->pingresp_timer) ){
             rc = FAILURE; /* PINGRESP not received in keepalive interval */
-        else
+            goto exit;
+        }
+    } else {
+        // If we have not sent or received anything in the timeout period,
+        // send out a ping request
+        if ( TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received) )
         {
             Timer timer;
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
             int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
+            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS){
+                // send the ping packet
+                // Expect the PINGRESP within 2 seconds of the PINGREQ
+                // being sent
+                TimerCountdownMS(&c->pingresp_timer, 2000 );
                 c->ping_outstanding = 1;
+            }
         }
     }
 
