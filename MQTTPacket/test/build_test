@@ -1,1 +1,8 @@
 gcc -Wall test1.c -o test1 -I../src ../src/MQTTConnectClient.c ../src/MQTTConnectServer.c ../src/MQTTPacket.c ../src/MQTTSerializePublish.c  ../src/MQTTDeserializePublish.c ../src/MQTTSubscribeServer.c ../src/MQTTSubscribeClient.c ../src/MQTTUnsubscribeServer.c ../src/MQTTUnsubscribeClient.c
+
+gcc -Wall test1.c -o test15 -I../src ../src/MQTTConnectClient.c ../src/MQTTConnectServer.c ../src/MQTTPacket.c ../src/MQTTSerializePublish.c  ../src/MQTTDeserializePublish.c ../src/MQTTSubscribeServer.c ../src/MQTTSubscribeClient.c ../src/MQTTUnsubscribeServer.c ../src/MQTTUnsubscribeClient.c -DMQTTV5 ../src/V5/MQTTProperties.c ../src/V5/MQTTV5Packet.c
+
+gcc -Wall test2.c -o test2 -I../src ../src/MQTTConnectClient.c ../src/MQTTConnectServer.c ../src/MQTTPacket.c ../src/MQTTSerializePublish.c  ../src/MQTTDeserializePublish.c ../src/MQTTSubscribeServer.c ../src/MQTTSubscribeClient.c ../src/MQTTUnsubscribeServer.c ../src/MQTTUnsubscribeClient.c -DMQTTV5 ../src/V5/MQTTProperties.c ../src/V5/MQTTV5Packet.c 
+
+gcc -Wall -c ../samples/transport.c -Os -s -I../samples
+gcc test3.c transport.o -I ../src ../src/MQTTConnectClient.c ../src/MQTTSerializePublish.c ../src/MQTTPacket.c -o test3 -Os -s -I../samples -DMQTTV5 ../src/V5/MQTTProperties.c ../src/V5/MQTTV5Packet.c -I../src/V5 ../src/MQTTSubscribeClient.c ../src/MQTTSubscribeServer.c ../src/MQTTUnsubscribeClient.c ../src/MQTTUnsubscribeServer.c ../src/MQTTDeserializePublish.c

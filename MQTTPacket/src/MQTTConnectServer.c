@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,10 +12,15 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - add MQTT v5 support
  *******************************************************************************/
 
 #include "StackTrace.h"
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
 #include <string.h>
 
 #define min(a, b) ((a < b) ? a : b)
@@ -37,10 +42,34 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 	else if (version == 4 && memcmp(protocol->lenstring.data, "MQTT",
 			min(4, protocol->lenstring.len)) == 0)
 		rc = 1;
+#if defined(MQTTV5)
+  else if (version == 5 && memcmp(protocol->lenstring.data, "MQTT",
+		  min(4, protocol->lenstring.len)) == 0)
+	  rc = 1;
+#endif
 	return rc;
 }
 
 
+
+#if defined(MQTTV5)
+int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+{
+	return MQTTV5Deserialize_connect(NULL, NULL, data, buf, len);
+}
+
+/**
+  * Deserializes the supplied (wire) buffer into connect data structure
+  * @param willProperties the V5 properties to be applied to the will message, if it exists
+  * @param connectProperties the V5 properties for the connect packet
+  * @param data the connect data structure to be filled out
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
+	MQTTPacket_connectData* data, unsigned char* buf, int len)
+#else
 /**
   * Deserializes the supplied (wire) buffer into connect data structure
   * @param data the connect data structure to be filled out
@@ -49,6 +78,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @return error code.  1 is success, 0 is failure
   */
 int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+#endif
 {
 	MQTTHeader header = {0};
 	MQTTConnectFlags flags = {0};
@@ -56,7 +86,6 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 	unsigned char* enddata = &buf[len];
 	int rc = 0;
 	MQTTString Protocol;
-	int version;
 	int mylen = 0;
 
 	FUNC_ENTRY;
@@ -70,20 +99,34 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
 		enddata - curdata < 0) /* do we have enough data to read the protocol version byte? */
 		goto exit;
 
-	version = (int)readChar(&curdata); /* Protocol version */
+	data->MQTTVersion = (int)readChar(&curdata); /* Protocol version */
 	/* If we don't recognize the protocol version, we don't parse the connect packet on the
 	 * basis that we don't know what the format will be.
 	 */
-	if (MQTTPacket_checkVersion(&Protocol, version))
+	if (MQTTPacket_checkVersion(&Protocol, data->MQTTVersion))
 	{
 		flags.all = readChar(&curdata);
 		data->cleansession = flags.bits.cleansession;
 		data->keepAliveInterval = readInt(&curdata);
+		#if defined(MQTTV5)
+		if (data->MQTTVersion == 5)
+		{
+		  if (!MQTTProperties_read(connectProperties, &curdata, enddata))
+			  goto exit;
+		}
+		#endif
 		if (!readMQTTLenString(&data->clientID, &curdata, enddata))
 			goto exit;
 		data->willFlag = flags.bits.will;
 		if (flags.bits.will)
 		{
+			#if defined(MQTTV5)
+			if (data->MQTTVersion == 5)
+			{
+				if (!MQTTProperties_read(willProperties, &curdata, enddata))
+				  goto exit;
+			}
+			#endif
 			data->will.qos = flags.bits.willQoS;
 			data->will.retained = flags.bits.willRetain;
 			if (!readMQTTLenString(&data->will.topicName, &curdata, enddata) ||
@@ -112,19 +155,38 @@ exit:
   * Serializes the connack packet into the supplied buffer.
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer
-  * @param connack_rc the integer connack return code to be used 
+  * @param connack_rc the integer connack return code to be used
   * @param sessionPresent the MQTT 3.1.1 sessionPresent flag
+	* @param connackProperties MQTT v5 properties, if NULL, then MQTT 3.1.1 connack
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
 int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+{
+	return MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, NULL);
+}
+
+int MQTTV5Serialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent,
+  MQTTProperties* connackProperties)
+#else
+int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = 0;
 	unsigned char *ptr = buf;
 	MQTTConnackFlags flags = {0};
+	int len = 0;
 
 	FUNC_ENTRY;
-	if (buflen < 2)
+
+#if defined(MQTTV5)
+	len = 2 + (connackProperties == NULL ? 0 : connackProperties->length);
+#else
+	len = 2;
+#endif
+
+	if (MQTTPacket_len(len) > buflen)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -133,12 +195,17 @@ int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_
 	header.bits.type = CONNACK;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 
 	flags.all = 0;
 	flags.bits.sessionpresent = sessionPresent;
-	writeChar(&ptr, flags.all); 
+	writeChar(&ptr, flags.all);
 	writeChar(&ptr, connack_rc);
+
+#if defined(MQTTV5)
+  if (connackProperties && MQTTProperties_write(&ptr, connackProperties) < 0)
+		goto exit;
+#endif
 
 	rc = ptr - buf;
 exit:
@@ -146,3 +213,72 @@ exit:
 	return rc;
 }
 
+
+#if defined(MQTTV5)
+int MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties, int* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	MQTTHeader header = {0};
+	unsigned char* curdata = buf;
+	unsigned char* enddata = NULL;
+	int rc = 0;
+	int mylen;
+
+	FUNC_ENTRY;
+	header.byte = readChar(&curdata);
+	if (header.bits.type != packettype)
+		goto exit;
+
+	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
+	enddata = curdata + mylen;
+
+  if (mylen > 0)
+	{
+	  *reasonCode = readChar(&curdata);
+		if (mylen > 1 && !MQTTProperties_read(properties, &curdata, enddata))
+	    goto exit;
+	}
+
+	rc = 1;
+exit:
+	FUNC_EXIT_RC(rc);
+	return rc;
+}
+#endif
+
+/**
+  * Deserializes the supplied (wire) buffer into connack data - return code
+  * @param sessionPresent the session present flag returned (only for MQTT 3.1.1)
+  * @param connack_rc returned integer value of the connack return code
+  * @param buf the raw buffer data, of the correct length determined by the remaining length field
+  * @param len the length in bytes of the data in the supplied buffer
+  * @return error code.  1 is success, 0 is failure
+  */
+#if defined(MQTTV5)
+int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_zero(DISCONNECT, properties, reasonCode, buf, buflen);
+}
+
+int MQTTV5Deserialize_auth(MQTTProperties* properties, int* reasonCode,
+	    unsigned char* buf, int buflen)
+{
+	return MQTTV5Deserialize_zero(AUTH, properties, reasonCode, buf, buflen);
+}
+#endif
+
+int MQTTDeserialize_disconnect(unsigned char* buf, int buflen)
+{
+	unsigned char type = 0;
+	unsigned char dup = 0;
+	unsigned short packetid = 0;
+	int rc = 0;
+
+	FUNC_ENTRY;
+	rc = MQTTDeserialize_ack(&type, &dup, &packetid, buf, buflen);
+	if (type == DISCONNECT)
+		rc = 1;
+	FUNC_EXIT_RC(rc);
+	return rc;
+}

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2017 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -12,9 +12,15 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
+ *    Ian Craggs - MQTT V5 implementation
  *******************************************************************************/
 
+#if defined(MQTTV5)
+#include "V5/MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
+
 #include "StackTrace.h"
 
 #include <string.h>
@@ -31,8 +37,19 @@
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return the length of the serialized data.  <= 0 indicates error
   */
+#if defined(MQTTV5)
 int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int maxcount, int* count, MQTTString topicFilters[],
-		unsigned char* buf, int len)
+	unsigned char* buf, int len)
+{
+  return MQTTV5Deserialize_unsubscribe(dup, packetid, NULL, maxcount, count, topicFilters, buf, len);
+}
+
+DLLExport int MQTTV5Deserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
+	int maxcount, int* count, MQTTString topicFilters[], unsigned char* buf, int len)
+#else
+int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int maxcount, int* count, MQTTString topicFilters[],
+	unsigned char* buf, int len)
+#endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
@@ -50,6 +67,16 @@ int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, in
 	enddata = curdata + mylen;
 
 	*packetid = readInt(&curdata);
+
+#if defined(MQTTV5)
+	if (properties)
+	{
+		if (enddata == curdata)
+			properties->length = properties->count = 0; /* signal that no properties were received */
+		else if (!MQTTProperties_read(properties, &curdata, enddata))
+			goto exit;
+	}
+#endif
 
 	*count = 0;
 	while (curdata < enddata)
@@ -73,14 +100,33 @@ exit:
   * @param packetid integer - the MQTT packet identifier
   * @return the length of the serialized data.  <= 0 indicates error
   */
+#if defined(MQTTV5)
 int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid)
+{
+	return MQTTV5Serialize_unsuback(buf, buflen, packetid, NULL, 0, NULL);
+}
+
+int MQTTV5Serialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid,
+  MQTTProperties* properties, int count, int* reasonCodes)
+#else
+int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid)
+#endif
 {
 	MQTTHeader header = {0};
 	int rc = 0;
 	unsigned char *ptr = buf;
+	int len = 2;
+#if defined(MQTTV5)
+	int i = 0;
+#endif
 
 	FUNC_ENTRY;
-	if (buflen < 2)
+#if defined(MQTTV5)
+	if (properties)
+	  len += MQTTProperties_len(properties);
+	len += count;
+#endif
+	if (buflen < len)
 	{
 		rc = MQTTPACKET_BUFFER_TOO_SHORT;
 		goto exit;
@@ -89,14 +135,23 @@ int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packet
 	header.bits.type = UNSUBACK;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, 2); /* write remaining length */
+	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
 
 	writeInt(&ptr, packetid);
+
+#if defined(MQTTV5)
+	if (properties && MQTTProperties_write(&ptr, properties) < 0)
+		goto exit;
+
+  if (reasonCodes)
+	{
+    for (i = 0; i < count; ++i)
+	    writeChar(&ptr, reasonCodes[i]);
+	}
+#endif
 
 	rc = ptr - buf;
 exit:
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
-
-

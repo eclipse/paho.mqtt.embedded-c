@@ -81,22 +81,27 @@ exit:
 }
 
 
-int MQTTPacket_len(int rem_len)
+int MQTTPacket_VBIlen(int rem_len)
 {
-	rem_len += 1; /* header byte */
+	int rc = 0;
 
-	/* now remaining_length field */
 	if (rem_len < 128)
-		rem_len += 1;
+		rc = 1;
 	else if (rem_len < 16384)
-		rem_len += 2;
-	else if (rem_len < 2097151)
-		rem_len += 3;
+		rc = 2;
+	else if (rem_len < 2097152)
+		rc = 3;
 	else
-		rem_len += 4;
-	return rem_len;
+		rc = 4;
+  return rc;
 }
 
+
+int MQTTPacket_len(int rem_len)
+{
+  /* header byte + remaining length */
+	return rem_len + 1  + MQTTPacket_VBIlen(rem_len);
+}
 
 static unsigned char* bufptr;
 
@@ -262,7 +267,7 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
 	int alen = 0,
 		blen = 0;
 	char *aptr;
-	
+
 	if (a->cstring)
 	{
 		aptr = a->cstring;
@@ -274,7 +279,7 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
 		alen = a->lenstring.len;
 	}
 	blen = strlen(bptr);
-	
+
 	return (alen == blen) && (strncmp(aptr, bptr, alen) == 0);
 }
 
@@ -409,4 +414,3 @@ exit:
 	trp->state = 0;
 	return rc;
 }
-

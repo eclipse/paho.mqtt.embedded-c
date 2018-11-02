@@ -14,8 +14,11 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+/***
+  Tests for MQTTV5 serialization and deserialization
+***/
 
-#include "MQTTPacket.h"
+#include "V5/MQTTV5Packet.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -48,7 +51,7 @@ struct Options
 	int test_no;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"tcp://iot.eclipse.org:1883",
 	NULL,
 	0,
 	0,
@@ -319,6 +322,35 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	return failures == start_failures;
 }
 
+int checkMQTTProperties(MQTTProperties* before, MQTTProperties* after)
+{
+	int start_failures = failures;
+	int i = 0;
+
+  assert("Counts should be the same", before->count == after->count,
+	       "Counts are different %d", after->count);
+	assert("Lengths should be the same", before->length == after->length,
+		 		 "Lengths are different %d", after->length);
+  for (i = 0; i < before->count; ++i)
+	{
+		int j = 0;
+		int found = 0;
+
+		MQTTProperty* curprop = &before->array[i];
+		for (j = 0; j < after->count; ++j)
+		{
+      if (after->array[j].identifier == curprop->identifier)
+			{
+				found = 1;
+				break;
+			}
+		}
+		assert("should find property", found == 1, "found was %d\n", found);
+	}
+
+	return failures == start_failures;
+}
+
 int test1(struct Options options)
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
@@ -326,13 +358,37 @@ int test1(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
+	MQTTProperties connectProperties = MQTTProperties_initializer,
+	               willProperties = MQTTProperties_initializer;
+	MQTTProperties outConnectProperties = MQTTProperties_initializer,
+	               outWillProperties = MQTTProperties_initializer;
+	MQTTProperty connect_props[10], will_props[10];
+	MQTTProperty out_connect_props[10], out_will_props[10];
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - serialization of connect and back");
 
-	data.clientID.cstring = "me";
+  data.MQTTVersion = 5;
+	connectProperties.max_count = 10;
+	connectProperties.array = connect_props;
+
+  MQTTProperty one;
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&connectProperties, &one);
+
+	willProperties.max_count = 10;
+	willProperties.array = will_props;
+
+	outConnectProperties.max_count = 10;
+	outConnectProperties.array = out_connect_props;
+
+	outWillProperties.max_count = 10;
+	outWillProperties.array = out_will_props;
+
+	data.clientID.cstring = "my clientid";
 
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
@@ -345,17 +401,20 @@ int test1(struct Options options)
 	data.will.retained = 0;
 	data.will.topicName.cstring = "will topic";
 
-	rc = MQTTSerialize_connect(buf, buflen, &data);
+	rc = MQTTV5Serialize_connect(buf, buflen, &data, &connectProperties, &willProperties);
 	assert("good rc from serialize connect", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_connect(&data_after, buf, buflen);
+	rc = MQTTV5Deserialize_connect(&outWillProperties, &outConnectProperties, &data_after, buf, buflen);
 	assert("good rc from deserialize connect", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
 	rc = checkConnectPackets(&data, &data_after);
 	assert("packets should be the same",  rc == 1, "packets were different\n", rc);
 
-/* exit: */
+	rc = checkMQTTProperties(&connectProperties, &outConnectProperties);
+  rc = checkMQTTProperties(&willProperties, &outWillProperties);
+
+  /* exit: */
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
@@ -385,18 +444,33 @@ int test2(struct Options options)
 	unsigned char *payload2 = NULL;
 	int payloadlen2 = 0;
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test2\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - serialization of publish and back");
 
 	topicString.cstring = "mytopic";
-	rc = MQTTSerialize_publish(buf, buflen, dup, qos, retained, msgid, topicString,
-			payload, payloadlen);
+	rc = MQTTV5Serialize_publish(buf, buflen, dup, qos, retained, msgid, topicString,
+			&properties, payload, payloadlen);
 	assert("good rc from serialize publish", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_publish(&dup2, &qos2, &retained2, &msgid2, &topicString2,
-			&payload2, &payloadlen2, buf, buflen);
+	rc = MQTTV5Deserialize_publish(&dup2, &qos2, &retained2, &msgid2, &topicString2,
+			&outProperties, &payload2, &payloadlen2, buf, buflen);
 	assert("good rc from deserialize publish", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
@@ -414,13 +488,14 @@ int test2(struct Options options)
 	assert("payloads should be the same",
 						memcmp(payload, payload2, payloadlen) == 0, "payloads were different %s\n", "");
 
+	rc = checkMQTTProperties(&properties, &outProperties);
+
 /*exit:*/
 	MyLog(LOGA_INFO, "TEST2: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
 	return failures;
 }
-
 
 
 int test3(struct Options options)
@@ -443,17 +518,40 @@ int test3(struct Options options)
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 	int req_qoss2[TOPIC_COUNT] = {0, 0};
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
+	struct subscribeOptions subscribeOptions[2] = {{1, 1, 1}, {1, 0, 2}},
+	    outSubscribeOptions[2] = {{0, 0, 0}, {0, 0, 0}};
+
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test3\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 2 - serialization of subscribe and back");
+	MyLog(LOGA_INFO, "Starting test 3 - serialization of subscribe and back");
 
 	topicStrings[0].cstring = "mytopic";
 	topicStrings[1].cstring = "mytopic2";
-	rc = MQTTSerialize_subscribe(buf, buflen, dup, msgid, count, topicStrings, req_qoss);
+	rc = MQTTV5Serialize_subscribe(buf, buflen, dup, msgid, &properties, count, topicStrings, req_qoss,
+	  subscribeOptions);
 	assert("good rc from serialize subscribe", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_subscribe(&dup2, &msgid2, 2, &count2, topicStrings2, req_qoss2, buf, buflen);
+	rc = MQTTV5Deserialize_subscribe(&dup2, &msgid2, &outProperties, 2, &count2, topicStrings2, req_qoss2,
+		outSubscribeOptions, buf, buflen);
 	assert("good rc from deserialize subscribe", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
@@ -468,7 +566,20 @@ int test3(struct Options options)
 					checkMQTTStrings(topicStrings[i], topicStrings2[i]), "topics were different %s\n", "");
 
 		assert("qoss should be the same", req_qoss[i] == req_qoss2[i], "qoss were different %d\n", req_qoss2[i]);
+
+		assert("noLocal options should be the same", subscribeOptions[i].noLocal == outSubscribeOptions[i].noLocal,
+		       "noLocal options were different %d\n", outSubscribeOptions[i].noLocal);
+
+		assert("retainAsPublished options should be the same",
+		        subscribeOptions[i].retainAsPublished == outSubscribeOptions[i].retainAsPublished,
+	 				  "retainAsPublished options were different %d\n", outSubscribeOptions[i].retainAsPublished);
+
+		assert("retainHandling options should be the same",
+		        subscribeOptions[i].retainHandling == outSubscribeOptions[i].retainHandling,
+					  "retainHandling options were different %d\n", outSubscribeOptions[i].retainHandling);
 	}
+
+	rc = checkMQTTProperties(&properties, &outProperties);
 
 /*exit:*/
 	MyLog(LOGA_INFO, "TEST3: test %s. %d tests run, %d failures.",
@@ -488,21 +599,39 @@ int test4(struct Options options)
 
 	int msgid = 23;
 	int count = TOPIC_COUNT;
-	int granted_qoss[TOPIC_COUNT] = {2, 1};
+	int reasonCodes[TOPIC_COUNT] = {2, 1};
 
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
-	int granted_qoss2[TOPIC_COUNT] = {0, 0};
+	int reasonCodes2[TOPIC_COUNT] = {0, 0};
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test4\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 4 - serialization of suback and back");
 
-	rc = MQTTSerialize_suback(buf, buflen, msgid, count, granted_qoss);
+	rc = MQTTV5Serialize_suback(buf, buflen, msgid, &properties, count, reasonCodes);
 	assert("good rc from serialize suback", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_suback(&msgid2, 2, &count2, granted_qoss2, buf, buflen);
+	rc = MQTTV5Deserialize_suback(&msgid2, &outProperties, 2, &count2, reasonCodes2, buf, buflen);
 	assert("good rc from deserialize suback", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
@@ -511,7 +640,9 @@ int test4(struct Options options)
 	assert("count should be the same", count == count2, "counts were different %d\n", count2);
 
 	for (i = 0; i < count2; ++i)
-		assert("qoss should be the same", granted_qoss[i] == granted_qoss2[i], "qoss were different %d\n", granted_qoss2[i]);
+		assert("qoss should be the same", reasonCodes[i] == reasonCodes2[i], "qoss were different %d\n", reasonCodes2[i]);
+
+	rc = checkMQTTProperties(&properties, &outProperties);
 
 /* exit: */
 	MyLog(LOGA_INFO, "TEST4: test %s. %d tests run, %d failures.",
@@ -539,18 +670,38 @@ int test5(struct Options options)
 	int count2 = 0;
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test5\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 2 - serialization of unsubscribe and back");
+	MyLog(LOGA_INFO, "Starting test 5 - serialization of unsubscribe and back");
 
 	topicStrings[0].cstring = "mytopic";
 	topicStrings[1].cstring = "mytopic2";
-	rc = MQTTSerialize_unsubscribe(buf, buflen, dup, msgid, count, topicStrings);
+	rc = MQTTV5Serialize_unsubscribe(buf, buflen, dup, msgid, &properties, count, topicStrings);
 	assert("good rc from serialize unsubscribe", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_unsubscribe(&dup2, &msgid2, 2, &count2, topicStrings2, buf, buflen);
+	rc = MQTTV5Deserialize_unsubscribe(&dup2, &msgid2, &outProperties, 2, &count2, topicStrings2, buf, buflen);
 	assert("good rc from deserialize unsubscribe", rc == 1, "rc was %d\n", rc);
+
+	checkMQTTProperties(&properties, &outProperties);
 
 	/* data after should be the same as data before */
 	assert("dups should be the same", dup == dup2, "dups were different %d\n", dup2);
@@ -582,21 +733,39 @@ int test6(struct Options options)
 	unsigned char sessionPresent2 = 0;
 	unsigned char connack_rc2 = 0;
 
+	MQTTProperties connackProperties, outConnackProperties;
+	MQTTProperty connack_props[10], out_connack_props[10];
+
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 2 - serialization of connack and back");
 
-	rc = MQTTSerialize_connack(buf, buflen, connack_rc, sessionPresent);
+	connackProperties.count = connackProperties.length = 0;
+	connackProperties.max_count = 10;
+	connackProperties.array = connack_props;
+
+	outConnackProperties.count = outConnackProperties.length = 0;
+	outConnackProperties.max_count = 10;
+	outConnackProperties.array = out_connack_props;
+
+  MQTTProperty one;
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&connackProperties, &one);
+
+	rc = MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, &connackProperties);
 	assert("good rc from serialize connack", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_connack(&sessionPresent2, &connack_rc2, buf, buflen);
+	rc = MQTTV5Deserialize_connack(&outConnackProperties, &sessionPresent2, &connack_rc2, buf, buflen);
 	assert("good rc from deserialize connack", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
 	assert("connack rcs should be the same", connack_rc == connack_rc2, "connack rcs were different %d\n", connack_rc2);
 	assert("session present flags should be the same", sessionPresent == sessionPresent2,
 			"session present flags were different %d\n", sessionPresent2);
+
+ 	rc = checkMQTTProperties(&connackProperties, &outConnackProperties);
 
 /* exit: */
 	MyLog(LOGA_INFO, "TEST6: test %s. %d tests run, %d failures.",
@@ -611,19 +780,39 @@ int test7(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
+	int reasonCode = -1, outReasonCode = -1;
+	MQTTProperties disconnectProperties = MQTTProperties_initializer,
+	               outdisconnectProperties = MQTTProperties_initializer;
+	MQTTProperty disconnect_props[10], out_disconnect_props[10];
+	MQTTProperty one;
 
 	fprintf(xml, "<testcase classname=\"test7\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 7 - serialization of disconnect and back");
 
-	rc = MQTTSerialize_disconnect(buf, buflen);
+	disconnectProperties.max_count = 10;
+	disconnectProperties.array = disconnect_props;
+
+	outdisconnectProperties.max_count = 10;
+	outdisconnectProperties.array = out_disconnect_props;
+
+	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.value.integer4 = 45;
+	rc = MQTTProperties_add(&disconnectProperties, &one);
+	reasonCode = SUCCESS;
+
+	rc = MQTTV5Serialize_disconnect(buf, buflen, reasonCode, &disconnectProperties);
 	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_disconnect(buf, buflen);
+	rc = MQTTV5Deserialize_disconnect(&outdisconnectProperties, &outReasonCode, buf, buflen);
 	assert("good rc from deserialize disconnect", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
+	assert("disconnect rcs should be the same", reasonCode == outReasonCode,
+	    "disconnect rcs were different %d\n", outReasonCode);
+
+ 	rc = checkMQTTProperties(&disconnectProperties, &outdisconnectProperties);
 
 /* exit: */
 	MyLog(LOGA_INFO, "TEST7: test %s. %d tests run, %d failures.",
@@ -632,27 +821,61 @@ int test7(struct Options options)
 	return failures;
 }
 
+
 int test8(struct Options options)
 {
+	int i = 0;
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	unsigned short msgid = 23;
+#define TOPIC_COUNT 2
+
+	int msgid = 23;
+	int count = TOPIC_COUNT;
+	int reasonCodes[TOPIC_COUNT] = {2, 1};
+
 	unsigned short msgid2 = 2223;
+	int count2 = 0;
+	int reasonCodes2[TOPIC_COUNT] = {0, 0};
+
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test8\" name=\"de/serialization\"");
 	global_start_time = start_clock();
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 8 - serialization of unsuback and back");
 
-	rc = MQTTSerialize_unsuback(buf, buflen, msgid);
+	rc = MQTTV5Serialize_unsuback(buf, buflen, msgid, &properties, count, reasonCodes);
 	assert("good rc from serialize unsuback", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTDeserialize_unsuback(&msgid2, buf, buflen);
+	rc = MQTTV5Deserialize_unsuback(&msgid2, &outProperties, 2, &count2, reasonCodes2, buf, buflen);
 	assert("good rc from deserialize unsuback", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */
 	assert("msgids should be the same", msgid == msgid2, "msgids were different %d\n", msgid2);
+
+	assert("count should be the same", count == count2, "counts were different %d\n", count2);
+
+	for (i = 0; i < count2; ++i)
+		assert("qoss should be the same", reasonCodes[i] == reasonCodes2[i], "qoss were different %d\n", reasonCodes2[i]);
+
+	rc = checkMQTTProperties(&properties, &outProperties);
 
 /* exit: */
 	MyLog(LOGA_INFO, "TEST8: test %s. %d tests run, %d failures.",
@@ -662,10 +885,59 @@ int test8(struct Options options)
 }
 
 
+int test9(struct Options options)
+{
+	int rc = 0;
+	unsigned char buf[100];
+	int buflen = sizeof(buf);
+	int reasonCode = 33, reasonCode2 = 44;
+
+	MQTTProperties properties = MQTTProperties_initializer;
+	MQTTProperties outProperties = MQTTProperties_initializer;
+	MQTTProperty props[10], out_props[10];
+
+	properties.max_count = 10;
+	properties.array = props;
+
+	outProperties.max_count = 10;
+	outProperties.array = out_props;
+
+	MQTTProperty one;
+	one.identifier = USER_PROPERTY;
+	one.value.data.data = "user property name";
+	one.value.data.len = strlen(one.value.data.data) + 1;
+	one.value.value.data = "user property value";
+	one.value.value.len = strlen(one.value.value.data) + 1;
+	rc = MQTTProperties_add(&properties, &one);
+
+	fprintf(xml, "<testcase classname=\"test9\" name=\"de/serialization\"");
+	global_start_time = start_clock();
+	failures = 0;
+	MyLog(LOGA_INFO, "Starting test 8 - serialization of auth and back");
+
+	rc = MQTTV5Serialize_auth(buf, buflen, reasonCode, &properties);
+	assert("good rc from serialize auth", rc > 0, "rc was %d\n", rc);
+
+	rc = MQTTV5Deserialize_auth(&outProperties, &reasonCode2, buf, buflen);
+	assert("good rc from deserialize auth", rc == 1, "rc was %d\n", rc);
+
+	/* data after should be the same as data before */
+	assert("reason codes should be the same", reasonCode == reasonCode2, "reasonCodes were different %d\n", reasonCode2);
+
+	rc = checkMQTTProperties(&properties, &outProperties);
+
+/* exit: */
+	MyLog(LOGA_INFO, "TEST9: test %s. %d tests run, %d failures.",
+			(failures == 0) ? "passed" : "failed", tests, failures);
+	write_test_result();
+	return failures;
+}
+
+
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8};
+ 	int (*tests[])() = {NULL, test1, test2, test3, test4, test5, test6, test7, test8, test9};
 
 	xml = fopen("TEST-test1.xml", "w");
 	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
