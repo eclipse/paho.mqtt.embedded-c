@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -264,7 +264,7 @@ int test1(struct Options options)
 
 	MyLog(LOGA_INFO, "Sending to hostname %s port %d", options.host, options.port);
 
-	data.clientID.cstring = "me";
+	data.clientID.cstring = "mqtt5_test3_test1";
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
 	data.username.cstring = "testuser";

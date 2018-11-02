@@ -29,3 +29,19 @@ add_library(MQTTPacketServer SHARED MQTTFormat MQTTPacket
             MQTTSerializePublish MQTTDeserializePublish
             MQTTConnectServer MQTTSubscribeServer MQTTUnsubscribeServer)
 target_compile_definitions(MQTTPacketServer PRIVATE MQTT_SERVER)
+
+file(GLOB SOURCES5 "*.c" "V5/*.c" ../samples/transport.c)
+
+add_library(paho-embed-mqtt5c SHARED ${SOURCES5})
+install(TARGETS paho-embed-mqtt5c DESTINATION /usr/lib)
+target_compile_definitions(paho-embed-mqtt5c PRIVATE MQTT_SERVER MQTT_CLIENT MQTTV5)
+
+add_library(MQTTPacketClient5 SHARED MQTTFormat MQTTPacket
+            MQTTSerializePublish MQTTDeserializePublish V5/MQTTProperties V5/MQTTV5Packet
+            MQTTConnectClient MQTTSubscribeClient MQTTUnsubscribeClient)
+target_compile_definitions(MQTTPacketClient5 PRIVATE MQTT_CLIENT MQTTV5)
+
+add_library(MQTTPacketServer5 SHARED MQTTFormat MQTTPacket
+            MQTTSerializePublish MQTTDeserializePublish V5/MQTTProperties V5/MQTTV5Packet
+            MQTTConnectServer MQTTSubscribeServer MQTTUnsubscribeServer)
+target_compile_definitions(MQTTPacketServer5 PRIVATE MQTT_SERVER MQTTV5)

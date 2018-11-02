@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2018 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -51,7 +51,7 @@ struct Options
 	int test_no;
 } options =
 {
-	"tcp://iot.eclipse.org:1883",
+	"tcp://localhost:1883",
 	NULL,
 	0,
 	0,
