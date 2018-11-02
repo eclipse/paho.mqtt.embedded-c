@@ -218,21 +218,26 @@ int keepalive(MQTTClient* c)
         goto exit;
 
     // If we are waiting for a ping response, check if it has been too long
-    if ( c->ping_outstanding == 1 ){
-        if ( TimerIsExpired(&c->pingresp_timer) ){
+    if (c->ping_outstanding)
+    {
+        if (TimerIsExpired(&c->pingresp_timer))
+        {
             rc = FAILURE; /* PINGRESP not received in keepalive interval */
             goto exit;
         }
-    } else {
+    } else
+    {
         // If we have not sent or received anything in the timeout period,
         // send out a ping request
-        if ( TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received) )
+        if (TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received))
         {
             Timer timer;
+
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
             int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS){
+            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS)
+            {
                 // send the ping packet
                 // Expect the PINGRESP within 2 seconds of the PINGREQ
                 // being sent
