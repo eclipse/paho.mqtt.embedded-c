@@ -339,7 +339,7 @@ int checkMQTTProperties(MQTTProperties* before, MQTTProperties* after)
 		MQTTProperty* curprop = &before->array[i];
 		for (j = 0; j < after->count; ++j)
 		{
-      if (after->array[j].identifier == curprop->identifier)
+			if (after->array[j].identifier == curprop->identifier)
 			{
 				found = 1;
 				break;
@@ -370,11 +370,11 @@ int test1(struct Options options)
 	failures = 0;
 	MyLog(LOGA_INFO, "Starting test 1 - serialization of connect and back");
 
-  data.MQTTVersion = 5;
+	data.MQTTVersion = 5;
 	connectProperties.max_count = 10;
 	connectProperties.array = connect_props;
 
-  MQTTProperty one;
+	MQTTProperty one;
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&connectProperties, &one);
@@ -412,7 +412,7 @@ int test1(struct Options options)
 	assert("packets should be the same",  rc == 1, "packets were different\n", rc);
 
 	rc = checkMQTTProperties(&connectProperties, &outConnectProperties);
-  rc = checkMQTTProperties(&willProperties, &outWillProperties);
+	rc = checkMQTTProperties(&willProperties, &outWillProperties);
 
   /* exit: */
 	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
