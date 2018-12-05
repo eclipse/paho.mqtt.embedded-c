@@ -26,7 +26,7 @@
 
 #include "FP.h"
 #include "MQTTPacket.h"
-#include <stdio.h>
+#include <string.h>
 #include "MQTTLogging.h"
 
 #if !defined(MQTTCLIENT_QOS1)
