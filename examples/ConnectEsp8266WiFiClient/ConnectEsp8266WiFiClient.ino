@@ -59,7 +59,7 @@ void setup() {
 
 	// Setup WiFi network
 	WiFi.mode(WIFI_STA);
-	WiFi.hostname("ESP_" MQTT_ID);
+	WiFi.hostname("ESP-" MQTT_ID);
 	WiFi.begin("ssid", "passphrase");
 	LOG_PRINTFLN("\n");
 	LOG_PRINTFLN("Connecting to WiFi");
