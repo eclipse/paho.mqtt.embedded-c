@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,13 @@ enum connack_return_codes
 #endif
 #if !defined(DLLExport)
   #define DLLExport
+#endif
+
+#if defined(__linux__)
+#include <endian.h>
+#if __BYTE_ORDER == __BIG_ENDIAN
+	#define REVERSED 1
+#endif
 #endif
 
 

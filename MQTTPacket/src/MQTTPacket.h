@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2019 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Xiang Rong - 442039 Add makefile to Embedded C client
+ *    Ian Craggs - big endian Linux reversed definition
  *******************************************************************************/
 
 #ifndef MQTTPACKET_H_
@@ -32,6 +33,14 @@ extern "C" {
   #define DLLImport
   #define DLLExport  
 #endif
+
+#if defined(__linux__)
+#include <endian.h>
+#if __BYTE_ORDER == __BIG_ENDIAN
+	#define REVERSED 1
+#endif
+#endif
+
 
 enum errors
 {
