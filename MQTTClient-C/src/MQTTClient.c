@@ -172,7 +172,7 @@ static char isTopicMatched(char* topicFilter, MQTTString* topicName)
         curn++;
     };
 
-    return (curn == curn_end) && (*curf == '\0');
+    return (curn == curn_end) && (*curf == '\0' || *curf == '#');
 }
 
 
