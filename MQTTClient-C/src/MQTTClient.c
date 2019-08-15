@@ -379,6 +379,7 @@ void MQTTRun(void* parm)
 		cycle(c, &timer);
 #if defined(MQTT_TASK)
 		MutexUnlock(&c->mutex);
+		for (TimerCountdownMS(&timer, 1); !TimerIsExpired(&timer);); /* Give other threads a chance to lock the mutex */
 #endif
 	}
 }
