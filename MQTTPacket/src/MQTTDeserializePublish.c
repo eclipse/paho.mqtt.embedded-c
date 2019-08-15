@@ -55,7 +55,11 @@ int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retaine
 
 	if (!readMQTTLenString(topicName, &curdata, enddata) ||
 		enddata - curdata < 0) /* do we have enough data to read the protocol version byte? */
-		goto exit;
+    {
+        rc = 0;
+        goto exit;
+    }
+
 
 	if (*qos > 0)
 		*packetid = readInt(&curdata);
