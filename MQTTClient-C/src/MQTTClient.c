@@ -372,6 +372,8 @@ void MQTTRun(void* parm)
 
 	while (1)
 	{
+		if (!c->isconnected)
+			continue;
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
 #endif
