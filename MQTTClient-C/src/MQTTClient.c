@@ -293,8 +293,10 @@ int cycle(MQTTClient* c, Timer* timer)
                     len = MQTTSerialize_ack(c->buf, c->buf_size, PUBREC, 0, msg.id);
                 if (len <= 0)
                     rc = FAILURE;
-                else
+                else {
+                    TimerCountdownMS(timer, c->command_timeout_ms);
                     rc = sendPacket(c, len, timer);
+		}
                 if (rc == FAILURE)
                     goto exit; // there was a problem
             }
@@ -310,8 +312,11 @@ int cycle(MQTTClient* c, Timer* timer)
             else if ((len = MQTTSerialize_ack(c->buf, c->buf_size,
                 (packet_type == PUBREC) ? PUBREL : PUBCOMP, 0, mypacketid)) <= 0)
                 rc = FAILURE;
-            else if ((rc = sendPacket(c, len, timer)) != SUCCESS) // send the PUBREL packet
-                rc = FAILURE; // there was a problem
+            else {
+                TimerCountdownMS(timer, c->command_timeout_ms);
+                if ((rc = sendPacket(c, len, timer)) != SUCCESS) // send the PUBREL packet
+                    rc = FAILURE; // there was a problem
+	    }
             if (rc == FAILURE)
                 goto exit; // there was a problem
             break;
