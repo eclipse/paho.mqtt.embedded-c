@@ -227,7 +227,10 @@ int keepalive(MQTTClient* c)
             TimerCountdownMS(&timer, 1000);
             int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
             if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
+	    {
                 c->ping_outstanding = 1;
+                TimerCountdown(&c->last_received, c->keepAliveInterval); // reset receive timer
+            }
         }
     }
 
