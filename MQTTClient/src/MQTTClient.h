@@ -579,8 +579,10 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
 {
     // get one piece of work off the wire and one pass through
-    int len = 0,
-        rc = SUCCESS;
+#if MQTTCLIENT_QOS1 || MQTTCLIENT_QOS2
+    int len = 0;
+# endif
+    int rc = SUCCESS;
 
     int packet_type = readPacket(timer);    // read the socket, see what work is due
 
