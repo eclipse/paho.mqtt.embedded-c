@@ -38,6 +38,7 @@ int MQTTPacket_encode(unsigned char* buf, int length)
 			buf[rc] |= 0x80;
 		}
 		else {
+			rc += 1;
 			break;
 		}
 	}
