@@ -31,15 +31,16 @@ int MQTTPacket_encode(unsigned char* buf, int length)
 	int rc = 0;
 
 	FUNC_ENTRY;
-	do
-	{
-		char d = length % 128;
-		length /= 128;
-		/* if there are more digits to encode, set the top bit of this digit */
-		if (length > 0)
-			d |= 0x80;
-		buf[rc++] = d;
-	} while (length > 0);
+	for(rc = 0; rc < 4; rc++) {
+		buf[rc] |= (length & 0x7F); /* 01111111 */
+		length = (length >> 7);
+		if (length) {
+			buf[rc] |= 0x80;
+		}
+		else {
+			break;
+		}
+	}
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
