@@ -136,9 +136,9 @@ int readInt(unsigned char** pptr)
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the character read
  */
-char readChar(unsigned char** pptr)
+unsigned char readChar(unsigned char** pptr)
 {
-	char c = **pptr;
+	unsigned char c = **pptr;
 	(*pptr)++;
 	return c;
 }
@@ -149,7 +149,7 @@ char readChar(unsigned char** pptr)
  * @param pptr pointer to the output buffer - incremented by the number of bytes used & returned
  * @param c the character to write
  */
-void writeChar(unsigned char** pptr, char c)
+void writeChar(unsigned char** pptr, unsigned char c)
 {
 	**pptr = c;
 	(*pptr)++;
