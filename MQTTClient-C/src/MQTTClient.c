@@ -131,9 +131,14 @@ static int readPacket(MQTTClient* c, Timer* timer)
     }
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
-    if (rem_len > 0 && (rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer)) != rem_len)) {
-        rc = 0;
-        goto exit;
+    if (rem_len > 0) 
+    {
+        rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer));
+        if(rc != rem_len)
+        {
+            rc = 0;
+            goto exit;
+        }
     }
 
     header.byte = c->readbuf[0];
@@ -472,7 +477,7 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
 }
 
 
-int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler messageHandler)
+int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler msgHandler)
 {
     int rc = FAILURE;
     int i = -1;
@@ -482,7 +487,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
     {
         if (c->messageHandlers[i].topicFilter != NULL && strcmp(c->messageHandlers[i].topicFilter, topicFilter) == 0)
         {
-            if (messageHandler == NULL) /* remove existing */
+            if (msgHandler == NULL) /* remove existing */
             {
                 c->messageHandlers[i].topicFilter = NULL;
                 c->messageHandlers[i].fp = NULL;
@@ -492,7 +497,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
         }
     }
     /* if no existing, look for empty slot (unless we are removing) */
-    if (messageHandler != NULL) {
+    if (msgHandler != NULL) {
         if (rc == FAILURE)
         {
             for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
@@ -507,7 +512,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
         if (i < MAX_MESSAGE_HANDLERS)
         {
             c->messageHandlers[i].topicFilter = topicFilter;
-            c->messageHandlers[i].fp = messageHandler;
+            c->messageHandlers[i].fp = msgHandler;
         }
     }
     return rc;
@@ -575,8 +580,8 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     int rc = FAILURE;
     Timer timer;
     MQTTString topic = MQTTString_initializer;
-    topic.cstring = (char *)topicFilter;
     int len = 0;
+    topic.cstring = (char *)topicFilter;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -619,8 +624,8 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     int rc = FAILURE;
     Timer timer;
     MQTTString topic = MQTTString_initializer;
-    topic.cstring = (char *)topicName;
     int len = 0;
+    topic.cstring = (char *)topicName;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
