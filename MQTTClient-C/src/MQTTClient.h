@@ -115,6 +115,8 @@ typedef struct MQTTClient
     int isconnected;
     int cleansession;
 
+    unsigned int try_cnt;  /* Try count for every send request. */
+
     struct MessageHandlers
     {
         const char* topicFilter;

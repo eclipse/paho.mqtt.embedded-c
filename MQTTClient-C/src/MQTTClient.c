@@ -80,6 +80,13 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
 }
 
 
+void MQTTClientInitParam(MQTTClient* c, unsigned int try_cnt)
+{
+    /* Init try count for every send request. */
+    c->try_cnt = try_cnt;
+}
+
+
 static int decodePacket(MQTTClient* c, int* value, int timeout)
 {
     unsigned char i;
@@ -217,22 +224,38 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
 int keepalive(MQTTClient* c)
 {
     int rc = SUCCESS;
+    static int cnt = 0;
+    int len = 0;
 
     if (c->keepAliveInterval == 0)
         goto exit;
 
     if (TimerIsExpired(&c->last_sent) || TimerIsExpired(&c->last_received))
     {
-        if (c->ping_outstanding)
+        if((c->ping_outstanding) && (cnt > c->try_cnt))
+        {
+            cnt = 0;
             rc = FAILURE; /* PINGRESP not received in keepalive interval */
+        }
         else
         {
             Timer timer;
+
+            /* Every time when start ping process reset the cnt value. */
+            if(c->ping_outstanding == 0)
+            {
+                cnt = 0;
+            }
+            
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
-            int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
+            len = MQTTSerialize_pingreq(c->buf, c->buf_size);
             if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
+            {
                 c->ping_outstanding = 1;
+            }
+
+            cnt ++;
         }
     }
 
@@ -527,7 +550,9 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
     Timer timer;
     int len = 0;
     MQTTString topic = MQTTString_initializer;
+    int cnt = 0;
     topic.cstring = (char *)topicFilter;
+    
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -535,12 +560,15 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
 	  if (!c->isconnected)
 		    goto exit;
 
+SEND_START:    
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
     len = MQTTSerialize_subscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic, (int*)&qos);
     if (len <= 0)
         goto exit;
+
+
     if ((rc = sendPacket(c, len, &timer)) != SUCCESS) // send the subscribe packet
         goto exit;             // there was a problem
 
@@ -559,6 +587,14 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
             {
                 rc = FAILURE;
             }
+        }
+    }
+    else
+    {
+        cnt ++;
+        if(cnt <= c->try_cnt)
+        {
+            goto SEND_START;
         }
         else
         {
@@ -591,8 +627,11 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     int rc = FAILURE;
     Timer timer;
     MQTTString topic = MQTTString_initializer;
+
     int len = 0;
+    int cnt = 0;
     topic.cstring = (char *)topicFilter;
+
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -600,6 +639,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
 	  if (!c->isconnected)
 		  goto exit;
 
+SEND_START:
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
@@ -618,7 +658,17 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
         }
     }
     else
-        rc = FAILURE;
+    {
+        cnt ++;
+        if(cnt <= c->try_cnt)
+        {
+            goto SEND_START;
+        }
+        else
+        {
+            rc = FAILURE;
+        }
+    }
 
 exit:
     if (rc == FAILURE)
@@ -635,8 +685,11 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     int rc = FAILURE;
     Timer timer;
     MQTTString topic = MQTTString_initializer;
+
     int len = 0;
+    int cnt = 0;
     topic.cstring = (char *)topicName;
+
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -644,6 +697,7 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
 	  if (!c->isconnected)
 		    goto exit;
 
+SEND_START:
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
@@ -667,7 +721,17 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
                 rc = FAILURE;
         }
         else
-            rc = FAILURE;
+        {
+            cnt ++;
+            if(cnt <= c->try_cnt)
+            {
+                goto SEND_START;
+            }
+            else
+            {
+                rc = FAILURE;
+            }
+        }
     }
     else if (message->qos == QOS2)
     {
@@ -679,7 +743,17 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
                 rc = FAILURE;
         }
         else
-            rc = FAILURE;
+        {
+            cnt ++;
+            if(cnt <= c->try_cnt)
+            {
+                goto SEND_START;
+            }
+            else
+            {
+                rc = FAILURE;
+            }
+        }
     }
 
 exit:
