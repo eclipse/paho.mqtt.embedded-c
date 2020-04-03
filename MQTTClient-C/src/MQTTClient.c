@@ -121,8 +121,8 @@ static int readPacket(MQTTClient* c, Timer* timer)
     int len = 0;
     int rem_len = 0;
 
-    /* 1. read the header byte.  This has the packet type in it */
-    int rc = c->ipstack->mqttread(c->ipstack, c->readbuf, 1, TimerLeftMS(timer));
+    /* 1. read the header byte(packet type). Only wait 5ms, jump out when no data and free cpu. */
+    int rc = c->ipstack->mqttread(c->ipstack, c->readbuf, 1, 5);
     if (rc != 1)
         goto exit;
 
@@ -374,14 +374,14 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     TimerInit(&timer);
     TimerCountdownMS(&timer, timeout_ms);
 
-	  do
+    /* Call the read process only once, the timeout_ms valid only when have getted first byte in 5ms. 
+    caution: Do not watting for timeout_ms, because this routine only be called periodically in back task,
+    and this can give other code cpu time for this bask task. */
+    do
     {
-        if (cycle(c, &timer) < 0)
-        {
-            rc = FAILURE;
-            break;
-        }
-  	} while (!TimerIsExpired(&timer));
+        rc = cycle(c, &timer);
+
+    } while (0);
 
     return rc;
 }
