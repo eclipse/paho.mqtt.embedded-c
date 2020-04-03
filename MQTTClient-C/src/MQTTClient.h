@@ -35,6 +35,7 @@
 #endif
 
 #include "MQTTPacket.h"
+//#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
 /* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
@@ -120,7 +121,7 @@ typedef struct MQTTClient
     struct MessageHandlers
     {
         const char* topicFilter;
-        void (*fp) (MessageData*);
+        void (*fp) (void *context_ptr, MessageData*);
         void        * context_ptr;
     } messageHandlers[MAX_MESSAGE_HANDLERS];      /* Message handlers are indexed by subscription topic */
 

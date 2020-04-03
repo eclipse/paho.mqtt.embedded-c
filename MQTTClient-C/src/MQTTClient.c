@@ -601,8 +601,6 @@ SEND_START:
             rc = FAILURE;
         }
     }
-    else
-        rc = FAILURE;
 
 exit:
     if (rc == FAILURE)
