@@ -395,11 +395,18 @@ void MQTTRun(void* parm)
 {
 	Timer timer;
 	MQTTClient* c = (MQTTClient*)parm;
+    struct timeval          delaytime;
+
 
 	TimerInit(&timer);
 
 	while (1)
 	{
+		/* Wait 100ms for other thread and start the next detect operation. */
+        delaytime.tv_sec = 0;
+        delaytime.tv_usec = 100000;
+        select(1, NULL, NULL, NULL, &delaytime);
+
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
 #endif
