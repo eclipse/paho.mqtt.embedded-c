@@ -433,9 +433,21 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
 
     do
     {
-        if (TimerIsExpired(timer))
-            break; // we timed out
+        /* Read once no matter whatever for timer. */
         rc = cycle(c, timer);
+        if(TimerIsExpired(timer))
+        {
+            if(rc <= 0)
+            {
+                /* Stop loop when no data received or read error. */
+                break;
+            }
+            else
+            {
+                /* Give more 500ms for next reading when reading other valid type packet. */
+                TimerCountdownMS(timer, 500);
+            }
+        }
     }
     while (rc != packet_type && rc >= 0);
 
