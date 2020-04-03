@@ -196,7 +196,7 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
             {
                 MessageData md;
                 NewMessageData(&md, topicName, message);
-                c->messageHandlers[i].fp(&md);
+                c->messageHandlers[i].fp(c->messageHandlers[i].context_ptr, &md);
                 rc = SUCCESS;
             }
         }
@@ -477,7 +477,7 @@ int MQTTConnect(MQTTClient* c, MQTTPacket_connectData* options)
 }
 
 
-int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler msgHandler)
+int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler msgHandler, void *context_ptr)
 {
     int rc = FAILURE;
     int i = -1;
@@ -513,6 +513,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
         {
             c->messageHandlers[i].topicFilter = topicFilter;
             c->messageHandlers[i].fp = msgHandler;
+            c->messageHandlers[i].context_ptr = context_ptr;
         }
     }
     return rc;
@@ -520,7 +521,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
 
 
 int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qos,
-       messageHandler messageHandler, MQTTSubackData* data)
+       messageHandler msgHandler, void *context_ptr, MQTTSubackData* data)
 {
     int rc = FAILURE;
     Timer timer;
@@ -552,7 +553,7 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
         {
             if (data->grantedQoS != 0x80)
             {
-                rc = MQTTSetMessageHandler(c, topicFilter, messageHandler);
+                rc = MQTTSetMessageHandler(c, topicFilter, msgHandler, context_ptr);
             }
             else
             {
@@ -578,10 +579,10 @@ exit:
 
 
 int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos,
-       messageHandler messageHandler)
+       messageHandler msgHandler, void *context_ptr)
 {
     MQTTSubackData data;
-    return MQTTSubscribeWithResults(c, topicFilter, qos, messageHandler, &data);
+    return MQTTSubscribeWithResults(c, topicFilter, qos, msgHandler, context_ptr, &data);
 }
 
 
@@ -613,7 +614,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
         {
             /* remove the subscription message handler associated with this topic, if there is one */
-            MQTTSetMessageHandler(c, topicFilter, NULL);
+            MQTTSetMessageHandler(c, topicFilter, NULL, NULL);
         }
     }
     else

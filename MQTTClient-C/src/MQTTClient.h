@@ -100,7 +100,7 @@ typedef struct MQTTSubackData
     enum QoS grantedQoS;
 } MQTTSubackData;
 
-typedef void (*messageHandler)(MessageData*);
+typedef void (*messageHandler)(void * context_ptr, MessageData*);
 
 typedef struct MQTTClient
 {
@@ -119,6 +119,7 @@ typedef struct MQTTClient
     {
         const char* topicFilter;
         void (*fp) (MessageData*);
+        void        * context_ptr;
     } messageHandlers[MAX_MESSAGE_HANDLERS];      /* Message handlers are indexed by subscription topic */
 
     void (*defaultMessageHandler) (MessageData*);
@@ -173,7 +174,7 @@ DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
  *  @param messageHandler - pointer to the message handler function or NULL to remove
  *  @return success code
  */
-DLLExport int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler messageHandler);
+DLLExport int MQTTSetMessageHandler(MQTTClient* client, const char* topicFilter, messageHandler msgHandler, void *context_ptr);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
@@ -181,7 +182,7 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, mess
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler);
+DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, void *context_ptr);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
@@ -190,7 +191,7 @@ DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum Qo
  *  @param data - suback granted QoS returned
  *  @return success code
  */
-DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, MQTTSubackData* data);
+DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, void *context_ptr, MQTTSubackData* data);
 
 /** MQTT Subscribe - send an MQTT unsubscribe packet and wait for unsuback before returning.
  *  @param client - the client object to use
