@@ -148,6 +148,15 @@ typedef struct MQTTClient
 DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
 		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size);
 
+/**
+  * Init some more parameter for mqtt client.
+  * @param client
+  * @param try count for send package
+  * @param 
+  * @param
+  */
+DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned int try_cnt);
+
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
  *  @param options - connect options

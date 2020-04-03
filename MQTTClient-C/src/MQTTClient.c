@@ -286,6 +286,7 @@ int cycle(MQTTClient* c, Timer* timer)
 {
     int len = 0,
         rc = SUCCESS;
+    unsigned int waittime = TimerLeftMS(timer);
 
     int packet_type = readPacket(c, timer);     /* read the socket, see what work is due */
 
@@ -322,7 +323,11 @@ int cycle(MQTTClient* c, Timer* timer)
                 if (len <= 0)
                     rc = FAILURE;
                 else
+                {
+                    /* Reset the waittime before sending packet. because routine 'deliverMessage' would use a lot. */
+                    TimerCountdownMS(timer, waittime);
                     rc = sendPacket(c, len, timer);
+                }
                 if (rc == FAILURE)
                     goto exit; // there was a problem
             }
@@ -333,6 +338,10 @@ int cycle(MQTTClient* c, Timer* timer)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
+
+            /* Reset the waittime before sendint packet. only in case. */
+            TimerCountdownMS(timer, waittime);
+            
             if (MQTTDeserialize_ack(&type, &dup, &mypacketid, c->readbuf, c->readbuf_size) != 1)
                 rc = FAILURE;
             else if ((len = MQTTSerialize_ack(c->buf, c->buf_size,
@@ -395,17 +404,14 @@ void MQTTRun(void* parm)
 {
 	Timer timer;
 	MQTTClient* c = (MQTTClient*)parm;
-    struct timeval          delaytime;
 
-
+    
 	TimerInit(&timer);
 
 	while (1)
 	{
 		/* Wait 100ms for other thread and start the next detect operation. */
-        delaytime.tv_sec = 0;
-        delaytime.tv_usec = 100000;
-        select(1, NULL, NULL, NULL, &delaytime);
+        ThreadSleep(100);
 
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
@@ -455,14 +461,13 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
 }
 
 
-
-
 int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTConnackData* data)
 {
     Timer connect_timer;
     int rc = FAILURE;
     MQTTPacket_connectData default_options = MQTTPacket_connectData_initializer;
     int len = 0;
+    int cnt = 0;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -470,6 +475,7 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
 	  if (c->isconnected) /* don't send connect packet again if we are already connected */
 		  goto exit;
 
+SEND_START:
     TimerInit(&connect_timer);
     TimerCountdownMS(&connect_timer, c->command_timeout_ms);
 
@@ -495,7 +501,17 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
             rc = FAILURE;
     }
     else
-        rc = FAILURE;
+    {
+        cnt ++;
+        if(cnt <= c->try_cnt)
+        {
+            goto SEND_START;
+        }
+        else
+        {
+            rc = FAILURE;
+        }
+    }
 
 exit:
     if (rc == SUCCESS)
