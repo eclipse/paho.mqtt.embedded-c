@@ -36,6 +36,7 @@
 
 #include "MQTTPacket.h"
 //#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
+#define MQTTCLIENT_PLATFORM_HEADER MQTTLinux.h
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
 /* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
@@ -99,7 +100,7 @@ typedef struct MQTTSubackData
 
 typedef void (*messageHandler)(void * context_ptr, MessageData*);
 
-struct MessageHandlers
+typedef struct MessageHandlers
 {
     const char* topicFilter;
     void (*fp) (void *context_ptr, MessageData*);
@@ -154,8 +155,7 @@ DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int
   * @param max message handler number
   * @param message handler structure
   */
-DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr)
-
+DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this

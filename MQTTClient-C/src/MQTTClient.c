@@ -414,7 +414,7 @@ void MQTTRun(void* parm)
 	while (1)
 	{
 		/* Wait 100ms for other thread and start the next detect operation. */
-        ThreadSleep(100);
+        //ThreadSleep(100);
 
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
