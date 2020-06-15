@@ -48,10 +48,6 @@
 
 #define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
 
-#if !defined(MAX_MESSAGE_HANDLERS)
-#define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
-#endif
-
 enum QoS { QOS0, QOS1, QOS2, SUBFAIL=0x80 };
 
 /* all failure return codes must be negative */
@@ -103,6 +99,13 @@ typedef struct MQTTSubackData
 
 typedef void (*messageHandler)(void * context_ptr, MessageData*);
 
+struct MessageHandlers
+{
+    const char* topicFilter;
+    void (*fp) (void *context_ptr, MessageData*);
+    void        * context_ptr;
+} MessageHandlers;
+
 typedef struct MQTTClient
 {
     unsigned int next_packetid,
@@ -116,14 +119,10 @@ typedef struct MQTTClient
     int isconnected;
     int cleansession;
 
-    unsigned int try_cnt;  /* Try count for every send request. */
+    unsigned char            try_cnt;  /* Try count for every send request. */
 
-    struct MessageHandlers
-    {
-        const char* topicFilter;
-        void (*fp) (void *context_ptr, MessageData*);
-        void        * context_ptr;
-    } messageHandlers[MAX_MESSAGE_HANDLERS];      /* Message handlers are indexed by subscription topic */
+    int         max_message_handlers;  /* Message handlers are indexed by subscription topic */    
+    MessageHandlers *messageHandlers;
 
     void (*defaultMessageHandler) (MessageData*);
 
@@ -152,10 +151,11 @@ DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int
   * Init some more parameter for mqtt client.
   * @param client
   * @param try count for send package
-  * @param 
-  * @param
+  * @param max message handler number
+  * @param message handler structure
   */
-DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned int try_cnt);
+DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr)
+
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this

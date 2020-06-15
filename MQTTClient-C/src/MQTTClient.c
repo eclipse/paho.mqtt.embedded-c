@@ -60,7 +60,7 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     int i;
     c->ipstack = network;
 
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    for (i = 0; i < c->max_message_handlers; ++i)
         c->messageHandlers[i].topicFilter = 0;
     c->command_timeout_ms = command_timeout_ms;
     c->buf = sendbuf;
@@ -80,10 +80,13 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
 }
 
 
-void MQTTClientInitParam(MQTTClient* c, unsigned int try_cnt)
+void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr)
 {
     /* Init try count for every send request. */
     c->try_cnt = try_cnt;
+    
+    c->max_message_handlers = max_msghdler;
+    c->messageHandlers = msghdler_ptr;
 }
 
 
@@ -194,7 +197,7 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
     int rc = FAILURE;
 
     // we have to find the right message handler - indexed by topic
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    for (i = 0; i < c->max_message_handlers; ++i)
     {
         if (c->messageHandlers[i].topicFilter != 0 && (MQTTPacket_equals(topicName, (char*)c->messageHandlers[i].topicFilter) ||
                 isTopicMatched((char*)c->messageHandlers[i].topicFilter, topicName)))
@@ -268,7 +271,7 @@ void MQTTCleanSession(MQTTClient* c)
 {
     int i = 0;
 
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    for (i = 0; i < c->max_message_handlers; ++i)
         c->messageHandlers[i].topicFilter = NULL;
 }
 
@@ -541,7 +544,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
     int i = -1;
 
     /* first check for an existing matching slot */
-    for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+    for (i = 0; i < c->max_message_handlers; ++i)
     {
         if (c->messageHandlers[i].topicFilter != NULL && strcmp(c->messageHandlers[i].topicFilter, topicFilter) == 0)
         {
@@ -558,7 +561,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
     if (msgHandler != NULL) {
         if (rc == FAILURE)
         {
-            for (i = 0; i < MAX_MESSAGE_HANDLERS; ++i)
+            for (i = 0; i < c->max_message_handlers; ++i)
             {
                 if (c->messageHandlers[i].topicFilter == NULL)
                 {
@@ -567,7 +570,7 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
                 }
             }
         }
-        if (i < MAX_MESSAGE_HANDLERS)
+        if (i < c->max_message_handlers)
         {
             c->messageHandlers[i].topicFilter = topicFilter;
             c->messageHandlers[i].fp = msgHandler;
