@@ -23,7 +23,7 @@ add_library(
   paho-embed-mqtt3cc SHARED
   ${SOURCES}
 )
-install(TARGETS paho-embed-mqtt3cc DESTINATION /usr/lib)
+install(TARGETS paho-embed-mqtt3cc DESTINATION usr/lib)
 target_include_directories(paho-embed-mqtt3cc PRIVATE "linux")
 target_link_libraries(paho-embed-mqtt3cc paho-embed-mqtt3c)
 target_compile_definitions(paho-embed-mqtt3cc PRIVATE
