@@ -38,7 +38,7 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
 
     while (sent < length && !TimerIsExpired(timer))
     {
-        rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length, TimerLeftMS(timer));
+        rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length - sent, TimerLeftMS(timer));
         if (rc < 0)  // there was an error writing the data
             break;
         sent += rc;
@@ -54,39 +54,35 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
 }
 
 
-void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms,
-		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size)
+void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms, \
+                    void* (*mem_calloc)(unsigned int n, unsigned int size), void (*mem_free)(void *addr_ptr))
 {
-    int i;
     c->ipstack = network;
 
-    for (i = 0; i < c->max_message_handlers; ++i)
-        c->messageHandlers[i].topicFilter = 0;
     c->command_timeout_ms = command_timeout_ms;
-    c->buf = sendbuf;
-    c->buf_size = sendbuf_size;
-    c->readbuf = readbuf;
-    c->readbuf_size = readbuf_size;
+    c->buf = NULL;
+    c->buf_size = 0;
+    c->readbuf = NULL;
+    c->readbuf_size = 0;
     c->isconnected = 0;
     c->cleansession = 0;
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
-	  c->next_packetid = 1;
+    c->next_packetid = 1;
+
+    c->try_cnt = 6;
+
+    c->max_message_handlers = 0;
+    c->messageHandlers = NULL;
+
+    c->mem_calloc = mem_calloc;
+    c->mem_free = mem_free;
+    
     TimerInit(&c->last_sent);
     TimerInit(&c->last_received);
 #if defined(MQTT_TASK)
 	  MutexInit(&c->mutex);
 #endif
-}
-
-
-void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr)
-{
-    /* Init try count for every send request. */
-    c->try_cnt = try_cnt;
-    
-    c->max_message_handlers = max_msghdler;
-    c->messageHandlers = msghdler_ptr;
 }
 
 
@@ -118,20 +114,106 @@ exit:
 }
 
 
+static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, int new_size)
+{
+    if(is_read != 0)
+    {
+        /* Return old buffer when not must new mode and buffer size over. */
+        if(must_new == 0)
+        {
+            if((c->readbuf != NULL) && (new_size <= c->readbuf_size))
+            {
+                return c->readbuf;
+            }
+        }
+        
+        /* Reset previous read buffer and create new one. */
+        if(c->readbuf != NULL)
+        {
+            c->mem_free(c->readbuf);
+            c->readbuf = NULL;
+            c->readbuf_size = 0;
+        }
+        
+        c->readbuf_size = new_size;
+        if((c->readbuf = (unsigned char*)c->mem_calloc(1, c->readbuf_size)) == NULL)
+        {
+            c->readbuf_size = 0;
+        }
+
+        return c->readbuf;
+    }
+    else
+    {
+        /* Return old buffer when not must new mode and buffer size over. */
+        if(must_new == 0)
+        {
+            if((c->buf != NULL) && (new_size <= c->buf_size))
+            {
+                return c->buf;
+            }
+        }
+        
+        /* Reset previous read buffer and create new one. */
+        if(c->buf != NULL)
+        {
+            c->mem_free(c->buf);
+            c->buf = NULL;
+            c->buf_size = 0;
+        }
+        
+        c->buf_size = new_size;
+        if((c->buf = (unsigned char*)c->mem_calloc(1, c->buf_size)) == NULL)
+        {
+            c->buf_size = 0;
+        }
+
+        return c->buf;
+    }
+}
+
+
+void FreeAllBuff(MQTTClient* c)
+{
+    /* Free all the memory. */
+    if(c->readbuf != NULL)
+    {
+        c->mem_free(c->readbuf);
+        c->readbuf = NULL;
+        c->readbuf_size = 0;
+    }
+    if(c->buf != NULL)
+    {
+        c->mem_free(c->buf);
+        c->buf = NULL;
+        c->buf_size = 0;
+    }
+}
+
 static int readPacket(MQTTClient* c, Timer* timer)
 {
     MQTTHeader header = {0};
     int len = 0;
     int rem_len = 0;
+    unsigned char first_byte = 0;
 
     /* 1. read the header byte(packet type). Only wait 5ms, jump out when no data and free cpu. */
-    int rc = c->ipstack->mqttread(c->ipstack, c->readbuf, 1, 5);
+    int rc = c->ipstack->mqttread(c->ipstack, &first_byte, 1, 5);
     if (rc != 1)
         goto exit;
 
     len = 1;
     /* 2. read the remaining length.  This is variable in itself */
     decodePacket(c, &rem_len, TimerLeftMS(timer));
+
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 1, 1, rem_len + 10) == NULL)
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
+    
+    c->readbuf[0]= first_byte;
     len += MQTTPacket_encode(c->readbuf + 1, rem_len); /* put the original remaining length back into the buffer */
 
     if (rem_len > (c->readbuf_size - len))
@@ -216,7 +298,7 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
     {
         MessageData md;
         NewMessageData(&md, topicName, message);
-        c->defaultMessageHandler(&md);
+        c->defaultMessageHandler(c->defaultMessageCtx_ptr, &md);
         rc = SUCCESS;
     }
 
@@ -252,12 +334,17 @@ int keepalive(MQTTClient* c)
             
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
-            len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-            if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
-            {
-                c->ping_outstanding = 1;
-            }
 
+            /* Reset previous read buffer and create new one. */
+            if(CallocNewBuff(c, 0, 0, 10) != NULL)
+            {
+                len = MQTTSerialize_pingreq(c->buf, c->buf_size);
+                if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
+                {
+                    c->ping_outstanding = 1;
+                }
+            }
+            
             cnt ++;
         }
     }
@@ -319,6 +406,13 @@ int cycle(MQTTClient* c, Timer* timer)
             deliverMessage(c, &topicName, &msg);
             if (msg.qos != QOS0)
             {
+                /* Reset previous read buffer and create new one. */
+                if(CallocNewBuff(c, 0, 0, 10) == NULL)
+                {
+                    rc = FAILURE;
+                    goto exit;
+                }
+                
                 if (msg.qos == QOS1)
                     len = MQTTSerialize_ack(c->buf, c->buf_size, PUBACK, 0, msg.id);
                 else if (msg.qos == QOS2)
@@ -344,6 +438,13 @@ int cycle(MQTTClient* c, Timer* timer)
 
             /* Reset the waittime before sendint packet. only in case. */
             TimerCountdownMS(timer, waittime);
+
+            /* Reset previous read buffer and create new one. */
+            if(CallocNewBuff(c, 0, 0, 10) == NULL)
+            {
+                rc = FAILURE;
+                goto exit;
+            }
             
             if (MQTTDeserialize_ack(&type, &dup, &mypacketid, c->readbuf, c->readbuf_size) != 1)
                 rc = FAILURE;
@@ -488,6 +589,14 @@ SEND_START:
     c->keepAliveInterval = options->keepAliveInterval;
     c->cleansession = options->cleansession;
     TimerCountdown(&c->last_received, c->keepAliveInterval);
+
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_connectLength(options)) + 10) == NULL)
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
+    
     if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
         goto exit;
     if ((rc = sendPacket(c, len, &connect_timer)) != SUCCESS)  // send the connect packet
@@ -542,7 +651,12 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
 {
     int rc = FAILURE;
     int i = -1;
+    MessageHandlers * new_msghdler_ptr = NULL;
+    int                   new_maxhdler = 0;
 
+
+SETMSG_START:
+    
     /* first check for an existing matching slot */
     for (i = 0; i < c->max_message_handlers; ++i)
     {
@@ -570,11 +684,32 @@ int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, messageHandler
                 }
             }
         }
+
         if (i < c->max_message_handlers)
         {
             c->messageHandlers[i].topicFilter = topicFilter;
             c->messageHandlers[i].fp = msgHandler;
             c->messageHandlers[i].context_ptr = context_ptr;
+        }
+        else
+        {
+            new_maxhdler = c->max_message_handlers + 30;
+            if((new_msghdler_ptr = (MessageHandlers*)c->mem_calloc(new_maxhdler, sizeof(*new_msghdler_ptr))) != NULL)
+            {
+                if(c->messageHandlers != NULL)
+                {
+                    memcpy(new_msghdler_ptr, c->messageHandlers, c->max_message_handlers * sizeof(*c->messageHandlers));
+                    c->mem_free(c->messageHandlers);
+                }
+                c->messageHandlers = new_msghdler_ptr;
+                c->max_message_handlers = new_maxhdler;
+
+                goto SETMSG_START;
+            }
+            else
+            {
+                rc = FAILURE;
+            } 
         }
     }
     return rc;
@@ -601,6 +736,13 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
 SEND_START:    
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
+
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_subscribeLength(1, &topic)) + 10) == NULL)
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
 
     len = MQTTSerialize_subscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic, (int*)&qos);
     if (len <= 0)
@@ -679,6 +821,13 @@ SEND_START:
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_unsubscribeLength(1, &topic)) + 10) == NULL)
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
+
     if ((len = MQTTSerialize_unsubscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic)) <= 0)
         goto exit;
     if ((rc = sendPacket(c, len, &timer)) != SUCCESS) // send the subscribe packet
@@ -739,6 +888,13 @@ SEND_START:
 
     if (message->qos == QOS1 || message->qos == QOS2)
         message->id = getNextPacketId(c);
+
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 0, 1, MQTTPacket_len(MQTTSerialize_publishLength(message->qos, topic, message->payloadlen)) + 10) == NULL)
+    {
+        rc = BUFFER_OVERFLOW;
+        goto exit;
+    }
 
     len = MQTTSerialize_publish(c->buf, c->buf_size, 0, message->qos, message->retained, message->id,
               topic, (unsigned char*)message->payload, message->payloadlen);
@@ -814,10 +970,24 @@ int MQTTDisconnect(MQTTClient* c)
     TimerInit(&timer);
     TimerCountdownMS(&timer, c->command_timeout_ms);
 
-	  len = MQTTSerialize_disconnect(c->buf, c->buf_size);
-    if (len > 0)
-        rc = sendPacket(c, len, &timer);            // send the disconnect packet
+
+    /* Reset previous read buffer and create new one. */
+    if(CallocNewBuff(c, 0, 0, 10) != NULL)
+    {
+        len = MQTTSerialize_disconnect(c->buf, c->buf_size);
+        if (len > 0)
+            rc = sendPacket(c, len, &timer);            // send the disconnect packet
+    }
+
     MQTTCloseSession(c);
+    FreeAllBuff(c);
+
+    if(c->messageHandlers != NULL)
+    {
+        c->mem_free(c->messageHandlers);
+        c->messageHandlers = NULL;
+    }
+    c->max_message_handlers = 0;
 
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);

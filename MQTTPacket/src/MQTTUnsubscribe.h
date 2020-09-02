@@ -25,6 +25,8 @@
   #define DLLExport
 #endif
 
+DLLExport int MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[]);
+
 DLLExport int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[]);
 

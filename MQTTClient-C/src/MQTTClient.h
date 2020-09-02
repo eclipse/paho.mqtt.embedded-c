@@ -35,8 +35,9 @@
 #endif
 
 #include "MQTTPacket.h"
-//#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
-#define MQTTCLIENT_PLATFORM_HEADER MQTTLinux.h
+#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
+//#define MQTTCLIENT_PLATFORM_HEADER MQTTLinux.h
+//#define MQTTCLIENT_PLATFORM_HEADER MQTTTcpClt.h
 
 #if defined(MQTTCLIENT_PLATFORM_HEADER)
 /* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
@@ -109,12 +110,10 @@ typedef struct MessageHandlers
 
 typedef struct MQTTClient
 {
-    unsigned int next_packetid,
-      command_timeout_ms;
-    size_t buf_size,
-      readbuf_size;
-    unsigned char *buf,
-      *readbuf;
+    unsigned int next_packetid, command_timeout_ms;
+    size_t buf_size, readbuf_size;
+    unsigned char *buf, *readbuf;
+    
     unsigned int keepAliveInterval;
     char ping_outstanding;
     int isconnected;
@@ -125,7 +124,14 @@ typedef struct MQTTClient
     int         max_message_handlers;  /* Message handlers are indexed by subscription topic */    
     MessageHandlers *messageHandlers;
 
-    void (*defaultMessageHandler) (MessageData*);
+    /* Default Message handler and context. */
+    void (*defaultMessageHandler) (void *context_ptr, MessageData*);
+    void                 * defaultMessageCtx_ptr;
+
+
+    /* Memory allocate and free routine. */
+    void * (*mem_calloc)(unsigned int n, unsigned int size);
+    void (*mem_free)(void *addr_ptr);
 
     Network* ipstack;
     Timer last_sent, last_received;
@@ -145,17 +151,8 @@ typedef struct MQTTClient
  * @param command_timeout_ms
  * @param
  */
-DLLExport void MQTTClientInit(MQTTClient* client, Network* network, unsigned int command_timeout_ms,
-		unsigned char* sendbuf, size_t sendbuf_size, unsigned char* readbuf, size_t readbuf_size);
-
-/**
-  * Init some more parameter for mqtt client.
-  * @param client
-  * @param try count for send package
-  * @param max message handler number
-  * @param message handler structure
-  */
-DLLExport void MQTTClientInitParam(MQTTClient* c, unsigned char try_cnt, int max_msghdler, MessageHandlers *msghdler_ptr);
+DLLExport void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms, \
+                                  void* (*mem_calloc)(unsigned int n, unsigned int size), void (*mem_free)(void *addr_ptr));
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
