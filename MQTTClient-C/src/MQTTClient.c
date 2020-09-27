@@ -308,7 +308,7 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
 
 int keepalive(MQTTClient* c)
 {
-#define KEEPALIVE_TRYCNT  10
+#define KEEPALIVE_TRYCNT  7
     int           rc = SUCCESS;
     static int   cnt = 0;
     int          len = 0;
@@ -328,8 +328,7 @@ int keepalive(MQTTClient* c)
         }
 
         /* Min slice delay 1s. */
-        slice_delay = (c->keepAliveInterval/2)/KEEPALIVE_TRYCNT;
-        slice_delay = (slice_delay < 2)? 2 : slice_delay;
+        slice_delay = (30 < c->keepAliveInterval)? 2 : 1;
 
         if(cnt == 0)
         {
