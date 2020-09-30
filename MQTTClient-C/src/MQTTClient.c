@@ -306,13 +306,11 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
 }
 
 
-int keepalive(MQTTClient* c)
+static int keepalive(MQTTClient* c)
 {
 #define KEEPALIVE_TRYCNT  7
     int           rc = SUCCESS;
-    static int   cnt = 0;
     int          len = 0;
-    int  slice_delay = 0;
 
 
     if (c->keepAliveInterval == 0)
@@ -320,6 +318,8 @@ int keepalive(MQTTClient* c)
 
     if(TimerIsExpired(&c->last_sent))
     {
+        Timer timer;
+
         /* Reset previous write buffer and create new one. */
         if(CallocNewBuff(c, 0, 0, 10) == NULL)
         {
@@ -327,71 +327,32 @@ int keepalive(MQTTClient* c)
             goto exit;
         }
 
-        /* Min slice delay 1s. */
-        slice_delay = (30 < c->keepAliveInterval)? 2 : 1;
+        TimerInit(&timer);
+        TimerCountdownMS(&timer, 1000);
+        len = MQTTSerialize_pingreq(c->buf, c->buf_size);
+        rc = sendPacket(c, len, &timer);
 
-        if(cnt == 0)
+        /* Set ping flag. */
+        c->ping_outstanding ++;
+          
+        if(KEEPALIVE_TRYCNT <= c->ping_outstanding)
         {
-            Timer timer;
-
-            TimerInit(&timer);
-            TimerCountdownMS(&timer, 1000);
-            len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-            rc = sendPacket(c, len, &timer);
-
-            /* Set ping flag. */
-            c->ping_outstanding = 1;
-            cnt ++;
-
-            /* Set last_sent to small slice. */
-            TimerCountdown(&c->last_sent, slice_delay);
-            rc = SUCCESS;
-            goto exit;
+            c->ping_outstanding = 0;
+            rc = FAILURE; /* PINGRESP not received in keepalive interval */
         }
         else
         {
-            if(c->ping_outstanding != 0)
-            {
-                if(KEEPALIVE_TRYCNT < cnt)
-                {
-                    cnt = 0;
-                    rc = FAILURE; /* PINGRESP not received in keepalive interval */
-                    goto exit;
-                }
-                else
-                {
-                    Timer timer;
-
-                    TimerInit(&timer);
-                    TimerCountdownMS(&timer, 1000);
-                    len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-                    rc = sendPacket(c, len, &timer);
-
-                    cnt ++;
-
-                    /* Set last_sent to small slice. */
-                    TimerCountdown(&c->last_sent, slice_delay);
-                    rc = SUCCESS;
-
-                    goto exit;
-                }
-            }
-            else
-            {
-                cnt = 0;
-
-                /* Set last_sent to keep alive data. */
-                TimerCountdown(&c->last_sent, c->keepAliveInterval);
-                rc = SUCCESS;
-
-                goto exit;
-            }
+            /* Set last_sent to small slice. */
+            TimerCountdown(&c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
+            rc = SUCCESS;     
         }
     }
 
 exit:
     return rc;
 }
+
+
 
 
 void MQTTCleanSession(MQTTClient* c)
@@ -501,7 +462,9 @@ int cycle(MQTTClient* c, Timer* timer)
         case PUBCOMP:
             break;
         case PINGRESP:
+            /* Set last_sent to keep alive data. */
             c->ping_outstanding = 0;
+            TimerCountdown(&c->last_sent, c->keepAliveInterval);
             break;
     }
 
