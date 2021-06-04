@@ -20,26 +20,28 @@
 #include <stdio.h>
 #include <string.h>
 
-static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) {
+static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) 
+{
     md->topicName = aTopicName;
     md->message = aMessage;
 }
 
 
-static int getNextPacketId(MQTTClient *c) {
+static int getNextPacketId(MQTTClient *c) 
+{
     return c->next_packetid = (c->next_packetid == MAX_PACKET_ID) ? 1 : c->next_packetid + 1;
 }
 
 
-static int sendPacket(MQTTClient* c, int length, Timer* timer)
+static int sendPacket(MQTTClient* c, int length, MQTTTimer timer)
 {
     int rc = MQTT_FAILURE,
         sent = 0;
 
-    while (sent < length && !TimerIsExpired(timer))
+    while (sent < length && !c->plat_ptr->TimerIsExpired(timer))
     {
-        rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length - sent, TimerLeftMS(timer));
-        if (rc < 0)  // there was an error writing the data
+        rc = c->plat_ptr->MqttWrite(c->plat_ptr, &c->buf[sent], length - sent, c->plat_ptr->TimerLeftMS(timer));
+        if (rc < 0)
             break;
         sent += rc;
     }
@@ -54,10 +56,9 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
 }
 
 
-void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms, \
-                    void* (*mem_calloc)(int n, int size), void (*mem_free)(void *addr_ptr))
+void MQTTClientInit(MQTTClient* c, MQTTPlatform *plat_ptr, unsigned int command_timeout_ms)
 {
-    c->ipstack = network;
+    c->plat_ptr = plat_ptr;
 
     c->command_timeout_ms = command_timeout_ms;
     c->buf = NULL;
@@ -75,11 +76,9 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     c->max_message_handlers = 0;
     c->messageHandlers = NULL;
 
-    c->mem_calloc = mem_calloc;
-    c->mem_free = mem_free;
-    
-    TimerInit(&c->last_sent);
-    TimerInit(&c->last_received);
+    c->plat_ptr->TimerInit(&(c->last_sent));
+    c->plat_ptr->TimerInit(&(c->last_received));
+	
 #if defined(MQTT_TASK)
 	  MutexInit(&c->mutex);
 #endif
@@ -103,7 +102,7 @@ static int decodePacket(MQTTClient* c, int* value, int timeout)
             rc = MQTTPACKET_READ_ERROR; /* bad data */
             goto exit;
         }
-        rc = c->ipstack->mqttread(c->ipstack, &i, 1, timeout);
+        rc = c->plat_ptr->MqttRead(c->plat_ptr, &i, 1, timeout);
         if (rc != 1)
             goto exit;
         *value += (i & 127) * multiplier;
@@ -136,7 +135,7 @@ static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, i
         }
         
         c->readbuf_size = new_size;
-        if((c->readbuf = (unsigned char*)c->mem_calloc(1, c->readbuf_size)) == NULL)
+        if((c->readbuf = (unsigned char*)c->plat_ptr->MemCalloc(1, c->readbuf_size)) == NULL)
         {
             c->readbuf_size = 0;
         }
@@ -163,7 +162,7 @@ static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, i
         }
         
         c->buf_size = new_size;
-        if((c->buf = (unsigned char*)c->mem_calloc(1, c->buf_size)) == NULL)
+        if((c->buf = (unsigned char*)c->plat_ptr->MemCalloc(1, c->buf_size)) == NULL)
         {
             c->buf_size = 0;
         }
@@ -178,19 +177,19 @@ void FreeAllBuff(MQTTClient* c)
     /* Free all the memory. */
     if(c->readbuf != NULL)
     {
-        c->mem_free(c->readbuf);
+        c->plat_ptr->MemFree(c->readbuf);
         c->readbuf = NULL;
         c->readbuf_size = 0;
     }
     if(c->buf != NULL)
     {
-        c->mem_free(c->buf);
+        c->plat_ptr->MemFree(c->buf);
         c->buf = NULL;
         c->buf_size = 0;
     }
 }
 
-static int readPacket(MQTTClient* c, Timer* timer)
+static int readPacket(MQTTClient* c, MQTTTimer timer)
 {
     MQTTHeader header = {0};
     int len = 0;
@@ -198,13 +197,13 @@ static int readPacket(MQTTClient* c, Timer* timer)
     unsigned char first_byte = 0;
 
     /* 1. read the header byte(packet type). Only wait 5ms, jump out when no data and free cpu. */
-    int rc = c->ipstack->mqttread(c->ipstack, &first_byte, 1, 5);
+    int rc = c->plat_ptr->MqttRead(c->plat_ptr, &first_byte, 1, 5);
     if (rc != 1)
         goto exit;
 
     len = 1;
     /* 2. read the remaining length.  This is variable in itself */
-    decodePacket(c, &rem_len, TimerLeftMS(timer));
+    decodePacket(c, &rem_len, c->plat_ptr->TimerLeftMS(timer));
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 1, 1, rem_len + 10) == NULL)
@@ -225,7 +224,7 @@ static int readPacket(MQTTClient* c, Timer* timer)
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
     if (rem_len > 0) 
     {
-        rc = c->ipstack->mqttread(c->ipstack, c->readbuf + len, rem_len, TimerLeftMS(timer));
+        rc = c->plat_ptr->MqttRead(c->plat_ptr, c->readbuf + len, rem_len, c->plat_ptr->TimerLeftMS(timer));
         if(rc != rem_len)
         {
             rc = 0;
@@ -318,7 +317,7 @@ static int keepalive(MQTTClient* c)
 
     if(TimerIsExpired(&c->last_sent))
     {
-        Timer timer;
+        MQTTTimer timer = NULL;
 
         /* Reset previous write buffer and create new one. */
         if(CallocNewBuff(c, 0, 0, 10) == NULL)
@@ -327,10 +326,10 @@ static int keepalive(MQTTClient* c)
             goto exit;
         }
 
-        TimerInit(&timer);
-        TimerCountdownMS(&timer, 1000);
+        c->plat_ptr->TimerInit(&timer);
+        c->plat_ptr->TimerCountdownMS(&timer, 1000);
         len = MQTTSerialize_pingreq(c->buf, c->buf_size);
-        rc = sendPacket(c, len, &timer);
+        rc = sendPacket(c, len, timer);
 
         /* Set ping flag. */
         c->ping_outstanding ++;
@@ -346,6 +345,12 @@ static int keepalive(MQTTClient* c)
             TimerCountdown(&c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
             rc = MQTT_SUCCESS;     
         }
+
+		if(timer != NULL)
+		{
+			c->plat_ptr->TimerDeinit(&timer);
+			timer = NULL;
+		}
     }
 
 exit:
@@ -373,13 +378,14 @@ void MQTTCloseSession(MQTTClient* c)
 }
 
 
-int cycle(MQTTClient* c, Timer* timer)
+int cycle(MQTTClient* c, MQTTTimer timer)
 {
     int len = 0,
-        rc = MQTT_SUCCESS;
-    unsigned int waittime = TimerLeftMS(timer);
+         rc = MQTT_SUCCESS;
+    unsigned int waittime = c->plat_ptr->TimerLeftMS(timer);
 
-    int packet_type = readPacket(c, timer);     /* read the socket, see what work is due */
+	/* read the socket, see what work is due */
+    int packet_type = readPacket(c, timer);     
 
     switch (packet_type)
     {
@@ -423,7 +429,7 @@ int cycle(MQTTClient* c, Timer* timer)
                 else
                 {
                     /* Reset the waittime before sending packet. because routine 'deliverMessage' would use a lot. */
-                    TimerCountdownMS(timer, waittime);
+                    c->plat_ptr->TimerCountdownMS(timer, waittime);
                     rc = sendPacket(c, len, timer);
                 }
                 if (rc == MQTT_FAILURE)
@@ -438,7 +444,7 @@ int cycle(MQTTClient* c, Timer* timer)
             unsigned char dup, type;
 
             /* Reset the waittime before sendint packet. only in case. */
-            TimerCountdownMS(timer, waittime);
+            c->plat_ptr->TimerCountdownMS(timer, waittime);
 
             /* Reset previous read buffer and create new one. */
             if(CallocNewBuff(c, 0, 0, 10) == NULL)
@@ -484,20 +490,26 @@ exit:
 
 int MQTTYield(MQTTClient* c, int timeout_ms)
 {
-    int rc = MQTT_SUCCESS;
-    Timer timer;
+    int          rc = MQTT_SUCCESS;
+    MQTTTimer timer = NULL;
 
-    TimerInit(&timer);
-    TimerCountdownMS(&timer, timeout_ms);
+    c->plat_ptr->TimerInit(&timer);
+    c->plat_ptr->TimerCountdownMS(timer, timeout_ms);
 
     /* Call the read process only once, the timeout_ms valid only when have getted first byte in 5ms. 
     caution: Do not watting for timeout_ms, because this routine only be called periodically in back task,
     and this can give other code cpu time for this bask task. */
     do
     {
-        rc = cycle(c, &timer);
+        rc = cycle(c, timer);
 
     } while (0);
+
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
+	}
 
     return rc;
 }
@@ -509,11 +521,11 @@ int MQTTIsConnected(MQTTClient* client)
 
 void MQTTRun(void* parm)
 {
-	Timer timer;
+	MQTTTimer timer = NULL;
 	MQTTClient* c = (MQTTClient*)parm;
 
     
-	TimerInit(&timer);
+	c->plat_ptr->TimerInit(&timer);
 
 	while (1)
 	{
@@ -523,11 +535,18 @@ void MQTTRun(void* parm)
 #if defined(MQTT_TASK)
 		MutexLock(&c->mutex);
 #endif
-		TimerCountdownMS(&timer, 500); /* Don't wait too long if no traffic is incoming */
-		cycle(c, &timer);
+		c->plat_ptr->TimerCountdownMS(timer, 500); /* Don't wait too long if no traffic is incoming */
+		cycle(c, timer);
+		
 #if defined(MQTT_TASK)
 		MutexUnlock(&c->mutex);
 #endif
+	}
+
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
 	}
 }
 
@@ -540,7 +559,7 @@ int MQTTStartTask(MQTTClient* client)
 #endif
 
 
-int waitfor(MQTTClient* c, int packet_type, Timer* timer)
+int waitfor(MQTTClient* c, int packet_type, MQTTTimer timer)
 {
     int rc = MQTT_FAILURE;
 
@@ -548,7 +567,7 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
     {
         /* Read once no matter whatever for timer. */
         rc = cycle(c, timer);
-        if(TimerIsExpired(timer))
+        if(c->plat_ptr->TimerIsExpired(timer))
         {
             if(rc <= 0)
             {
@@ -558,7 +577,7 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
             else
             {
                 /* Give more 500ms for next reading when reading other valid type packet. */
-                TimerCountdownMS(timer, 500);
+                c->plat_ptr->TimerCountdownMS(timer, 500);
             }
         }
     }
@@ -570,7 +589,7 @@ int waitfor(MQTTClient* c, int packet_type, Timer* timer)
 
 int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTConnackData* data)
 {
-    Timer connect_timer;
+    MQTTTimer connect_timer = NULL;
     int rc = MQTT_FAILURE;
     MQTTPacket_connectData default_options = MQTTPacket_connectData_initializer;
     int len = 0;
@@ -583,8 +602,8 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
 		  goto exit;
 
 SEND_START:
-    TimerInit(&connect_timer);
-    TimerCountdownMS(&connect_timer, c->command_timeout_ms);
+    c->plat_ptr->TimerInit(&connect_timer);
+    c->plat_ptr->TimerCountdownMS(connect_timer, c->command_timeout_ms);
 
     if (options == 0)
         options = &default_options; /* set default options if none were supplied */
@@ -634,6 +653,12 @@ exit:
         c->isconnected = 1;
         c->ping_outstanding = 0;
     }
+
+	if(connect_timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&connect_timer);
+		connect_timer = NULL;
+	}
 
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);
@@ -697,12 +722,12 @@ SETMSG_START:
         else
         {
             new_maxhdler = c->max_message_handlers + 30;
-            if((new_msghdler_ptr = (MessageHandlers*)c->mem_calloc(new_maxhdler, sizeof(*new_msghdler_ptr))) != NULL)
+            if((new_msghdler_ptr = (MessageHandlers*)c->plat_ptr->MemCalloc(new_maxhdler, sizeof(*new_msghdler_ptr))) != NULL)
             {
                 if(c->messageHandlers != NULL)
                 {
                     memcpy(new_msghdler_ptr, c->messageHandlers, c->max_message_handlers * sizeof(*c->messageHandlers));
-                    c->mem_free(c->messageHandlers);
+                    c->plat_ptr->MemFree(c->messageHandlers);
                 }
                 c->messageHandlers = new_msghdler_ptr;
                 c->max_message_handlers = new_maxhdler;
@@ -719,11 +744,10 @@ SETMSG_START:
 }
 
 
-int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qos,
-       messageHandler msgHandler, void *context_ptr, MQTTSubackData* data)
+int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr, MQTTSubackData* data)
 {
-    int rc = MQTT_FAILURE;
-    Timer timer;
+    int          rc = MQTT_FAILURE;
+    MQTTTimer timer = NULL;
     int len = 0;
     MQTTString topic = MQTTString_initializer;
     int cnt = 0;
@@ -737,8 +761,8 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
 		    goto exit;
 
 SEND_START:    
-    TimerInit(&timer);
-    TimerCountdownMS(&timer, c->command_timeout_ms);
+    c->plat_ptr->TimerInit(&timer);
+    c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_subscribeLength(1, &topic)) + 10) == NULL)
@@ -752,10 +776,10 @@ SEND_START:
         goto exit;
 
 
-    if ((rc = sendPacket(c, len, &timer)) != MQTT_SUCCESS) // send the subscribe packet
-        goto exit;             // there was a problem
+    if ((rc = sendPacket(c, len, timer)) != MQTT_SUCCESS) // send the subscribe packet
+        goto exit;
 
-    if (waitfor(c, SUBACK, &timer) == SUBACK)      // wait for suback
+    if (waitfor(c, SUBACK, timer) == SUBACK)      // wait for suback
     {
         int count = 0;
         unsigned short mypacketid;
@@ -788,6 +812,13 @@ SEND_START:
 exit:
     if (rc == MQTT_FAILURE)
         MQTTCloseSession(c);
+	
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
+	}
+	
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);
 #endif
@@ -795,8 +826,7 @@ exit:
 }
 
 
-int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos,
-       messageHandler msgHandler, void *context_ptr)
+int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr)
 {
     MQTTSubackData data;
     return MQTTSubscribeWithResults(c, topicFilter, qos, msgHandler, context_ptr, &data);
@@ -806,7 +836,7 @@ int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos,
 int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
 {
     int rc = MQTT_FAILURE;
-    Timer timer;
+    MQTTTimer timer = NULL;
     MQTTString topic = MQTTString_initializer;
 
     int len = 0;
@@ -821,8 +851,9 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
 		  goto exit;
 
 SEND_START:
-    TimerInit(&timer);
-    TimerCountdownMS(&timer, c->command_timeout_ms);
+
+    c->plat_ptr->TimerInit(&timer);
+    c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_unsubscribeLength(1, &topic)) + 10) == NULL)
@@ -833,10 +864,10 @@ SEND_START:
 
     if ((len = MQTTSerialize_unsubscribe(c->buf, c->buf_size, 0, getNextPacketId(c), 1, &topic)) <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &timer)) != MQTT_SUCCESS) // send the subscribe packet
+    if ((rc = sendPacket(c, len, timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit; // there was a problem
 
-    if (waitfor(c, UNSUBACK, &timer) == UNSUBACK)
+    if (waitfor(c, UNSUBACK, timer) == UNSUBACK)
     {
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
@@ -861,6 +892,13 @@ SEND_START:
 exit:
     if (rc == MQTT_FAILURE)
         MQTTCloseSession(c);
+	
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
+	}
+	
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);
 #endif
@@ -871,7 +909,7 @@ exit:
 int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
 {
     int rc = MQTT_FAILURE;
-    Timer timer;
+    MQTTTimer timer = NULL;
     MQTTString topic = MQTTString_initializer;
 
     int len = 0;
@@ -886,8 +924,8 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
 		    goto exit;
 
 SEND_START:
-    TimerInit(&timer);
-    TimerCountdownMS(&timer, c->command_timeout_ms);
+    c->plat_ptr->TimerInit(&timer);
+    c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     if (message->qos == QOS1 || message->qos == QOS2)
         message->id = getNextPacketId(c);
@@ -903,12 +941,12 @@ SEND_START:
               topic, (unsigned char*)message->payload, message->payloadlen);
     if (len <= 0)
         goto exit;
-    if ((rc = sendPacket(c, len, &timer)) != MQTT_SUCCESS) // send the subscribe packet
+    if ((rc = sendPacket(c, len, timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit; // there was a problem
 
     if (message->qos == QOS1)
     {
-        if (waitfor(c, PUBACK, &timer) == PUBACK)
+        if (waitfor(c, PUBACK, timer) == PUBACK)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
@@ -930,7 +968,7 @@ SEND_START:
     }
     else if (message->qos == QOS2)
     {
-        if (waitfor(c, PUBCOMP, &timer) == PUBCOMP)
+        if (waitfor(c, PUBCOMP, timer) == PUBCOMP)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
@@ -954,6 +992,13 @@ SEND_START:
 exit:
     if (rc == MQTT_FAILURE)
         MQTTCloseSession(c);
+	
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
+	}
+	
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);
 #endif
@@ -964,22 +1009,22 @@ exit:
 int MQTTDisconnect(MQTTClient* c)
 {
     int rc = MQTT_FAILURE;
-    Timer timer;     // we might wait for incomplete incoming publishes to complete
+    MQTTTimer timer = NULL;     // we might wait for incomplete incoming publishes to complete
     int len = 0;
 
 #if defined(MQTT_TASK)
 	MutexLock(&c->mutex);
 #endif
-    TimerInit(&timer);
-    TimerCountdownMS(&timer, c->command_timeout_ms);
 
+    c->plat_ptr->TimerInit(&timer);
+    c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 0, 0, 10) != NULL)
     {
         len = MQTTSerialize_disconnect(c->buf, c->buf_size);
         if (len > 0)
-            rc = sendPacket(c, len, &timer);            // send the disconnect packet
+            rc = sendPacket(c, len, timer);            // send the disconnect packet
     }
 
     MQTTCloseSession(c);
@@ -987,13 +1032,32 @@ int MQTTDisconnect(MQTTClient* c)
 
     if(c->messageHandlers != NULL)
     {
-        c->mem_free(c->messageHandlers);
+        c->plat_ptr->MemFree(c->messageHandlers);
         c->messageHandlers = NULL;
     }
     c->max_message_handlers = 0;
 
+	if(c->last_sent != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&(c->last_sent));
+		c->last_sent = NULL;
+	}
+	if(c->last_received != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&(c->last_received));
+		c->last_received = NULL;
+	}
+
+	if(timer != NULL)
+	{
+		c->plat_ptr->TimerDeinit(&timer);
+		timer = NULL;
+	}
+
 #if defined(MQTT_TASK)
 	  MutexUnlock(&c->mutex);
 #endif
+
+	
     return rc;
 }

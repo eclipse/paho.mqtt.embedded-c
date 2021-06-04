@@ -35,42 +35,42 @@
 #endif
 
 #include "MQTTPacket.h"
-#define MQTTCLIENT_PLATFORM_HEADER MQTTFreeRTOS.h
-//#define MQTTCLIENT_PLATFORM_HEADER MQTTLinux.h
-//#define MQTTCLIENT_PLATFORM_HEADER MQTTTcpClt.h
 
-#if defined(MQTTCLIENT_PLATFORM_HEADER)
-/* The following sequence of macros converts the MQTTCLIENT_PLATFORM_HEADER value
- * into a string constant suitable for use with include.
- */
-#define xstr(s) str(s)
-#define str(s) #s
-#include xstr(MQTTCLIENT_PLATFORM_HEADER)
-#endif
 
-#define MAX_PACKET_ID 65535 /* according to the MQTT specification - do not change! */
+/* according to the MQTT specification - do not change! */
+#define MAX_PACKET_ID 65535 
 
-enum QoS { QOS0, QOS1, QOS2, SUBFAIL=0x80 };
+enum QoS { QOS0, QOS1, QOS2, SUBFAIL = 0x80 };
 
 /* all failure return codes must be negative */
 enum returnCode { MQTT_BUFFER_OVERFLOW = -2, MQTT_FAILURE = -1, MQTT_SUCCESS = 0 };
 
-/* The Platform specific header must define the Network and Timer structures and functions
- * which operate on them.
- *
-typedef struct Network
-{
-	int (*mqttread)(Network*, unsigned char* read_buffer, int, int);
-	int (*mqttwrite)(Network*, unsigned char* send_buffer, int, int);
-} Network;*/
+/* Timer structure for mqtt. */
+typedef void * MQTTTimer;
 
-/* The Timer structure must be defined in the platform specific header,
- * and have the following functions to operate on it.  */
-extern void TimerInit(Timer*);
-extern char TimerIsExpired(Timer*);
-extern void TimerCountdownMS(Timer*, unsigned int);
-extern void TimerCountdown(Timer*, unsigned int);
-extern int TimerLeftMS(Timer*);
+/* Platform routine and variable for mqtt. */
+typedef struct MQTTPlatform
+{
+	/* User's context pointer. */
+	void * context_ptr;
+	
+	/* Network operation routine. */
+	int (*MqttRead)(struct Platform *plat_ptr, unsigned char * buff_ptr, int len, int timeout_ms);
+	int (*MqttWrite)(struct Platform *plat_ptr, unsigned char *buff_ptr, int len, int timeout_ms);
+
+	/* Timer routine. */
+	void (*TimerInit)(MQTTTimer *time_ptr);
+	void (*TimerDeinit)(MQTTTimer *time_ptr);
+	char (*TimerIsExpired)(MQTTTimer timer);
+	void (*TimerCountdownMS)(MQTTTimer timer, unsigned int timeout_ms);
+	void (*TimerCountdown)(MQTTTimer timer, unsigned int timeout_s);
+	int  (*TimerLeftMS)(MQTTTimer timer);
+
+	/* Memory allocate and free routine. */
+    void * (*MemCalloc)(unsigned int n, unsigned int size);
+    void   (*MemFree)(void *addr_ptr);
+	
+} MQTTPlatform;
 
 typedef struct MQTTMessage
 {
@@ -111,32 +111,32 @@ typedef struct MessageHandlers
 typedef struct MQTTClient
 {
     unsigned int next_packetid, command_timeout_ms;
-    size_t buf_size, readbuf_size;
-    unsigned char *buf, *readbuf;
+    size_t                  buf_size, readbuf_size;
+    unsigned char                   *buf, *readbuf;
     
-    unsigned int keepAliveInterval;
-    char ping_outstanding;
-    int isconnected;
-    int cleansession;
+    unsigned int   keepAliveInterval;
+    char            ping_outstanding;
+    int                  isconnected;
+    int                 cleansession;
 
-    unsigned char            try_cnt;  /* Try count for every send request. */
+	/* Try count for every send request. */
+    unsigned char            try_cnt;
 
-    int         max_message_handlers;  /* Message handlers are indexed by subscription topic */    
+	/* Message handlers are indexed by subscription topic. */
+    int         max_message_handlers;    
     MessageHandlers *messageHandlers;
 
     /* Default Message handler and context. */
     void (*defaultMessageHandler) (void *context_ptr, MessageData*);
-    void                 * defaultMessageCtx_ptr;
+    void                                    * defaultMessageCtx_ptr;
 
-
-    /* Memory allocate and free routine. */
-    void * (*mem_calloc)(unsigned int n, unsigned int size);
-    void (*mem_free)(void *addr_ptr);
-
-    Network* ipstack;
-    Timer last_sent, last_received;
+	/* Platform routine for mqtt use. */
+    MQTTPlatform        * plat_ptr;
+	
+    MQTTTimer last_sent, last_received;
+	
 #if defined(MQTT_TASK)
-    Mutex mutex;
+    Mutex   mutex;
     Thread thread;
 #endif
 } MQTTClient;
@@ -151,16 +151,14 @@ typedef struct MQTTClient
  * @param command_timeout_ms
  * @param
  */
-DLLExport void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms, \
-                                  void* (*mem_calloc)(unsigned int n, unsigned int size), void (*mem_free)(void *addr_ptr));
+DLLExport void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
  *  @param options - connect options
  *  @return success code
  */
-DLLExport int MQTTConnectWithResults(MQTTClient* client, MQTTPacket_connectData* options,
-    MQTTConnackData* data);
+DLLExport int MQTTConnectWithResults(MQTTClient* client, MQTTPacket_connectData* options, MQTTConnackData* data);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
