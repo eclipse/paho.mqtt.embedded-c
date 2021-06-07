@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <string.h>
 
+
 static void NewMessageData(MessageData* md, MQTTString* aTopicName, MQTTMessage* aMessage) 
 {
     md->topicName = aTopicName;
@@ -47,7 +48,7 @@ static int sendPacket(MQTTClient* c, int length, MQTTTimer timer)
     }
     if (sent == length)
     {
-        TimerCountdown(&c->last_sent, c->keepAliveInterval); // record the fact that we have successfully sent the packet
+        c->plat_ptr->TimerCountdown(&c->last_sent, c->keepAliveInterval); // record the fact that we have successfully sent the packet
         rc = MQTT_SUCCESS;
     }
     else
@@ -56,9 +57,9 @@ static int sendPacket(MQTTClient* c, int length, MQTTTimer timer)
 }
 
 
-void MQTTClientInit(MQTTClient* c, MQTTPlatform *plat_ptr, unsigned int command_timeout_ms)
+void MQTTClientInit(MQTTClient* c, MQTTPlatform *platform, unsigned int command_timeout_ms)
 {
-    c->plat_ptr = plat_ptr;
+    c->plat_ptr = platform;
 
     c->command_timeout_ms = command_timeout_ms;
     c->buf = NULL;
@@ -78,10 +79,6 @@ void MQTTClientInit(MQTTClient* c, MQTTPlatform *plat_ptr, unsigned int command_
 
     c->plat_ptr->TimerInit(&(c->last_sent));
     c->plat_ptr->TimerInit(&(c->last_received));
-	
-#if defined(MQTT_TASK)
-	  MutexInit(&c->mutex);
-#endif
 }
 
 
@@ -129,7 +126,7 @@ static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, i
         /* Reset previous read buffer and create new one. */
         if(c->readbuf != NULL)
         {
-            c->mem_free(c->readbuf);
+            c->plat_ptr->MemFree(c->readbuf);
             c->readbuf = NULL;
             c->readbuf_size = 0;
         }
@@ -156,7 +153,7 @@ static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, i
         /* Reset previous read buffer and create new one. */
         if(c->buf != NULL)
         {
-            c->mem_free(c->buf);
+            c->plat_ptr->MemFree(c->buf);
             c->buf = NULL;
             c->buf_size = 0;
         }
@@ -235,7 +232,7 @@ static int readPacket(MQTTClient* c, MQTTTimer timer)
     header.byte = c->readbuf[0];
     rc = header.bits.type;
     if (c->keepAliveInterval > 0)
-        TimerCountdown(&c->last_received, c->keepAliveInterval); // record the fact that we have successfully received a packet
+        c->plat_ptr->TimerCountdown(&c->last_received, c->keepAliveInterval); // record the fact that we have successfully received a packet
 exit:
     return rc;
 }
@@ -315,7 +312,7 @@ static int keepalive(MQTTClient* c)
     if (c->keepAliveInterval == 0)
         goto exit;
 
-    if(TimerIsExpired(&c->last_sent))
+    if(c->plat_ptr->TimerIsExpired(&c->last_sent))
     {
         MQTTTimer timer = NULL;
 
@@ -342,7 +339,7 @@ static int keepalive(MQTTClient* c)
         else
         {
             /* Set last_sent to small slice. */
-            TimerCountdown(&c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
+            c->plat_ptr->TimerCountdown(&c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
             rc = MQTT_SUCCESS;     
         }
 
@@ -356,8 +353,6 @@ static int keepalive(MQTTClient* c)
 exit:
     return rc;
 }
-
-
 
 
 void MQTTCleanSession(MQTTClient* c)
@@ -470,7 +465,7 @@ int cycle(MQTTClient* c, MQTTTimer timer)
         case PINGRESP:
             /* Set last_sent to keep alive data. */
             c->ping_outstanding = 0;
-            TimerCountdown(&c->last_sent, c->keepAliveInterval);
+            c->plat_ptr->TimerCountdown(&c->last_sent, c->keepAliveInterval);
             break;
     }
 
@@ -519,45 +514,6 @@ int MQTTIsConnected(MQTTClient* client)
   return client->isconnected;
 }
 
-void MQTTRun(void* parm)
-{
-	MQTTTimer timer = NULL;
-	MQTTClient* c = (MQTTClient*)parm;
-
-    
-	c->plat_ptr->TimerInit(&timer);
-
-	while (1)
-	{
-		/* Wait 100ms for other thread and start the next detect operation. */
-        //ThreadSleep(100);
-
-#if defined(MQTT_TASK)
-		MutexLock(&c->mutex);
-#endif
-		c->plat_ptr->TimerCountdownMS(timer, 500); /* Don't wait too long if no traffic is incoming */
-		cycle(c, timer);
-		
-#if defined(MQTT_TASK)
-		MutexUnlock(&c->mutex);
-#endif
-	}
-
-	if(timer != NULL)
-	{
-		c->plat_ptr->TimerDeinit(&timer);
-		timer = NULL;
-	}
-}
-
-
-#if defined(MQTT_TASK)
-int MQTTStartTask(MQTTClient* client)
-{
-	return ThreadStart(&client->thread, &MQTTRun, client);
-}
-#endif
-
 
 int waitfor(MQTTClient* c, int packet_type, MQTTTimer timer)
 {
@@ -595,13 +551,11 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
     int len = 0;
     int cnt = 0;
 
-#if defined(MQTT_TASK)
-	  MutexLock(&c->mutex);
-#endif
-	  if (c->isconnected) /* don't send connect packet again if we are already connected */
+	if (c->isconnected) /* don't send connect packet again if we are already connected */
 		  goto exit;
 
 SEND_START:
+
     c->plat_ptr->TimerInit(&connect_timer);
     c->plat_ptr->TimerCountdownMS(connect_timer, c->command_timeout_ms);
 
@@ -610,7 +564,7 @@ SEND_START:
 
     c->keepAliveInterval = options->keepAliveInterval;
     c->cleansession = options->cleansession;
-    TimerCountdown(&c->last_received, c->keepAliveInterval);
+    c->plat_ptr->TimerCountdown(&c->last_received, c->keepAliveInterval);
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_connectLength(options)) + 10) == NULL)
@@ -648,6 +602,7 @@ SEND_START:
     }
 
 exit:
+
     if (rc == MQTT_SUCCESS)
     {
         c->isconnected = 1;
@@ -659,10 +614,6 @@ exit:
 		c->plat_ptr->TimerDeinit(&connect_timer);
 		connect_timer = NULL;
 	}
-
-#if defined(MQTT_TASK)
-	  MutexUnlock(&c->mutex);
-#endif
 
     return rc;
 }
@@ -754,13 +705,11 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
     topic.cstring = (char *)topicFilter;
     
 
-#if defined(MQTT_TASK)
-	  MutexLock(&c->mutex);
-#endif
-	  if (!c->isconnected)
-		    goto exit;
+	if (!c->isconnected)
+		goto exit;
 
-SEND_START:    
+SEND_START: 
+
     c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
@@ -810,8 +759,9 @@ SEND_START:
     }
 
 exit:
+
     if (rc == MQTT_FAILURE)
-        MQTTCloseSession(c);
+		MQTTCloseSession(c);
 	
 	if(timer != NULL)
 	{
@@ -819,9 +769,6 @@ exit:
 		timer = NULL;
 	}
 	
-#if defined(MQTT_TASK)
-	  MutexUnlock(&c->mutex);
-#endif
     return rc;
 }
 
@@ -844,11 +791,8 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     topic.cstring = (char *)topicFilter;
 
 
-#if defined(MQTT_TASK)
-	  MutexLock(&c->mutex);
-#endif
-	  if (!c->isconnected)
-		  goto exit;
+	if (!c->isconnected)
+		goto exit;
 
 SEND_START:
 
@@ -899,9 +843,6 @@ exit:
 		timer = NULL;
 	}
 	
-#if defined(MQTT_TASK)
-	  MutexUnlock(&c->mutex);
-#endif
     return rc;
 }
 
@@ -911,19 +852,17 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     int rc = MQTT_FAILURE;
     MQTTTimer timer = NULL;
     MQTTString topic = MQTTString_initializer;
-
     int len = 0;
     int cnt = 0;
+
+
     topic.cstring = (char *)topicName;
 
-
-#if defined(MQTT_TASK)
-	  MutexLock(&c->mutex);
-#endif
-	  if (!c->isconnected)
-		    goto exit;
+	if (!c->isconnected)
+		goto exit;
 
 SEND_START:
+
     c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
@@ -990,6 +929,7 @@ SEND_START:
     }
 
 exit:
+
     if (rc == MQTT_FAILURE)
         MQTTCloseSession(c);
 	
@@ -999,9 +939,6 @@ exit:
 		timer = NULL;
 	}
 	
-#if defined(MQTT_TASK)
-	  MutexUnlock(&c->mutex);
-#endif
     return rc;
 }
 
@@ -1012,9 +949,6 @@ int MQTTDisconnect(MQTTClient* c)
     MQTTTimer timer = NULL;     // we might wait for incomplete incoming publishes to complete
     int len = 0;
 
-#if defined(MQTT_TASK)
-	MutexLock(&c->mutex);
-#endif
 
     c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
@@ -1053,11 +987,7 @@ int MQTTDisconnect(MQTTClient* c)
 		c->plat_ptr->TimerDeinit(&timer);
 		timer = NULL;
 	}
-
-#if defined(MQTT_TASK)
-	  MutexUnlock(&c->mutex);
-#endif
-
 	
     return rc;
 }
+

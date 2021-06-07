@@ -55,8 +55,8 @@ typedef struct MQTTPlatform
 	void * context_ptr;
 	
 	/* Network operation routine. */
-	int (*MqttRead)(struct Platform *plat_ptr, unsigned char * buff_ptr, int len, int timeout_ms);
-	int (*MqttWrite)(struct Platform *plat_ptr, unsigned char *buff_ptr, int len, int timeout_ms);
+	int (*MqttRead)(struct MQTTPlatform *plat_ptr, unsigned char * buff_ptr, int len, int timeout_ms);
+	int (*MqttWrite)(struct MQTTPlatform *plat_ptr, unsigned char *buff_ptr, int len, int timeout_ms);
 
 	/* Timer routine. */
 	void (*TimerInit)(MQTTTimer *time_ptr);
@@ -110,9 +110,13 @@ typedef struct MessageHandlers
 
 typedef struct MQTTClient
 {
-    unsigned int next_packetid, command_timeout_ms;
-    size_t                  buf_size, readbuf_size;
-    unsigned char                   *buf, *readbuf;
+    unsigned int       next_packetid;
+	unsigned int  command_timeout_ms;
+	
+    size_t                  buf_size;
+	size_t              readbuf_size;
+    unsigned char              * buf;
+	unsigned char          * readbuf;
     
     unsigned int   keepAliveInterval;
     char            ping_outstanding;
@@ -128,17 +132,14 @@ typedef struct MQTTClient
 
     /* Default Message handler and context. */
     void (*defaultMessageHandler) (void *context_ptr, MessageData*);
-    void                                    * defaultMessageCtx_ptr;
+    void     * defaultMessageCtx_ptr;
 
 	/* Platform routine for mqtt use. */
-    MQTTPlatform        * plat_ptr;
+    MQTTPlatform          * plat_ptr;
 	
-    MQTTTimer last_sent, last_received;
+    MQTTTimer              last_sent;
+	MQTTTimer          last_received;
 	
-#if defined(MQTT_TASK)
-    Mutex   mutex;
-    Thread thread;
-#endif
 } MQTTClient;
 
 #define DefaultClient {0, 0, 0, 0, NULL, NULL, 0, 0, 0}
@@ -146,12 +147,12 @@ typedef struct MQTTClient
 
 /**
  * Create an MQTT client object
- * @param client
+ * @param platform
  * @param network
  * @param command_timeout_ms
  * @param
  */
-DLLExport void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeout_ms);
+DLLExport void MQTTClientInit(MQTTClient* c, MQTTPlatform* platform, unsigned int command_timeout_ms);
 
 /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
  *  The nework object must be connected to the network endpoint before calling this
@@ -225,14 +226,6 @@ DLLExport int MQTTYield(MQTTClient* client, int time);
  *  @return truth value indicating whether the client is connected to the server
  */
 DLLExport int MQTTIsConnected(MQTTClient* client);
-
-#if defined(MQTT_TASK)
-/** MQTT start background thread for a client.  After this, MQTTYield should not be called.
-*  @param client - the client object to use
-*  @return success code
-*/
-DLLExport int MQTTStartTask(MQTTClient* client);
-#endif
 
 #if defined(__cplusplus)
      }
