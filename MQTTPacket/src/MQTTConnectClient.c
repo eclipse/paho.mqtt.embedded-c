@@ -166,7 +166,7 @@ exit:
   * @param packettype the message type
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
+static int MQTTSerialize_zero(unsigned char* buf, int buflen, unsigned char packettype)
 {
 	MQTTHeader header = {0};
 	int rc = -1;

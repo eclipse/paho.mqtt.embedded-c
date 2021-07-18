@@ -100,7 +100,7 @@ int MQTTPacket_len(int rem_len)
 
 static unsigned char* bufptr;
 
-int bufchar(unsigned char* c, int count)
+static int bufchar(unsigned char* c, int count)
 {
 	int i;
 
@@ -184,7 +184,7 @@ void writeCString(unsigned char** pptr, const char* string)
 }
 
 
-int getLenStringLen(char* ptr)
+static int getLenStringLen(char* ptr)
 {
 	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
 	return len;

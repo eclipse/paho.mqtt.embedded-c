@@ -27,7 +27,7 @@
   * @param version the MQTT protocol version number, as in the connect packet
   * @return correct MQTT combination?  1 is true, 0 is false
   */
-int MQTTPacket_checkVersion(MQTTString* protocol, int version)
+static int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 {
 	int rc = 0;
 
