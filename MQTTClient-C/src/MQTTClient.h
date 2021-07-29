@@ -138,6 +138,9 @@ typedef struct MQTTClient
     MQTTPlatform          * plat_ptr;
     MQTTTimer              last_sent;
 	MQTTTimer          last_received;
+
+	/* Set nopong state and no need to wait server's pong frame. */
+	unsigned char        nopong_stat;
 	
 } MQTTClient;
 
@@ -221,11 +224,18 @@ DLLExport int MQTTDisconnect(MQTTClient* client, int isSendPacket);
  */
 DLLExport int MQTTYield(MQTTClient* client, int time);
 
-/** MQTT Keepalive left - Get keepalive left time in ms.
+/** MQTT Keepalive time left - Get keepalive left time in ms.
  *  @param client - the client object to use
  *  @return Left time in ms format.
  */
 DLLExport int MQTTKeppaliveLeftMS(MQTTClient *client);
+
+/** MQTT set nopong state - Set mqtt's nopong state.
+ *  @param client - the client object to use
+ *  @param isNopong - no pong flag, non-zero means no need to wait server's pong frame
+ *  @return none
+ */
+DLLExport void MQTTSetNopongStat(MQTTClient *client, int isNopong);
 
 /** MQTT isConnected
  *  @param client - the client object to use

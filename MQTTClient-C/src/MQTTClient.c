@@ -304,7 +304,7 @@ int deliverMessage(MQTTClient* c, MQTTString* topicName, MQTTMessage* message)
 
 static int keepalive(MQTTClient* c)
 {
-#define KEEPALIVE_TRYCNT  7
+#define KEEPALIVE_TRYCNT  4
     int           rc = MQTT_SUCCESS;
     int          len = 0;
 
@@ -339,7 +339,7 @@ static int keepalive(MQTTClient* c)
         else
         {
             /* Set last_sent to small slice. */
-            c->plat_ptr->TimerCountdown(c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
+            c->plat_ptr->TimerCountdown(c->last_sent, (30 < c->keepAliveInterval)? 4 : 2);
             rc = MQTT_SUCCESS;     
         }
 
@@ -348,10 +348,19 @@ static int keepalive(MQTTClient* c)
 			c->plat_ptr->TimerDeinit(&timer);
 			timer = NULL;
 		}
+
+		/* MQTT will not wait server's pong frame when nopong state active. */
+		if(c->nopong_stat != 0)
+		{
+			/* Set last_sent to keep alive data. */
+            c->ping_outstanding = 0;
+            c->plat_ptr->TimerCountdown(c->last_sent, c->keepAliveInterval);
+		}
     }
 
 exit:
     return rc;
+#undef KEEPALIVE_TRYCNT
 }
 
 
@@ -1000,6 +1009,13 @@ int MQTTDisconnect(MQTTClient* c, int isSendPacket)
 int MQTTKeppaliveLeftMS(MQTTClient *c)
 {
 	return c->plat_ptr->TimerLeftMS(c->last_sent);
+}
+
+
+/* Set mqtt's no pong state. */
+void MQTTSetNopongStat(MQTTClient *c, int isNopong)
+{
+	c->nopong_stat = (isNopong != 0)? 1 : 0;
 }
 
 
