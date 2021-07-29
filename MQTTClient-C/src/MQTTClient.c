@@ -943,7 +943,7 @@ exit:
 }
 
 
-int MQTTDisconnect(MQTTClient* c)
+int MQTTDisconnect(MQTTClient* c, int isSendPacket)
 {
     int rc = MQTT_FAILURE;
     MQTTTimer timer = NULL;     // we might wait for incomplete incoming publishes to complete
@@ -953,13 +953,17 @@ int MQTTDisconnect(MQTTClient* c)
     c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
-    /* Reset previous read buffer and create new one. */
-    if(CallocNewBuff(c, 0, 0, 10) != NULL)
-    {
-        len = MQTTSerialize_disconnect(c->buf, c->buf_size);
-        if (len > 0)
-            rc = sendPacket(c, len, timer);            // send the disconnect packet
-    }
+	/* Send MQTT disconnect package when tcp link ok. */
+	if(isSendPacket != 0)
+	{
+		/* Reset previous read buffer and create new one. */
+	    if(CallocNewBuff(c, 0, 0, 10) != NULL)
+	    {
+	        len = MQTTSerialize_disconnect(c->buf, c->buf_size);
+	        if (len > 0)
+	            rc = sendPacket(c, len, timer);            // send the disconnect packet
+	    }
+	}
 
     MQTTCloseSession(c);
     FreeAllBuff(c);
@@ -990,4 +994,12 @@ int MQTTDisconnect(MQTTClient* c)
 	
     return rc;
 }
+
+
+/* Get keepalive left time in ms. */
+int MQTTKeppaliveLeftMS(MQTTClient *c)
+{
+	return c->plat_ptr->TimerLeftMS(c->last_sent);
+}
+
 

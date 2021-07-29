@@ -136,7 +136,6 @@ typedef struct MQTTClient
 
 	/* Platform routine for mqtt use. */
     MQTTPlatform          * plat_ptr;
-	
     MQTTTimer              last_sent;
 	MQTTTimer          last_received;
 	
@@ -190,7 +189,7 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* client, const char* topicFilter,
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, void *context_ptr);
+DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler msgHandler, void *context_ptr);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
@@ -210,9 +209,10 @@ DLLExport int MQTTUnsubscribe(MQTTClient* client, const char* topicFilter);
 
 /** MQTT Disconnect - send an MQTT disconnect packet and close the connection
  *  @param client - the client object to use
+ *  @param isSendpacket - send MQTT disconnect packet or not, some platform will crash when call mbedtls_write on link error condition
  *  @return success code
  */
-DLLExport int MQTTDisconnect(MQTTClient* client);
+DLLExport int MQTTDisconnect(MQTTClient* client, int isSendPacket);
 
 /** MQTT Yield - MQTT background
  *  @param client - the client object to use
@@ -220,6 +220,12 @@ DLLExport int MQTTDisconnect(MQTTClient* client);
  *  @return success code
  */
 DLLExport int MQTTYield(MQTTClient* client, int time);
+
+/** MQTT Keepalive left - Get keepalive left time in ms.
+ *  @param client - the client object to use
+ *  @return Left time in ms format.
+ */
+DLLExport int MQTTKeppaliveLeftMS(MQTTClient *client);
 
 /** MQTT isConnected
  *  @param client - the client object to use
