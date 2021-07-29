@@ -48,7 +48,7 @@ static int sendPacket(MQTTClient* c, int length, MQTTTimer timer)
     }
     if (sent == length)
     {
-        c->plat_ptr->TimerCountdown(&c->last_sent, c->keepAliveInterval); // record the fact that we have successfully sent the packet
+        c->plat_ptr->TimerCountdown(c->last_sent, c->keepAliveInterval); // record the fact that we have successfully sent the packet
         rc = MQTT_SUCCESS;
     }
     else
@@ -312,7 +312,7 @@ static int keepalive(MQTTClient* c)
     if (c->keepAliveInterval == 0)
         goto exit;
 
-    if(c->plat_ptr->TimerIsExpired(&c->last_sent))
+    if(c->plat_ptr->TimerIsExpired(c->last_sent))
     {
         MQTTTimer timer = NULL;
 
@@ -339,7 +339,7 @@ static int keepalive(MQTTClient* c)
         else
         {
             /* Set last_sent to small slice. */
-            c->plat_ptr->TimerCountdown(&c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
+            c->plat_ptr->TimerCountdown(c->last_sent, (30 < c->keepAliveInterval)? 2 : 1);
             rc = MQTT_SUCCESS;     
         }
 
@@ -380,8 +380,7 @@ int cycle(MQTTClient* c, MQTTTimer timer)
     unsigned int waittime = c->plat_ptr->TimerLeftMS(timer);
 
 	/* read the socket, see what work is due */
-    int packet_type = readPacket(c, timer);     
-
+    int packet_type = readPacket(c, timer);
     switch (packet_type)
     {
         default:
@@ -400,6 +399,7 @@ int cycle(MQTTClient* c, MQTTTimer timer)
             MQTTString topicName;
             MQTTMessage msg;
             int intQoS;
+
             msg.payloadlen = 0; /* this is a size_t, but deserialize publish sets this as int */
             if (MQTTDeserialize_publish(&msg.dup, &intQoS, &msg.retained, &msg.id, &topicName,
                (unsigned char**)&msg.payload, (int*)&msg.payloadlen, c->readbuf, c->readbuf_size) != 1)
@@ -465,7 +465,7 @@ int cycle(MQTTClient* c, MQTTTimer timer)
         case PINGRESP:
             /* Set last_sent to keep alive data. */
             c->ping_outstanding = 0;
-            c->plat_ptr->TimerCountdown(&c->last_sent, c->keepAliveInterval);
+            c->plat_ptr->TimerCountdown(c->last_sent, c->keepAliveInterval);
             break;
     }
 
