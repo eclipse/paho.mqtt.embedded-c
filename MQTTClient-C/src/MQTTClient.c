@@ -232,7 +232,7 @@ static int readPacket(MQTTClient* c, MQTTTimer timer)
     header.byte = c->readbuf[0];
     rc = header.bits.type;
     if (c->keepAliveInterval > 0)
-        c->plat_ptr->TimerCountdown(&c->last_received, c->keepAliveInterval); // record the fact that we have successfully received a packet
+        c->plat_ptr->TimerCountdown(c->last_received, c->keepAliveInterval); // record the fact that we have successfully received a packet
 exit:
     return rc;
 }
@@ -564,7 +564,7 @@ SEND_START:
 
     c->keepAliveInterval = options->keepAliveInterval;
     c->cleansession = options->cleansession;
-    c->plat_ptr->TimerCountdown(&c->last_received, c->keepAliveInterval);
+    c->plat_ptr->TimerCountdown(c->last_received, c->keepAliveInterval);
 
     /* Reset previous read buffer and create new one. */
     if(CallocNewBuff(c, 0, 0, MQTTPacket_len(MQTTSerialize_connectLength(options)) + 10) == NULL)
