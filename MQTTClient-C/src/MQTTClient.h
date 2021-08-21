@@ -66,6 +66,9 @@ typedef struct MQTTPlatform
 	void (*TimerCountdown)(MQTTTimer timer, unsigned int timeout_s);
 	int  (*TimerLeftMS)(MQTTTimer timer);
 
+    /* Time delay. */
+    void (*DelayMs)(unsigned int delay_ms);
+
 	/* Memory allocate and free routine. */
     void * (*MemCalloc)(unsigned int n, unsigned int size);
     void   (*MemFree)(void *addr_ptr);
@@ -237,11 +240,18 @@ DLLExport int MQTTKeppaliveLeftMS(MQTTClient *client);
  */
 DLLExport void MQTTSetNopongStat(MQTTClient *client, int isNopong);
 
-/** MQTT isConnected
+/** MQTT IsConnected
  *  @param client - the client object to use
  *  @return truth value indicating whether the client is connected to the server
  */
 DLLExport int MQTTIsConnected(MQTTClient* client);
+
+/** MQTT Send heartbeat frame
+ *  @param client - the client object to use
+ *  @param timeout_ms - timeout for waitting pong frame, 0 means only send ping and no wait pong
+ *  @return success code
+ */
+DLLExport int MQTTSendHeartBeat(MQTTClient* c, unsigned int timeout_ms);
 
 #if defined(__cplusplus)
      }

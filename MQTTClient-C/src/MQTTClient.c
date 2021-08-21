@@ -324,7 +324,7 @@ static int keepalive(MQTTClient* c)
         }
 
         c->plat_ptr->TimerInit(&timer);
-        c->plat_ptr->TimerCountdownMS(&timer, 1000);
+        c->plat_ptr->TimerCountdownMS(timer, 1000);
         len = MQTTSerialize_pingreq(c->buf, c->buf_size);
         rc = sendPacket(c, len, timer);
 
@@ -389,7 +389,8 @@ int cycle(MQTTClient* c, MQTTTimer timer)
     unsigned int waittime = c->plat_ptr->TimerLeftMS(timer);
 
 	/* read the socket, see what work is due */
-    int packet_type = readPacket(c, timer);
+    int packet_type = readPacket(c, timer);     
+
     switch (packet_type)
     {
         default:
@@ -408,7 +409,6 @@ int cycle(MQTTClient* c, MQTTTimer timer)
             MQTTString topicName;
             MQTTMessage msg;
             int intQoS;
-
             msg.payloadlen = 0; /* this is a size_t, but deserialize publish sets this as int */
             if (MQTTDeserialize_publish(&msg.dup, &intQoS, &msg.retained, &msg.id, &topicName,
                (unsigned char**)&msg.payload, (int*)&msg.payloadlen, c->readbuf, c->readbuf_size) != 1)
@@ -563,9 +563,10 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
 	if (c->isconnected) /* don't send connect packet again if we are already connected */
 		  goto exit;
 
+    c->plat_ptr->TimerInit(&connect_timer);
+
 SEND_START:
 
-    c->plat_ptr->TimerInit(&connect_timer);
     c->plat_ptr->TimerCountdownMS(connect_timer, c->command_timeout_ms);
 
     if (options == 0)
@@ -717,9 +718,10 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
 	if (!c->isconnected)
 		goto exit;
 
+    c->plat_ptr->TimerInit(&timer);
+
 SEND_START: 
 
-    c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     /* Reset previous read buffer and create new one. */
@@ -803,9 +805,10 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
 	if (!c->isconnected)
 		goto exit;
 
+    c->plat_ptr->TimerInit(&timer);
+
 SEND_START:
 
-    c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     /* Reset previous read buffer and create new one. */
@@ -870,9 +873,10 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
 	if (!c->isconnected)
 		goto exit;
 
+    c->plat_ptr->TimerInit(&timer);
+
 SEND_START:
 
-    c->plat_ptr->TimerInit(&timer);
     c->plat_ptr->TimerCountdownMS(timer, c->command_timeout_ms);
 
     if (message->qos == QOS1 || message->qos == QOS2)
@@ -1019,3 +1023,70 @@ void MQTTSetNopongStat(MQTTClient *c, int isNopong)
 }
 
 
+int MQTTSendHeartBeat(MQTTClient* c, unsigned int timeout_ms)
+{
+    int                rc = MQTT_SUCCESS;
+    int               len = 0;
+    MQTTTimer       timer = NULL;
+    unsigned int time_tmp = 0;
+    
+#define HEARTBEAT_DELAYMS   200
+
+
+    /* Reset previous write buffer and create new one. */
+    if(CallocNewBuff(c, 0, 0, 10) == NULL)
+    {
+        rc = MQTT_FAILURE;
+        goto exit;
+    }
+
+    /* Set ping flag. */
+    c->ping_outstanding ++;
+    c->plat_ptr->TimerInit(&timer);
+
+    while(1)
+    {
+        c->plat_ptr->TimerCountdownMS(timer, 1000);
+        len = MQTTSerialize_pingreq(c->buf, c->buf_size);
+
+        /* Out when sending failure. */
+        if((rc = sendPacket(c, len, timer)) != MQTT_SUCCESS)
+        {
+            goto exit;
+        }
+
+        /* Out when no need to wait pong frame. */
+        if(timeout_ms == 0)
+        {
+            goto exit;
+        }
+        else
+        {
+            c->plat_ptr->DelayMs(HEARTBEAT_DELAYMS);
+            time_tmp += HEARTBEAT_DELAYMS;
+
+            /* Out success when have received pong frame. */
+            if(c->ping_outstanding == 0)
+            {
+                rc = MQTT_SUCCESS;
+                goto exit;
+            }
+
+            /* Out failure when waitting for pong frame overtime. */
+            if(timeout_ms <= time_tmp)
+            {
+                rc = MQTT_FAILURE;
+                goto exit;
+            } 
+        }
+    }
+
+exit:
+
+    if(timer != NULL)
+    {
+        c->plat_ptr->TimerDeinit(&timer);
+        timer = NULL;
+    }
+    return rc;
+}
