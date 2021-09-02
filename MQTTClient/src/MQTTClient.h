@@ -41,7 +41,7 @@ namespace MQTT
 {
 
 
-enum QoS { QOS0, QOS1, QOS2 };
+enum QoS: int { QOS0, QOS1, QOS2 };
 
 // all failure return codes must be negative
 enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
