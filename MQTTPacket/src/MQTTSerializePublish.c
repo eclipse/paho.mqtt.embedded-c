@@ -91,6 +91,53 @@ exit:
 }
 
 
+/**
+  * Serializes the supplied publish header into the supplied buffer, ready for sending
+  * @param buf the buffer into which the packet will be serialized
+  * @param buflen the length in bytes of the supplied buffer
+  * @param dup integer - the MQTT dup flag
+  * @param qos integer - the MQTT QoS value
+  * @param retained integer - the MQTT retained flag
+  * @param packetid integer - the MQTT packet identifier
+  * @param topicName MQTTString - the MQTT topic in the publish
+  * @param payloadlen integer - the length of the MQTT payload
+  * @return the length of the serialized data.  <= 0 indicates error
+  */
+int MQTTSerializeHeader_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
+        MQTTString topicName, int payloadlen)
+{
+    unsigned char *ptr = buf;
+    MQTTHeader  header = {0};
+    int        rem_len = 0;
+    int             rc = 0;
+
+    FUNC_ENTRY;
+    if (MQTTPacket_len(MQTTSerialize_publishLength(qos, topicName, 0)) > buflen)
+    {
+        rc = MQTTPACKET_BUFFER_TOO_SHORT;
+        goto exit;
+    }
+    rem_len = MQTTSerialize_publishLength(qos, topicName, payloadlen);
+
+    header.bits.type = PUBLISH;
+    header.bits.dup = dup;
+    header.bits.qos = qos;
+    header.bits.retain = retained;
+    writeChar(&ptr, header.byte); /* write header */
+
+    ptr += MQTTPacket_encode(ptr, rem_len); /* write remaining length */;
+    writeMQTTString(&ptr, topicName);
+
+    if (qos > 0)
+        writeInt(&ptr, packetid);
+    
+    rc = ptr - buf;
+
+exit:
+    FUNC_EXIT_RC(rc);
+    return rc;
+}
+
 
 /**
   * Serializes the ack packet into the supplied buffer.

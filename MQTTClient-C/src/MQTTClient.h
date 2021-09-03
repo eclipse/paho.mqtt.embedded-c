@@ -77,39 +77,41 @@ typedef struct MQTTPlatform
 
 typedef struct MQTTMessage
 {
-    enum QoS qos;
+    enum QoS           qos;
     unsigned char retained;
-    unsigned char dup;
-    unsigned short id;
-    void *payload;
-    size_t payloadlen;
+    unsigned char      dup;
+    unsigned short      id;
+    
+    void         * payload;
+    size_t      payloadlen;
 } MQTTMessage;
 
 typedef struct MessageData
 {
-    MQTTMessage* message;
-    MQTTString* topicName;
+    MQTTMessage  * message;
+    MQTTString * topicName;
 } MessageData;
 
 typedef struct MQTTConnackData
 {
-    unsigned char rc;
+    unsigned char             rc;
     unsigned char sessionPresent;
 } MQTTConnackData;
 
 typedef struct MQTTSubackData
 {
-    enum QoS grantedQoS;
+    int grantedQoS;
 } MQTTSubackData;
 
 typedef void (*messageHandler)(void * context_ptr, MessageData*);
 
 typedef struct MessageHandlers
 {
-    const char* topicFilter;
+    const char  * topicFilter;
     void (*fp) (void *context_ptr, MessageData*);
     void        * context_ptr;
 } MessageHandlers;
+
 
 typedef struct MQTTClient
 {
@@ -181,6 +183,14 @@ DLLExport int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
  */
 DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
 
+/** MQTT Publish - send an MQTT publish packet and wait for all acks to complete for all QoSs, use less memory than 'MQTTPublish'
+ *  @param client - the client object to use
+ *  @param topic - the topic to publish to
+ *  @param message - the message to send
+ *  @return success code
+ */
+DLLExport int MQTTMiniPublish(MQTTClient* client, const char*, MQTTMessage*);
+
 /** MQTT SetMessageHandler - set or remove a per topic message handler
  *  @param client - the client object to use
  *  @param topicFilter - the topic filter set the message handler for
@@ -196,6 +206,16 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* client, const char* topicFilter,
  *  @return success code
  */
 DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler msgHandler, void *context_ptr);
+
+/** MQTT Subscribe - send an MQTT subscribe packet to sub many topic and wait for suback before returning.
+ *  @param client - the client object to use
+ *  @param count - topic count for msgHandlers array
+ *  @param msgHandlers - message handler array, contain topicFilter, fp, context_ptr domain
+ *  @param qos - qos array for each message
+ *  @param grantedQoS - array that contain the returned qos, user should check every qos value when return failure
+ *  @return success code
+ */
+DLLExport int MQTTSubscribeMany(MQTTClient* client, int count, MessageHandlers msgHandlers[], int qos[], int grantedQoS[]);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use

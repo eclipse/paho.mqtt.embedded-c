@@ -29,6 +29,9 @@ DLLExport int MQTTSerialize_publishLength(int qos, MQTTString topicName, int pay
 DLLExport int MQTTSerialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
 		MQTTString topicName, unsigned char* payload, int payloadlen);
 
+DLLExport int MQTTSerializeHeader_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
+        MQTTString topicName, int payloadlen);
+
 DLLExport int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
 		unsigned char** payload, int* payloadlen, unsigned char* buf, int len);
 
