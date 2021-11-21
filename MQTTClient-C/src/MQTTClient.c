@@ -36,6 +36,11 @@ static int sendPacket(MQTTClient* c, int length, Timer* timer)
     int rc = FAILURE,
         sent = 0;
 
+    if(TimerLeftMS(timer) < MIN_SEND_PACKET_TIMEOUT_MS)
+    {
+        TimerInit(timer);
+        TimerCountdownMS(timer, MIN_SEND_PACKET_TIMEOUT_MS);
+    }
     while (sent < length && !TimerIsExpired(timer))
     {
         rc = c->ipstack->mqttwrite(c->ipstack, &c->buf[sent], length, TimerLeftMS(timer));

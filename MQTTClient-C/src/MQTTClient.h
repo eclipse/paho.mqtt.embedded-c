@@ -51,6 +51,10 @@
 #define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
 #endif
 
+#if !defined(MIN_SEND_PACKET_TIMEOUT_MS)
+#define MIN_SEND_PACKET_TIMEOUT_MS 50 /* redefinable - minimal send timeout? */
+#endif
+
 enum QoS { QOS0, QOS1, QOS2, SUBFAIL=0x80 };
 
 /* all failure return codes must be negative */
