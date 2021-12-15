@@ -932,7 +932,7 @@ SETMSG_START:
 }
 
 
-static int MQTTAsyncSubscribeWithResults(MQTTAsyncClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr, MQTTAsyncSubackData* data, unsigned char isAsyncAck)
+static int MQTTAsyncSubscribeWithResults(MQTTAsyncClient* c, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr, MQTTAsyncSubackData* data, unsigned char isAsyncAck)
 {
     int                   rc = MQTTAsync_FAILURE;
     MQTTAsyncTimer     timer = NULL;
@@ -1048,7 +1048,7 @@ exit:
 }
 
 
-int MQTTAsyncSubscribe(MQTTAsyncClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr, unsigned char isAsyncAck)
+int MQTTAsyncSubscribe(MQTTAsyncClient* c, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr, unsigned char isAsyncAck)
 {
     MQTTAsyncSubackData data;
     return MQTTAsyncSubscribeWithResults(c, topicFilter, qos, msgHandler, context_ptr, &data, isAsyncAck);

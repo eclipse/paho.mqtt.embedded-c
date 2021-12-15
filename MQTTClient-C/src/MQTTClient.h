@@ -205,7 +205,7 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* client, const char* topicFilter,
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler msgHandler, void *context_ptr);
+DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr);
 
 /** MQTT Subscribe - send an MQTT subscribe packet to sub many topic and wait for suback before returning.
  *  @param client - the client object to use
@@ -224,7 +224,7 @@ DLLExport int MQTTSubscribeMany(MQTTClient* client, int count, MessageHandlers m
  *  @param data - suback granted QoS returned
  *  @return success code
  */
-DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, void *context_ptr, MQTTSubackData* data);
+DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, int qos, messageHandler, void *context_ptr, MQTTSubackData* data);
 
 /** MQTT Subscribe - send an MQTT unsubscribe packet and wait for unsuback before returning.
  *  @param client - the client object to use

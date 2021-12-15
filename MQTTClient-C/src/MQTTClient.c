@@ -745,7 +745,7 @@ SETMSG_START:
 }
 
 
-int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr, MQTTSubackData* data)
+int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr, MQTTSubackData* data)
 {
     int           rc = MQTT_FAILURE;
     MQTTTimer  timer = NULL;
@@ -825,7 +825,7 @@ exit:
 }
 
 
-int MQTTSubscribe(MQTTClient* c, const char* topicFilter, enum QoS qos, messageHandler msgHandler, void *context_ptr)
+int MQTTSubscribe(MQTTClient* c, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr)
 {
     MQTTSubackData data;
     return MQTTSubscribeWithResults(c, topicFilter, qos, msgHandler, context_ptr, &data);

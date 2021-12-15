@@ -200,7 +200,7 @@ DLLExport int MQTTAsyncPublish(MQTTAsyncClient* client, const char*, MQTTAsyncMe
  *  @param isAsyncAck - is ack packet in asynchronous mode or not
  *  @return success code
  */
-DLLExport int MQTTAsyncSubscribe(MQTTAsyncClient* client, const char* topicFilter, enum QoS, messageHandler msgHandler, void *context_ptr, unsigned char isAsyncAck);
+DLLExport int MQTTAsyncSubscribe(MQTTAsyncClient* client, const char* topicFilter, int qos, messageHandler msgHandler, void *context_ptr, unsigned char isAsyncAck);
 
 /** MQTTAsync Subscribe - send an MQTTAsync subscribe packet to sub many topic and wait for suback before returning.
  *  @param client - the client object to use
