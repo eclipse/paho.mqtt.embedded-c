@@ -196,7 +196,7 @@ static unsigned char * CallocNewBuff(MQTTClient* c, int is_read, int must_new, i
 }
 
 
-void FreeAllBuff(MQTTClient* c)
+static void FreeAllBuff(MQTTClient* c)
 {
     /* Free all the memory. */
     if(c->readbuf != NULL)
@@ -214,15 +214,27 @@ void FreeAllBuff(MQTTClient* c)
 }
 
 
-static int readPacket(MQTTClient* c, MQTTTimer timer)
+static int readPacket(MQTTClient* c, MQTTTimer timer, int waitWhenNodata)
 {
+    int            rc = 0;
     MQTTHeader header = {0};
-    int len = 0;
-    int rem_len = 0;
+    int           len = 0;
+    int       rem_len = 0;
     unsigned char first_byte = 0;
 
-    /* 1. read the header byte(packet type). Only wait 5ms, jump out when no data and free cpu. */
-    int rc = c->plat_ptr->MqttRead(c->plat_ptr, &first_byte, 1, 5);
+
+    /* 1. read the header byte(packet type). */
+    if(waitWhenNodata != 0)
+    {
+        /* Waiting for specific timer. */
+        rc = c->plat_ptr->MqttRead(c->plat_ptr, &first_byte, 1, c->plat_ptr->TimerLeftMS(timer));
+    }
+    else
+    {
+        /* Only wait 10ms, jump out when no data. 
+        Caution: must not less then 10ms, because some chip's task schedule unit bigger than 10ms. */
+        rc = c->plat_ptr->MqttRead(c->plat_ptr, &first_byte, 1, 10);
+    }
     if (rc != 1)
         goto exit;
 
@@ -410,14 +422,14 @@ void MQTTCloseSession(MQTTClient* c)
 }
 
 
-int cycle(MQTTClient* c, MQTTTimer timer)
+static int MQTTCycle(MQTTClient* c, MQTTTimer timer)
 {
     int len = 0,
          rc = MQTT_SUCCESS;
     unsigned int waittime = c->plat_ptr->TimerLeftMS(timer);
 
 	/* read the socket, see what work is due */
-    int packet_type = readPacket(c, timer);     
+    int packet_type = readPacket(c, timer, 0);     
 
     switch (packet_type)
     {
@@ -533,7 +545,7 @@ int MQTTYield(MQTTClient* c, int timeout_ms)
     and this can give other code cpu time for this bask task. */
     do
     {
-        rc = cycle(c, timer);
+        rc = MQTTCycle(c, timer);
 
     } while (0);
 
@@ -552,14 +564,14 @@ int MQTTIsConnected(MQTTClient* client)
 }
 
 
-static int waitfor(MQTTClient* c, int packet_type, MQTTTimer timer)
+static int MQTTWaitfor(MQTTClient* c, int packet_type, MQTTTimer timer)
 {
     int rc = MQTT_FAILURE;
 
     do
     {
         /* Read once no matter whatever for timer. */
-        rc = cycle(c, timer);
+        rc = MQTTCycle(c, timer);
         if(c->plat_ptr->TimerIsExpired(timer))
         {
             if(rc <= 0)
@@ -617,7 +629,7 @@ SEND_START:
         goto exit; // there was a problem
 
     // this will be a blocking call, wait for the connack
-    if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
+    if (MQTTWaitfor(c, CONNACK, &connect_timer) == CONNACK)
     {
         data->rc = 0;
         data->sessionPresent = 0;
@@ -767,7 +779,7 @@ SEND_START:
     if ((rc = sendPacket(c, len, NULL, 0, timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit;
 
-    if (waitfor(c, SUBACK, timer) == SUBACK)      // wait for suback
+    if (MQTTWaitfor(c, SUBACK, timer) == SUBACK)      // wait for suback
     {
         int count = 0;
         unsigned short mypacketid;
@@ -865,7 +877,7 @@ SEND_START:
     if ((rc = sendPacket(c, len, NULL, 0, timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit;
 
-    if (waitfor(c, SUBACK, timer) == SUBACK)      // wait for suback
+    if (MQTTWaitfor(c, SUBACK, timer) == SUBACK)      // wait for suback
     {
         int             ret_count = 0;
         unsigned short mypacketid = 0;
@@ -965,7 +977,7 @@ SEND_START:
     if ((rc = sendPacket(c, len, NULL, 0, timer)) != MQTT_SUCCESS) // send the subscribe packet
         goto exit; // there was a problem
 
-    if (waitfor(c, UNSUBACK, timer) == UNSUBACK)
+    if (MQTTWaitfor(c, UNSUBACK, timer) == UNSUBACK)
     {
         unsigned short mypacketid;  // should be the same as the packetid above
         if (MQTTDeserialize_unsuback(&mypacketid, c->readbuf, c->readbuf_size) == 1)
@@ -1040,7 +1052,7 @@ SEND_START:
 
     if (message->qos == QOS1)
     {
-        if (waitfor(c, PUBACK, timer) == PUBACK)
+        if (MQTTWaitfor(c, PUBACK, timer) == PUBACK)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
@@ -1062,7 +1074,7 @@ SEND_START:
     }
     else if (message->qos == QOS2)
     {
-        if (waitfor(c, PUBCOMP, timer) == PUBCOMP)
+        if (MQTTWaitfor(c, PUBCOMP, timer) == PUBCOMP)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
@@ -1138,7 +1150,7 @@ SEND_START:
 
     if (message->qos == QOS1)
     {
-        if (waitfor(c, PUBACK, timer) == PUBACK)
+        if (MQTTWaitfor(c, PUBACK, timer) == PUBACK)
         {
             unsigned short mypacketid;
             unsigned char dup, type;
@@ -1160,7 +1172,7 @@ SEND_START:
     }
     else if (message->qos == QOS2)
     {
-        if (waitfor(c, PUBCOMP, timer) == PUBCOMP)
+        if (MQTTWaitfor(c, PUBCOMP, timer) == PUBCOMP)
         {
             unsigned short mypacketid;
             unsigned char dup, type;

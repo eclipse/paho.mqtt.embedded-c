@@ -55,7 +55,7 @@ typedef struct MQTTPlatform
 	void * context_ptr;
 	
 	/* Network operation routine. */
-	int (*MqttRead)(struct MQTTPlatform *plat_ptr, unsigned char * buff_ptr, int len, int timeout_ms);
+	int (*MqttRead)(struct MQTTPlatform *plat_ptr, unsigned char *buff_ptr, int len, int timeout_ms);
 	int (*MqttWrite)(struct MQTTPlatform *plat_ptr, unsigned char *buff_ptr, int len, int timeout_ms);
 
 	/* Timer routine. */
