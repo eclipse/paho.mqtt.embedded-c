@@ -55,6 +55,10 @@ enum PropertyTypes {
   UTF_8_STRING_PAIR
 };
 
+typedef struct {
+  MQTTLenString key;
+  MQTTLenString val;
+} MQTTStringPair;
 
 typedef struct
 {
@@ -64,7 +68,7 @@ typedef struct
     short integer2;
     int integer4;
     MQTTLenString data;
-    MQTTLenString value; /* for user properties */
+    MQTTStringPair string_pair; /* for user properties */
   } value;
 } MQTTProperty;
 
