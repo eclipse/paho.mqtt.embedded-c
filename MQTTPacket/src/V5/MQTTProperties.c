@@ -117,8 +117,8 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
         len = 2 + prop->value.data.len;
         break;
       case UTF_8_STRING_PAIR:
-        len = 2 + prop->value.data.len;
-        len += 2 + prop->value.value.len;
+        len = 2 + prop->value.string_pair.key.len;
+        len += 2 + prop->value.string_pair.val.len;
         break;
     }
     props->length += len + 1; /* add identifier byte */
@@ -160,9 +160,9 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
         rc = prop->value.data.len + 2; /* include length field */
         break;
       case UTF_8_STRING_PAIR:
-        writeMQTTLenString(pptr, prop->value.data);
-        writeMQTTLenString(pptr, prop->value.value);
-        rc = prop->value.data.len + prop->value.value.len + 4; /* include length fields */
+        writeMQTTLenString(pptr, prop->value.string_pair.key);
+        writeMQTTLenString(pptr, prop->value.string_pair.val);
+        rc = prop->value.string_pair.key.len + prop->value.string_pair.val.len + 4; /* include length fields */
         break;
     }
   }
@@ -231,8 +231,8 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
         len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
         break;
       case UTF_8_STRING_PAIR:
-        len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
-        len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
+        len = MQTTLenStringRead(&prop->value.string_pair.key, pptr, enddata);
+        len += MQTTLenStringRead(&prop->value.string_pair.val, pptr, enddata);
         break;
     }
   }
