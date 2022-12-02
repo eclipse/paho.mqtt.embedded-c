@@ -48,13 +48,13 @@ int main(int argc, char *argv[])
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
-	int buflen = sizeof(buf);
+	size_t buflen = sizeof(buf);
 	int msgid = 1;
 	MQTTString topicString = MQTTString_initializer;
 	int req_qos = 0;
 	char* payload = "mypayload";
-	int payloadlen = strlen(payload);
-	int len = 0;
+	size_t payloadlen = strlen(payload);
+	int32_t len = 0;
 	char *host = "m2m.eclipse.org";
 	int port = 1883;
 	MQTTTransport mytransport;

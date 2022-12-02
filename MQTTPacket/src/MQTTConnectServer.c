@@ -48,7 +48,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
 {
 	MQTTHeader header = {0};
 	MQTTConnectFlags flags = {0};
@@ -112,11 +112,11 @@ exit:
   * Serializes the connack packet into the supplied buffer.
   * @param buf the buffer into which the packet will be serialized
   * @param buflen the length in bytes of the supplied buffer
-  * @param connack_rc the integer connack return code to be used 
+  * @param connack_rc the integer connack return code to be used
   * @param sessionPresent the MQTT 3.1.1 sessionPresent flag
   * @return serialized length, or error if 0
   */
-int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+int MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent)
 {
 	MQTTHeader header = {0};
 	int rc = 0;
@@ -137,7 +137,7 @@ int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_
 
 	flags.all = 0;
 	flags.bits.sessionpresent = sessionPresent;
-	writeChar(&ptr, flags.all); 
+	writeChar(&ptr, flags.all);
 	writeChar(&ptr, connack_rc);
 
 	rc = ptr - buf;

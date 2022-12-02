@@ -365,7 +365,7 @@ int test1(struct Options options)
 
 int test2(struct Options options)
 {
-	int rc = 0;
+	int32_t rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
 

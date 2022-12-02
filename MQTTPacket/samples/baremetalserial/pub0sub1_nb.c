@@ -54,13 +54,13 @@ int main(int argc, char *argv[])
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
-	int buflen = sizeof(buf);
+	int32_t buflen = sizeof(buf);
 	int msgid = 1;
 	MQTTString topicString = MQTTString_initializer;
 	int req_qos = 0;
 	char* payload = "mypayload";
-	int payloadlen = strlen(payload);
-	int len = 0;
+	int32_t payloadlen = strlen(payload);
+	int32_t len = 0;
 	MQTTTransport mytransport;
 	int state = READING;
 

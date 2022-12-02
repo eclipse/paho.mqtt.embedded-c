@@ -241,11 +241,11 @@ private:
     int cycle(Timer& timer);
     int waitfor(int packet_type, Timer& timer);
     int keepalive();
-    int publish(int len, Timer& timer, enum QoS qos);
+    int publish(int32_t len, Timer& timer, enum QoS qos);
 
     int decodePacket(int* value, int timeout);
     int readPacket(Timer& timer);
-    int sendPacket(int length, Timer& timer);
+    int sendPacket(int32_t length, Timer& timer);
     int deliverMessage(MQTTString& topicName, Message& message);
     bool isTopicMatched(char* topicFilter, MQTTString& topicName);
 
@@ -377,7 +377,7 @@ void MQTT::Client<Network, Timer, a, b>::freeQoS2msgid(unsigned short id)
 
 
 template<class Network, class Timer, int a, int b>
-int MQTT::Client<Network, Timer, a, b>::sendPacket(int length, Timer& timer)
+int MQTT::Client<Network, Timer, a, b>::sendPacket(int32_t length, Timer& timer)
 {
     int rc = FAILURE,
         sent = 0;
@@ -414,7 +414,7 @@ int MQTT::Client<Network, Timer, a, b>::decodePacket(int* value, int timeout)
 {
     unsigned char c;
     int multiplier = 1;
-    int len = 0;
+    int32_t len = 0;
     const int MAX_NO_OF_REMAINING_LENGTH_BYTES = 4;
 
     *value = 0;
@@ -449,7 +449,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::readPacket(Timer& tim
 {
     int rc = FAILURE;
     MQTTHeader header = {0};
-    int len = 0;
+    int32_t len = 0;
     int rem_len = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
@@ -579,7 +579,7 @@ template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
 int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::cycle(Timer& timer)
 {
     // get one piece of work off the wire and one pass through
-    int len = 0,
+    int32_t len = 0,
         rc = SUCCESS;
 
     int packet_type = readPacket(timer);    // read the socket, see what work is due
@@ -698,7 +698,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::keepalive()
     else if (last_sent.expired() || last_received.expired())
     {
         Timer timer(1000);
-        int len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
+        int32_t len = MQTTSerialize_pingreq(sendbuf, MAX_MQTT_PACKET_SIZE);
         if (len > 0 && (rc = sendPacket(len, timer)) == SUCCESS) // send the ping packet
         {
             ping_outstanding = true;
@@ -733,7 +733,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect(MQTTPacket_co
 {
     Timer connect_timer(command_timeout_ms);
     int rc = FAILURE;
-    int len = 0;
+    int32_t len = 0;
 
     if (isconnected) // don't send connect packet again if we are already connected
         goto exit;
@@ -855,7 +855,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::su
 {
     int rc = FAILURE;
     Timer timer(command_timeout_ms);
-    int len = 0;
+    int32_t len = 0;
     MQTTString topic = {(char*)topicFilter, {0, 0}};
 
     if (!isconnected)
@@ -902,7 +902,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, MAX_MESSAGE_HANDLERS>::un
     int rc = FAILURE;
     Timer timer(command_timeout_ms);
     MQTTString topic = {(char*)topicFilter, {0, 0}};
-    int len = 0;
+    int32_t len = 0;
 
     if (!isconnected)
         goto exit;
@@ -932,7 +932,7 @@ exit:
 
 
 template<class Network, class Timer, int MAX_MQTT_PACKET_SIZE, int b>
-int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(int len, Timer& timer, enum QoS qos)
+int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(int32_t len, Timer& timer, enum QoS qos)
 {
     int rc;
 
@@ -986,7 +986,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::publish(const char* t
     int rc = FAILURE;
     Timer timer(command_timeout_ms);
     MQTTString topicString = MQTTString_initializer;
-    int len = 0;
+    int32_t len = 0;
 
     if (!isconnected)
         goto exit;
@@ -1042,7 +1042,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::disconnect()
 {
     int rc = FAILURE;
     Timer timer(command_timeout_ms);     // we might wait for incomplete incoming publishes to complete
-    int len = MQTTSerialize_disconnect(sendbuf, MAX_MQTT_PACKET_SIZE);
+    int32_t len = MQTTSerialize_disconnect(sendbuf, MAX_MQTT_PACKET_SIZE);
     if (len > 0)
         rc = sendPacket(len, timer);            // send the disconnect packet
     closeSession();

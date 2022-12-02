@@ -25,10 +25,10 @@
   * @param topicFilters the array of topic filter strings to be used in the publish
   * @return the length of buffer needed to contain the serialized version of the packet
   */
-int MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[])
+int32_t MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[])
 {
 	int i;
-	int len = 2; /* packetid */
+	int32_t len = 2; /* packetid */
 
 	for (i = 0; i < count; ++i)
 		len += 2 + MQTTstrlen(topicFilters[i]); /* length + topic*/
@@ -46,12 +46,12 @@ int MQTTSerialize_unsubscribeLength(int count, MQTTString topicFilters[])
   * @param topicFilters - array of topic filter names
   * @return the length of the serialized data.  <= 0 indicates error
   */
-int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+int32_t MQTTSerialize_unsubscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[])
 {
 	unsigned char *ptr = buf;
 	MQTTHeader header = {0};
-	int rem_len = 0;
+	int32_t rem_len = 0;
 	int rc = -1;
 	int i = 0;
 
@@ -89,7 +89,7 @@ exit:
   * @param buflen the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int buflen)
+int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int32_t buflen)
 {
 	unsigned char type = 0;
 	unsigned char dup = 0;

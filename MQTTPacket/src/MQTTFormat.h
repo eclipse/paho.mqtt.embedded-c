@@ -31,7 +31,7 @@ int MQTTStringFormat_subscribe(char* strbuf, int strbuflen, unsigned char dup, u
 int MQTTStringFormat_suback(char* strbuf, int strbuflen, unsigned short packetid, int count, int* grantedQoSs);
 int MQTTStringFormat_unsubscribe(char* strbuf, int strbuflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[]);
-char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf, int buflen);
-char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf, int buflen);
+char* MQTTFormat_toClientString(char* strbuf, int strbuflen, unsigned char* buf, int32_t buflen);
+char* MQTTFormat_toServerString(char* strbuf, int strbuflen, unsigned char* buf, int32_t buflen);
 
 #endif

@@ -31,7 +31,7 @@ static int getNextPacketId(MQTTClient *c) {
 }
 
 
-static int sendPacket(MQTTClient* c, int length, Timer* timer)
+static int sendPacket(MQTTClient* c, int32_t length, Timer* timer)
 {
     int rc = FAILURE,
         sent = 0;
@@ -84,7 +84,7 @@ static int decodePacket(MQTTClient* c, int* value, int timeout)
 {
     unsigned char i;
     int multiplier = 1;
-    int len = 0;
+    int32_t len = 0;
     const int MAX_NO_OF_REMAINING_LENGTH_BYTES = 4;
 
     *value = 0;
@@ -111,7 +111,7 @@ exit:
 static int readPacket(MQTTClient* c, Timer* timer)
 {
     MQTTHeader header = {0};
-    int len = 0;
+    int32_t len = 0;
     int rem_len = 0;
 
     /* 1. read the header byte.  This has the packet type in it */
@@ -225,7 +225,7 @@ int keepalive(MQTTClient* c)
             Timer timer;
             TimerInit(&timer);
             TimerCountdownMS(&timer, 1000);
-            int len = MQTTSerialize_pingreq(c->buf, c->buf_size);
+            int32_t len = MQTTSerialize_pingreq(c->buf, c->buf_size);
             if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS) // send the ping packet
                 c->ping_outstanding = 1;
         }
@@ -256,7 +256,7 @@ void MQTTCloseSession(MQTTClient* c)
 
 int cycle(MQTTClient* c, Timer* timer)
 {
-    int len = 0,
+    int32_t len = 0,
         rc = SUCCESS;
 
     int packet_type = readPacket(c, timer);     /* read the socket, see what work is due */
@@ -415,7 +415,7 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
     Timer connect_timer;
     int rc = FAILURE;
     MQTTPacket_connectData default_options = MQTTPacket_connectData_initializer;
-    int len = 0;
+    int32_t len = 0;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -519,7 +519,7 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum QoS qo
 {
     int rc = FAILURE;
     Timer timer;
-    int len = 0;
+    int32_t len = 0;
     MQTTString topic = MQTTString_initializer;
     topic.cstring = (char *)topicFilter;
 
@@ -580,7 +580,7 @@ int MQTTUnsubscribe(MQTTClient* c, const char* topicFilter)
     Timer timer;
     MQTTString topic = MQTTString_initializer;
     topic.cstring = (char *)topicFilter;
-    int len = 0;
+    int32_t len = 0;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -624,7 +624,7 @@ int MQTTPublish(MQTTClient* c, const char* topicName, MQTTMessage* message)
     Timer timer;
     MQTTString topic = MQTTString_initializer;
     topic.cstring = (char *)topicName;
-    int len = 0;
+    int32_t len = 0;
 
 #if defined(MQTT_TASK)
 	  MutexLock(&c->mutex);
@@ -684,7 +684,7 @@ int MQTTDisconnect(MQTTClient* c)
 {
     int rc = FAILURE;
     Timer timer;     // we might wait for incomplete incoming publishes to complete
-    int len = 0;
+    int32_t len = 0;
 
 #if defined(MQTT_TASK)
 	MutexLock(&c->mutex);

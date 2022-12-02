@@ -28,12 +28,12 @@ int main(int argc, char *argv[])
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
 	char buf[200];
-	int buflen = sizeof(buf);
+	size_t buflen = sizeof(buf);
 	int mysock = 0;
 	MQTTString topicString = MQTTString_initializer;
 	char* payload = "mypayload";
-	int payloadlen = strlen(payload);
-	int len = 0;
+	size_t payloadlen = strlen(payload);
+	int32_t len = 0;
 	char *host = "m2m.eclipse.org";
 	int port = 1883;
 
