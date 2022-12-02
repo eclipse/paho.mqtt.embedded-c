@@ -183,14 +183,6 @@ void writeCString(unsigned char** pptr, const char* string)
 	*pptr += len;
 }
 
-
-int getLenStringLen(char* ptr)
-{
-	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
-	return len;
-}
-
-
 void writeMQTTString(unsigned char** pptr, MQTTString mqttstring)
 {
 	if (mqttstring.lenstring.len > 0)
