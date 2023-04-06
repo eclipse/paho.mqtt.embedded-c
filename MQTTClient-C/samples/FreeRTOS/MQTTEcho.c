@@ -24,7 +24,7 @@ void messageArrived(MessageData* data)
 
 static void prvMQTTEchoTask(void *pvParameters)
 {
-	/* connect to m2m.eclipse.org, subscribe to a topic, send and receive messages regularly every 1 sec */
+	/* connect to test.mosquitto.org, subscribe to a topic, send and receive messages regularly every 1 sec */
 	MQTTClient client;
 	Network network;
 	unsigned char sendbuf[80], readbuf[80];
@@ -36,7 +36,7 @@ static void prvMQTTEchoTask(void *pvParameters)
 	NetworkInit(&network);
 	MQTTClientInit(&client, &network, 30000, sendbuf, sizeof(sendbuf), readbuf, sizeof(readbuf));
 
-	char* address = "iot.eclipse.org";
+	char* address = "test.mosquitto.org";
 	if ((rc = NetworkConnect(&network, address, 1883)) != 0)
 		printf("Return code from network connect is %d\n", rc);
 

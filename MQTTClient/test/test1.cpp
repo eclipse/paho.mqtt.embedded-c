@@ -777,7 +777,7 @@ void messageArrived4(MQTT::MessageData& md)
     test2_message_data = &md;
 	  MQTT::Message &m = md.message;
 
-    printf("Message received %.*s\n", (int)m.payloadlen, m.payload);
+    printf("Message received %.*s\n", (int)m.payloadlen, (char*)m.payload);
 
     test4_no_queued_messages++;
 }

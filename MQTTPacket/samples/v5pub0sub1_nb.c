@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
 	mytransport.sck = &mysock;
 	mytransport.getfn = transport_getdatanb;
 	mytransport.state = 0;
-	data.clientID.cstring = "paho-emb-pub0sub1_nb";
+	data.clientID.cstring = "paho-emb-v5pub0sub1_nb";
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
 	data.username.cstring = "rw";

@@ -81,7 +81,7 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
 {
   int rc = 0, type;
 
-  if (props->count == props->max_count)
+  if (props->count >= props->max_count)
     rc = -1;  /* max number of properties already in structure */
   else if ((type = MQTTProperty_getType(prop->identifier)) < 0)
     rc = -2;

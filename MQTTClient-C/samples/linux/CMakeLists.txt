@@ -22,3 +22,11 @@ add_executable(
 target_link_libraries(stdoutsubc paho-embed-mqtt3cc paho-embed-mqtt3c)
 target_include_directories(stdoutsubc PRIVATE "../../src" "../../src/linux")
 target_compile_definitions(stdoutsubc PRIVATE MQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h)
+
+add_executable(
+stdoutsubcv5
+stdoutsubv5.c
+)
+target_link_libraries(stdoutsubcv5 paho-embed-mqtt3cc paho-embed-mqtt3c)
+target_include_directories(stdoutsubcv5 PRIVATE "../../src" "../../src/linux")
+target_compile_definitions(stdoutsubcv5 PRIVATE MQTTCLIENT_PLATFORM_HEADER=MQTTLinux.h)

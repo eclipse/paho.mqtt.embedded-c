@@ -19,13 +19,13 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "MQTTPacket.h"
+#include "V5/MQTTV5Packet.h"
 #include "transport.h"
 
 
 int main(int argc, char *argv[])
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+	MQTTPacket_connectData conn_data = MQTTPacket_connectData_initializer;
 	int rc = 0;
 	char buf[200];
 	int buflen = sizeof(buf);
@@ -49,19 +49,41 @@ int main(int argc, char *argv[])
 
 	printf("Sending to hostname %s port %d\n", host, port);
 
-	data.clientID.cstring = "paho-emb-qos0pub";
-	data.keepAliveInterval = 20;
-	data.cleansession = 1;
-	data.username.cstring = "rw";
-	data.password.cstring = "readwrite";
-	data.MQTTVersion = 4;
+	conn_data.clientID.cstring = "paho-emb-v5qos0pub";
+	conn_data.keepAliveInterval = 20;
+	conn_data.cleansession = 1;
+	conn_data.username.cstring = "rw";
+	conn_data.password.cstring = "readwrite";
+	conn_data.MQTTVersion = 5;
 
-	len = MQTTSerialize_connect((unsigned char *)buf, buflen, &data);
+	MQTTProperties conn_properties = MQTTProperties_initializer;
+	MQTTProperties will_properties = MQTTProperties_initializer;
+	
+	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &conn_data, &conn_properties, &will_properties);
 
-	topicString.cstring = "mytopic";
-	len += MQTTSerialize_publish((unsigned char *)(buf + len), buflen - len, 0, 0, 0, 0, topicString, (unsigned char *)payload, payloadlen);
+	MQTTProperty pub_properties_array[1];
+	MQTTProperties pub_properties = MQTTProperties_initializer;
+	pub_properties.array = pub_properties_array;
+	pub_properties.max_count = 1;
 
-	len += MQTTSerialize_disconnect((unsigned char *)(buf + len), buflen - len);
+	MQTTProperty v5property;
+	v5property.identifier = USER_PROPERTY;
+	v5property.value.data.data = "user key";
+	v5property.value.data.len = strlen(v5property.value.data.data);
+	v5property.value.value.data = "user value";
+	v5property.value.value.len = strlen(v5property.value.value.data);
+	rc = MQTTProperties_add(&pub_properties, &v5property);
+	if (rc)
+	{
+		printf("Failed to add user property\n");
+		goto exit;
+	}
+
+	topicString.cstring = "mytopicv5";
+	len += MQTTV5Serialize_publish((unsigned char *)(buf + len), buflen - len, 0, 1, 0, 123, topicString, &pub_properties, (unsigned char *)payload, payloadlen);
+
+	MQTTProperties disconnect_properties = MQTTProperties_initializer;
+	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, NORMAL_DISCONNECTION, &disconnect_properties);
 
 	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)

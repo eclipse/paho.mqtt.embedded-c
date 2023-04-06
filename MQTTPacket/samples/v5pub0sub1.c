@@ -57,7 +57,6 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "test.mosquitto.org";
 	int port = 1884;
-	MQTTTransport mytransport;
 
 	stop_init();
 	if (argc > 1)
@@ -72,10 +71,7 @@ int main(int argc, char *argv[])
 
 	printf("Sending to hostname %s port %d\n", host, port);
 
-	mytransport.sck = &mysock;
-	mytransport.getfn = transport_getdatanb;
-	mytransport.state = 0;
-	data.clientID.cstring = "paho-emb-pub0sub1_nb";
+	data.clientID.cstring = "paho-emb-v5pub0sub1";
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
 	data.username.cstring = "rw";
@@ -103,31 +99,29 @@ int main(int argc, char *argv[])
 	len = MQTTSerialize_subscribe(buf, buflen, 0, msgid, 1, &topicString, &req_qos);
 
 	rc = transport_sendPacketBuffer(mysock, buf, len);
-	do {
-		int frc;
-		if ((frc=MQTTPacket_readnb(buf, buflen, &mytransport)) == SUBACK) /* wait for suback */
-		{
-			unsigned short submsgid;
-			int subcount;
-			int granted_qos;
+	if (MQTTPacket_read(buf, buflen, transport_getdata) == SUBACK) 	/* wait for suback */
+	{
+		unsigned short submsgid;
+		int subcount;
+		int granted_qos;
 
-			rc = MQTTDeserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
-			if (granted_qos != 0)
-			{
-				printf("granted qos != 0, %d\n", granted_qos);
-				goto exit;
-			}
-			break;
-		}
-		else if (frc == -1)
+		rc = MQTTDeserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
+		if (granted_qos != 0)
+		{
+			printf("granted qos != 0, %d\n", granted_qos);
 			goto exit;
-	} while (1); /* handle timeouts here */
+		}
+	}
+	else
+		goto exit;
+
 	/* loop getting msgs on subscribed topic */
 	topicString.cstring = "pubtopic";
 	while (!toStop)
 	{
-		/* handle timeouts */
-		if (MQTTPacket_readnb(buf, buflen, &mytransport) == PUBLISH)
+		/* transport_getdata() has a built-in 1 second timeout,
+		your mileage will vary */
+		if (MQTTPacket_read(buf, buflen, transport_getdata) == PUBLISH)
 		{
 			unsigned char dup;
 			int qos;
@@ -141,10 +135,11 @@ int main(int argc, char *argv[])
 			rc = MQTTDeserialize_publish(&dup, &qos, &retained, &msgid, &receivedTopic,
 					&payload_in, &payloadlen_in, buf, buflen);
 			printf("message arrived %.*s\n", payloadlen_in, payload_in);
-			printf("publishing reading\n");
-			len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char*)payload, payloadlen);
-			rc = transport_sendPacketBuffer(mysock, buf, len);
 		}
+
+		printf("publishing reading\n");
+		len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char*)payload, payloadlen);
+		rc = transport_sendPacketBuffer(mysock, buf, len);
 	}
 
 	printf("disconnecting\n");

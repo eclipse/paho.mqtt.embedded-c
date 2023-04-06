@@ -78,7 +78,7 @@ typedef struct MQTTProperties
 
 #define MQTTProperties_initializer {0, 0, 0, NULL}
 
-int MQTTProperties_len(MQTTProperties* props);
+DLLExport int MQTTProperties_len(MQTTProperties* props);
 
 /**
  * Add the property pointer to the property array, no allocation, just a reference
@@ -86,8 +86,8 @@ int MQTTProperties_len(MQTTProperties* props);
  * @param prop
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
-int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
+DLLExport int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
 
-int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties);
+DLLExport int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties);
 
-int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsigned char* enddata);
+DLLExport int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsigned char* enddata);

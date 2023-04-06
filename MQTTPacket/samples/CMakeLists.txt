@@ -35,3 +35,34 @@ add_executable(
   qos0pub.c transport.c
 )
 target_link_libraries(qos0pub paho-embed-mqtt3c)
+
+add_executable(
+  ping
+  ping.c transport.c
+)
+target_link_libraries(ping paho-embed-mqtt3c)
+
+add_executable(
+  ping_nb
+  ping_nb.c transport.c
+)
+target_link_libraries(ping_nb paho-embed-mqtt3c)
+
+add_executable(
+v5qos0pub
+v5qos0pub.c transport.c
+)
+target_link_libraries(v5qos0pub paho-embed-mqtt5c)
+
+add_executable(
+v5pub0sub1
+v5pub0sub1.c transport.c
+)
+target_link_libraries(v5pub0sub1 paho-embed-mqtt5c)
+
+add_executable(
+v5pub0sub1_nb
+v5pub0sub1_nb.c transport.c
+)
+target_link_libraries(v5pub0sub1_nb paho-embed-mqtt5c)
+
