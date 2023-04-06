@@ -5,7 +5,7 @@
 The tests require both Python v2 and Mosquitto MQTT. On Ubuntu, these can be installed using
 `sudo apt install python2 mosquitto`.
 
-## Runnning the tests
+## Running the tests
 
 1. Start the servers
 

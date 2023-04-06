@@ -534,9 +534,9 @@ int test3(struct Options options)
 	MQTTProperty one;
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test3\" name=\"de/serialization\"");
@@ -618,9 +618,9 @@ int test4(struct Options options)
 	MQTTProperty one;
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test4\" name=\"de/serialization\"");
@@ -683,9 +683,9 @@ int test5(struct Options options)
 	MQTTProperty one;
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test5\" name=\"de/serialization\"");
@@ -851,9 +851,9 @@ int test8(struct Options options)
 	MQTTProperty one;
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test8\" name=\"de/serialization\"");
@@ -905,9 +905,9 @@ int test9(struct Options options)
 	MQTTProperty one;
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 
 	fprintf(xml, "<testcase classname=\"test9\" name=\"de/serialization\"");

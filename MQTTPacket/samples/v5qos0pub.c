@@ -68,10 +68,10 @@ int main(int argc, char *argv[])
 
 	MQTTProperty v5property;
 	v5property.identifier = USER_PROPERTY;
-	v5property.value.data.data = "user key";
-	v5property.value.data.len = strlen(v5property.value.data.data);
-	v5property.value.value.data = "user value";
-	v5property.value.value.len = strlen(v5property.value.value.data);
+	v5property.value.string_pair.key.data = "user key";
+	v5property.value.string_pair.key.len = strlen(v5property.value.string_pair.key.data);
+	v5property.value.string_pair.val.data = "user value";
+	v5property.value.string_pair.val.len = strlen(v5property.value.string_pair.val.data);
 	rc = MQTTProperties_add(&pub_properties, &v5property);
 	if (rc)
 	{

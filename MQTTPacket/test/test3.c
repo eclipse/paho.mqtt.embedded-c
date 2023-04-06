@@ -281,9 +281,9 @@ int test1(struct Options options)
 
 	one.identifier = USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
-	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data) + 1;
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
-	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data) + 1;
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
 	rc = MQTTProperties_add(&properties, &one);
 	assert("add properties rc should be 0",  rc == 0, "rc was different %d\n", rc);
 
