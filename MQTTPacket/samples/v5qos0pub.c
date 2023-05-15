@@ -21,7 +21,7 @@
 
 #include "V5/MQTTV5Packet.h"
 #include "transport.h"
-
+#include "v5log.h"
 
 int main(int argc, char *argv[])
 {

@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Sergio R. Caprile - port and nonblocking
+ *    Cristian Pop - adding MQTTv5 sample
  *******************************************************************************/
 
 #include <stdio.h>
@@ -21,6 +22,7 @@
 
 #include "V5/MQTTV5Packet.h"
 #include "transport.h"
+#include "v5log.h"
 
 #define KEEPALIVE_INTERVAL 20
 
@@ -104,6 +106,7 @@ int main(int argc, char *argv[])
 	data.cleansession = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
+	data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
 	MQTTProperties will_properties = MQTTProperties_initializer;
@@ -131,6 +134,11 @@ int main(int argc, char *argv[])
 	} while (1); /* handle timeouts here */
 
 	printf("MQTTv5 connected: (%d properties)\n", connack_properties.count);
+	for(int i = 0; i < connack_properties.count; i++)
+	{
+		v5property_print(connack_properties.array[i]);
+	}
+
 	start_ping_timer();
 	
 	state = IDLE;

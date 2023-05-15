@@ -13,6 +13,7 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Sergio R. Caprile - clarifications and/or documentation extension
+ *    Cristian Pop - adding MQTTv5 sample
  *******************************************************************************/
 
 #include <stdio.h>
@@ -21,6 +22,7 @@
 
 #include "MQTTPacket.h"
 #include "transport.h"
+#include "v5log.h"
 
 /* This is in order to get an asynchronous signal to stop the sample,
 as the code loops waiting for msgs on the subscribed topic.
@@ -58,6 +60,29 @@ int main(int argc, char *argv[])
 	char *host = "test.mosquitto.org";
 	int port = 1884;
 	MQTTTransport mytransport;
+	MQTTProperty connack_properties_array[5];
+	MQTTProperties connack_properties = MQTTProperties_initializer;
+
+	connack_properties.array = connack_properties_array;
+	connack_properties.max_count = 5;
+
+	MQTTProperty pub_properties_array[1];
+	MQTTProperties pub_properties = MQTTProperties_initializer;
+	pub_properties.array = pub_properties_array;
+	pub_properties.max_count = 1;
+
+	MQTTProperty v5property;
+	v5property.identifier = USER_PROPERTY;
+	v5property.value.string_pair.key.data = "user key";
+	v5property.value.string_pair.key.len = strlen(v5property.value.string_pair.key.data);
+	v5property.value.string_pair.val.data = "user value";
+	v5property.value.string_pair.val.len = strlen(v5property.value.string_pair.val.data);
+	rc = MQTTProperties_add(&pub_properties, &v5property);
+	if (rc)
+	{
+		printf("Failed to add user property\n");
+		goto exit;
+	}
 
 	stop_init();
 	if (argc > 1)
@@ -80,8 +105,12 @@ int main(int argc, char *argv[])
 	data.cleansession = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
+	data.MQTTVersion = 5;
 
-	len = MQTTSerialize_connect(buf, buflen, &data);
+	MQTTProperties conn_properties = MQTTProperties_initializer;
+	MQTTProperties will_properties = MQTTProperties_initializer;
+
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	/* wait for connack */
@@ -89,7 +118,8 @@ int main(int argc, char *argv[])
 	{
 		unsigned char sessionPresent, connack_rc;
 
-		if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, buflen) != 1 || connack_rc != 0)
+		if (MQTTV5Deserialize_connack(&connack_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
+			|| connack_rc != 0)
 		{
 			printf("Unable to connect, return code %d\n", connack_rc);
 			goto exit;
@@ -97,6 +127,14 @@ int main(int argc, char *argv[])
 	}
 	else
 		goto exit;
+
+	printf("MQTTv5 connected: (%d properties)\n", connack_properties.count);
+	for(int i = 0; i < connack_properties.count; i++)
+	{
+		v5property_print(connack_properties.array[i]);
+	}
+
+	// TODO: v5 SUBSCRIBE
 
 	/* subscribe */
 	topicString.cstring = "substopic";
@@ -138,11 +176,14 @@ int main(int argc, char *argv[])
 			int rc;
 			MQTTString receivedTopic;
 
+			// TODO: V5 deserialize
 			rc = MQTTDeserialize_publish(&dup, &qos, &retained, &msgid, &receivedTopic,
 					&payload_in, &payloadlen_in, buf, buflen);
 			printf("message arrived %.*s\n", payloadlen_in, payload_in);
+			
 			printf("publishing reading\n");
-			len = MQTTSerialize_publish(buf, buflen, 0, 0, 0, 0, topicString, (unsigned char*)payload, payloadlen);
+			len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &pub_properties, 
+					(unsigned char *)payload, payloadlen);
 			rc = transport_sendPacketBuffer(mysock, buf, len);
 		}
 	}
