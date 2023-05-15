@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 
 	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)
-		printf("Successfully published\n");
+		printf("Successfully published v5\n");
 	else
 		printf("Publish failed\n");
 
