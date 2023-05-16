@@ -16,4 +16,5 @@
 
 #include "V5/MQTTV5Packet.h"
 
-const char* v5property_print(MQTTProperty property);
+void v5property_print(MQTTProperty property);
+const char* v5reasoncode_to_string(int reasoncode);

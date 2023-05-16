@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
 		else if (frc == -1)
 			goto exit;
 	} while (1); /* handle timeouts here */
+
+	printf("waiting for messages on %s\n", topicString.cstring);
+
 	/* loop getting msgs on subscribed topic */
 	topicString.cstring = "pubtopic";
 	while (!toStop)

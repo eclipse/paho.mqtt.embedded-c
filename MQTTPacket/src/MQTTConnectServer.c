@@ -234,7 +234,7 @@ int MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties,
 
   if (mylen > 0)
 	{
-	  *reasonCode = readChar(&curdata);
+	  *reasonCode = (unsigned char)readChar(&curdata);
 		if (mylen > 1 && !MQTTProperties_read(properties, &curdata, enddata))
 	    goto exit;
 	}

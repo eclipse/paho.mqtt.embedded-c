@@ -60,29 +60,15 @@ int main(int argc, char *argv[])
 	char *host = "test.mosquitto.org";
 	int port = 1884;
 	MQTTTransport mytransport;
-	MQTTProperty connack_properties_array[5];
-	MQTTProperties connack_properties = MQTTProperties_initializer;
-
-	connack_properties.array = connack_properties_array;
-	connack_properties.max_count = 5;
-
-	MQTTProperty pub_properties_array[1];
-	MQTTProperties pub_properties = MQTTProperties_initializer;
-	pub_properties.array = pub_properties_array;
-	pub_properties.max_count = 1;
-
-	MQTTProperty v5property;
-	v5property.identifier = USER_PROPERTY;
-	v5property.value.string_pair.key.data = "user key";
-	v5property.value.string_pair.key.len = strlen(v5property.value.string_pair.key.data);
-	v5property.value.string_pair.val.data = "user value";
-	v5property.value.string_pair.val.len = strlen(v5property.value.string_pair.val.data);
-	rc = MQTTProperties_add(&pub_properties, &v5property);
-	if (rc)
-	{
-		printf("Failed to add user property\n");
-		goto exit;
-	}
+	MQTTProperty recv_properties_array[5];
+	MQTTProperties recv_properties = MQTTProperties_initializer;
+	recv_properties.array = recv_properties_array;
+	recv_properties.max_count = 5;
+	MQTTProperty send_properties_array[2];
+	MQTTProperties send_properties = MQTTProperties_initializer;
+	send_properties.array = send_properties_array;
+	send_properties.max_count = 2;
+	int server_topic_alias_max = 0;
 
 	stop_init();
 	if (argc > 1)
@@ -118,27 +104,32 @@ int main(int argc, char *argv[])
 	{
 		unsigned char sessionPresent, connack_rc;
 
-		if (MQTTV5Deserialize_connack(&connack_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
+		if (MQTTV5Deserialize_connack(&recv_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
 			|| connack_rc != 0)
 		{
-			printf("Unable to connect, return code %d\n", connack_rc);
+			printf("Unable to connect, return code %d (%s)\n", connack_rc, v5reasoncode_to_string(connack_rc));
 			goto exit;
 		}
 	}
 	else
 		goto exit;
 
-	printf("MQTTv5 connected: (%d properties)\n", connack_properties.count);
-	for(int i = 0; i < connack_properties.count; i++)
+	printf("MQTTv5 connected: (%d properties)\n", recv_properties.count);
+	for(int i = 0; i < recv_properties.count; i++)
 	{
-		v5property_print(connack_properties.array[i]);
+		if (recv_properties.array[i].identifier == TOPIC_ALIAS_MAXIMUM)
+		{
+			server_topic_alias_max = recv_properties.array[i].value.integer2;
+		}
+
+		v5property_print(recv_properties.array[i]);
 	}
 
-	// TODO: v5 SUBSCRIBE
-
 	/* subscribe */
+	MQTTProperties sub_properties = MQTTProperties_initializer;
+	struct subscribeOptions sub_options = { 0 };
 	topicString.cstring = "substopic";
-	len = MQTTSerialize_subscribe(buf, buflen, 0, msgid, 1, &topicString, &req_qos);
+	len = MQTTV5Serialize_subscribe(buf, buflen, 0, msgid, &sub_properties, 1, &topicString, &req_qos, &sub_options);
 
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	do {
@@ -147,44 +138,140 @@ int main(int argc, char *argv[])
 		{
 			unsigned short submsgid;
 			int subcount;
-			int granted_qos;
+			int reason_code;
 
-			rc = MQTTDeserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
-			if (granted_qos != 0)
+			rc = MQTTV5Deserialize_suback(&submsgid, &recv_properties, 1, &subcount, &reason_code, buf, buflen);
+			if (reason_code != 0)
 			{
-				printf("granted qos != 0, %d\n", granted_qos);
+				printf("granted qos != 0, %d (%s)\n", 
+					reason_code, reason_code <= 2 ? "Granted QoS" : v5reasoncode_to_string(reason_code));
 				goto exit;
 			}
+
+			printf("suback: (%d properties)\n", recv_properties.count);
+			for(int i = 0; i < recv_properties.count; i++)
+			{
+				v5property_print(recv_properties.array[i]);
+			}
+
 			break;
 		}
 		else if (frc == -1)
 			goto exit;
 	} while (1); /* handle timeouts here */
-	/* loop getting msgs on subscribed topic */
+
+	/* publish first message and configure topic alias */
+	printf("publishing reading\n");
+		
+	MQTTProperty property_topic_alias = {
+		.identifier = TOPIC_ALIAS,
+		.value.integer2 = 1
+	};
+
+	if (server_topic_alias_max >= 1)
+	{
+		rc = MQTTProperties_add(&send_properties, &property_topic_alias);
+		if (rc)
+		{
+			printf("Failed to add topic alias\n");
+			goto exit;
+		}
+	}
+	
+	char* property_key = "user key";
+	char* property_value = "user value";
+	MQTTProperty user_property = {
+		.identifier = USER_PROPERTY,
+		.value.string_pair.key.data = property_key,
+		.value.string_pair.key.len = strlen(property_key),
+		.value.string_pair.val.data = property_value,
+		.value.string_pair.val.len = strlen(property_value),
+	};
+
+	rc = MQTTProperties_add(&send_properties, &user_property);
+	if (rc)
+	{
+		printf("Failed to add user property\n");
+		goto exit;
+	}
+
 	topicString.cstring = "pubtopic";
+
+	len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &send_properties, 
+				(unsigned char *)payload, payloadlen);
+	rc = transport_sendPacketBuffer(mysock, buf, len);
+
+	/* loop getting msgs on subscribed topic */
 	while (!toStop)
 	{
 		/* handle timeouts */
-		if (MQTTPacket_readnb(buf, buflen, &mytransport) == PUBLISH)
-		{
-			unsigned char dup;
-			int qos;
-			unsigned char retained;
-			unsigned short msgid;
-			int payloadlen_in;
-			unsigned char* payload_in;
-			int rc;
-			MQTTString receivedTopic;
+		rc = MQTTPacket_readnb(buf, buflen, &mytransport); 
+		unsigned char dup;
+		unsigned short msgid;
 
-			// TODO: V5 deserialize
-			rc = MQTTDeserialize_publish(&dup, &qos, &retained, &msgid, &receivedTopic,
-					&payload_in, &payloadlen_in, buf, buflen);
-			printf("message arrived %.*s\n", payloadlen_in, payload_in);
-			
-			printf("publishing reading\n");
-			len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &pub_properties, 
-					(unsigned char *)payload, payloadlen);
-			rc = transport_sendPacketBuffer(mysock, buf, len);
+		switch (rc)
+		{
+			case 0:
+				// call-again (no-op).
+				break;
+
+			case -1:
+				printf("read error\n");
+				toStop = 1;
+				break;
+
+			case PUBLISH:
+			{
+				int qos;
+				unsigned char retained;
+				int payloadlen_in;
+				unsigned char* payload_in;
+				MQTTString receivedTopic;
+
+				rc = MQTTV5Deserialize_publish(&dup, &qos, &retained, &msgid, &receivedTopic, &recv_properties, 
+						&payload_in, &payloadlen_in, buf, buflen);
+				printf("message arrived %.*s\n", payloadlen_in, payload_in);
+
+				printf("message has %d properties\n", recv_properties.count);
+				for(int i = 0; i < recv_properties.count; i++)
+				{
+					v5property_print(recv_properties.array[i]);
+				}
+
+				if (server_topic_alias_max >= 1)
+				{
+					printf("publishing using topic alias / reading\n");
+					topicString.cstring = "";
+				}
+				else 
+				{
+					printf("publishing reading\n");
+				}
+
+				len = MQTTV5Serialize_publish(buf, buflen, 0, 0, 0, 0, topicString, &send_properties, 
+							(unsigned char *)payload, payloadlen);
+				rc = transport_sendPacketBuffer(mysock, buf, len);
+			}
+			break;
+
+			case DISCONNECT:
+			{
+				int reason_code;
+				toStop = 1;
+				printf("disconnect received\n");
+				rc = MQTTV5Deserialize_disconnect(&recv_properties, &reason_code, buf, buflen);
+				printf("\tdisconnect details: reason=%d (%s)\n", reason_code, v5reasoncode_to_string(reason_code));
+
+				printf("disconnect has %d properties\n", recv_properties.count);
+				for(int i = 0; i < recv_properties.count; i++)
+				{
+					v5property_print(recv_properties.array[i]);
+				}
+			}
+			break;
+
+			default:
+				printf("unknown message type (%d)\n", rc);
 		}
 	}
 

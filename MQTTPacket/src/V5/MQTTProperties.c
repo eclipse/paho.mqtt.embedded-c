@@ -204,7 +204,7 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
   int type = -1,
     len = 0;
 
-  prop->identifier = readChar(pptr);
+  prop->identifier = (unsigned char)readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
   if (type >= BYTE && type <= UTF_8_STRING_PAIR)
   {
