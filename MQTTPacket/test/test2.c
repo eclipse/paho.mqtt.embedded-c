@@ -893,7 +893,7 @@ int test9(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	int reasonCode = BAD_AUTHENTICATION_METHOD; // // (140) test signed char to unsigned char conversion.
+	int reasonCode = BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
 	int reasonCode2 = 44;
 
 	MQTTProperties properties = MQTTProperties_initializer;
