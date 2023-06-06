@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -107,6 +107,7 @@ int linux_write(Network* n, unsigned char* buffer, int len, int timeout_ms)
 
 void NetworkInit(Network* n)
 {
+	signal(SIGPIPE, SIG_IGN);
 	n->my_socket = 0;
 	n->mqttread = linux_read;
 	n->mqttwrite = linux_write;
