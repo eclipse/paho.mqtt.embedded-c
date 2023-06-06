@@ -26,7 +26,7 @@ jobs:
           python3 startbroker.py -c localhost_testing.conf &
       - name: Start test proxy
         run: |
-          python3 test/mqttsas.py &
+          python3 test/mqttsas.py localhost 1883 1885 &
       - name: run tests
         run: |
           cd build.paho
