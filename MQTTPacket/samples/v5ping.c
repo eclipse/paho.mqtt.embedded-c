@@ -12,15 +12,17 @@
  *
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Sergio R. Caprile - port and nonblocking
+ *    Sergio R. Caprile - port
+ *    Cristian Pop - adding MQTTv5 sample
  *******************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "MQTTPacket.h"
+#include "V5/MQTTV5Packet.h"
 #include "transport.h"
+#include "v5log.h"
 
 #define KEEPALIVE_INTERVAL 20
 
@@ -63,8 +65,6 @@ void stop_init(void)
 }
 /* */
 
-enum states { IDLE, GETPONG };
-
 int main(int argc, char *argv[])
 {
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
@@ -75,8 +75,11 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "test.mosquitto.org";
 	int port = 1884;
-	MQTTTransport mytransport;
-	int state;
+	MQTTProperty connack_properties_array[5];
+	MQTTProperties connack_properties = MQTTProperties_initializer;
+
+	connack_properties.array = connack_properties_array;
+	connack_properties.max_count = 5;
 
 	stop_init();
 	if (argc > 1)
@@ -91,67 +94,69 @@ int main(int argc, char *argv[])
 
 	printf("Sending to hostname %s port %d\n", host, port);
 
-	mytransport.sck = &mysock;
-	mytransport.getfn = transport_getdatanb;
-	mytransport.state = 0;
-	data.clientID.cstring = "paho-emb-ping_nb";
+	data.clientID.cstring = "paho-emb-ping";
 	data.keepAliveInterval = KEEPALIVE_INTERVAL;
 	data.cleansession = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
+	data.MQTTVersion = 5;
 
-	len = MQTTSerialize_connect(buf, buflen, &data);
+	MQTTProperties conn_properties = MQTTProperties_initializer;
+	MQTTProperties will_properties = MQTTProperties_initializer;
+
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
-	printf("Sent MQTT connect\n");
+	printf("Sent MQTTv5 connect\n");
 	/* wait for connack */
-	do {
-		int frc;
-		if ((frc=MQTTPacket_readnb(buf, buflen, &mytransport)) == CONNACK){
-			unsigned char sessionPresent, connack_rc;
-			if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, buflen) != 1 || connack_rc != 0){
-				printf("Unable to connect, return code %d\n", connack_rc);
-				goto exit;
-			}
-			break;
-		}
-		else if (frc == -1)
-			goto exit;
-	} while (1); /* handle timeouts here */
+	if (MQTTPacket_read(buf, buflen, transport_getdata) == CONNACK)
+	{
+		unsigned char sessionPresent, connack_rc;
 
-	printf("MQTT connected\n");
-	start_ping_timer();
-	
-	state = IDLE;
-	while (!toStop)	{
-		switch(state){
-		case IDLE:
-			if(time_to_ping()){
-				len = MQTTSerialize_pingreq(buf, buflen);
-				transport_sendPacketBuffer(mysock, buf, len);
-				printf("Ping...");
-				state = GETPONG;
-			}
-			break;
-		case GETPONG:
-			if((rc=MQTTPacket_readnb(buf, buflen, &mytransport)) == PINGRESP){
-				printf("Pong\n");
-				start_ping_timer();
-				state = IDLE;
-			} else if(rc == -1){
-				printf("OOPS\n");
-				goto exit;
-			}
-			break;
+		if (MQTTV5Deserialize_connack(&connack_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
+			|| connack_rc != 0)
+		{
+			printf("Unable to connect, return code %d\n", connack_rc);
+			goto exit;
 		}
+	}
+	else
+		goto exit;
+
+	printf("MQTTv5 connected: (%d properties)\n", connack_properties.count);
+	for(int i = 0; i < connack_properties.count; i++)
+	{
+		v5property_print(connack_properties.array[i]);
+	}
+
+	start_ping_timer();
+
+	while (!toStop)
+	{
+		while(!time_to_ping());
+		len = MQTTSerialize_pingreq(buf, buflen);
+		transport_sendPacketBuffer(mysock, buf, len);
+		printf("Ping...");
+		if (MQTTPacket_read(buf, buflen, transport_getdata) == PINGRESP){
+			printf("Pong\n");
+			start_ping_timer();
+		}
+		else {
+			printf("OOPS\n");
+			goto exit;
+		}
+		
 	}
 
 	printf("disconnecting\n");
-	len = MQTTSerialize_disconnect(buf, buflen);
+
+	MQTTProperties disconn_properties = MQTTProperties_initializer;
+	len = MQTTV5Serialize_disconnect(buf, buflen, NORMAL_DISCONNECTION, &disconn_properties);
+
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 exit:
 	transport_close(mysock);
-	
+
 	return 0;
 }

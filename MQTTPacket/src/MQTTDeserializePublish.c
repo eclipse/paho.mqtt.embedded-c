@@ -139,7 +139,7 @@ int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned 
 	  if (enddata == curdata) /* no reason code, or properties */
 		  *reasonCode = 0;
 		else
-	    *reasonCode = readChar(&curdata);
+	    *reasonCode = (unsigned char)readChar(&curdata);
   }
 
 	if (properties)

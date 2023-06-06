@@ -277,6 +277,15 @@ int test1(struct Options options)
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&properties, &one);
+	assert("add properties rc should be 0",  rc == 0, "rc was different %d\n", rc);
+
+	one.identifier = USER_PROPERTY;
+	one.value.string_pair.key.data = "user property name";
+	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
+	one.value.string_pair.val.data = "user property value";
+	one.value.string_pair.val.len = strlen(one.value.string_pair.val.data);
+	rc = MQTTProperties_add(&properties, &one);
+	assert("add properties rc should be 0",  rc == 0, "rc was different %d\n", rc);
 
 	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &data, &properties, NULL);
 	rc = transport_sendPacketBuffer(mysock, buf, len);

@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 	char* payload = "mypayload";
 	int payloadlen = strlen(payload);
 	int len = 0;
-	char *host = "m2m.eclipse.org";
-	int port = 1883;
+	char *host = "test.mosquitto.org";
+	int port = 1884;
 	MQTTTransport mytransport;
 
 	stop_init();
@@ -75,11 +75,11 @@ int main(int argc, char *argv[])
 	mytransport.sck = &mysock;
 	mytransport.getfn = transport_getdatanb;
 	mytransport.state = 0;
-	data.clientID.cstring = "me";
+	data.clientID.cstring = "paho-emb-pub0sub1_nb";
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
-	data.username.cstring = "testuser";
-	data.password.cstring = "testpassword";
+	data.username.cstring = "rw";
+	data.password.cstring = "readwrite";
 
 	len = MQTTSerialize_connect(buf, buflen, &data);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
@@ -122,6 +122,9 @@ int main(int argc, char *argv[])
 		else if (frc == -1)
 			goto exit;
 	} while (1); /* handle timeouts here */
+
+	printf("waiting for messages on %s\n", topicString.cstring);
+
 	/* loop getting msgs on subscribed topic */
 	topicString.cstring = "pubtopic";
 	while (!toStop)

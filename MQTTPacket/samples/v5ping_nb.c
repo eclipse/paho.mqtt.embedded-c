@@ -13,14 +13,16 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *    Sergio R. Caprile - port and nonblocking
+ *    Cristian Pop - adding MQTTv5 sample
  *******************************************************************************/
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-#include "MQTTPacket.h"
+#include "V5/MQTTV5Packet.h"
 #include "transport.h"
+#include "v5log.h"
 
 #define KEEPALIVE_INTERVAL 20
 
@@ -77,6 +79,11 @@ int main(int argc, char *argv[])
 	int port = 1884;
 	MQTTTransport mytransport;
 	int state;
+	MQTTProperty connack_properties_array[5];
+	MQTTProperties connack_properties = MQTTProperties_initializer;
+
+	connack_properties.array = connack_properties_array;
+	connack_properties.max_count = 5;
 
 	stop_init();
 	if (argc > 1)
@@ -99,8 +106,12 @@ int main(int argc, char *argv[])
 	data.cleansession = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
+	data.MQTTVersion = 5;
 
-	len = MQTTSerialize_connect(buf, buflen, &data);
+	MQTTProperties conn_properties = MQTTProperties_initializer;
+	MQTTProperties will_properties = MQTTProperties_initializer;
+
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	printf("Sent MQTT connect\n");
@@ -109,7 +120,10 @@ int main(int argc, char *argv[])
 		int frc;
 		if ((frc=MQTTPacket_readnb(buf, buflen, &mytransport)) == CONNACK){
 			unsigned char sessionPresent, connack_rc;
-			if (MQTTDeserialize_connack(&sessionPresent, &connack_rc, buf, buflen) != 1 || connack_rc != 0){
+
+			if (MQTTV5Deserialize_connack(&connack_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
+			    || connack_rc != 0)
+			{
 				printf("Unable to connect, return code %d\n", connack_rc);
 				goto exit;
 			}
@@ -119,7 +133,12 @@ int main(int argc, char *argv[])
 			goto exit;
 	} while (1); /* handle timeouts here */
 
-	printf("MQTT connected\n");
+	printf("MQTTv5 connected: (%d properties)\n", connack_properties.count);
+	for(int i = 0; i < connack_properties.count; i++)
+	{
+		v5property_print(connack_properties.array[i]);
+	}
+
 	start_ping_timer();
 	
 	state = IDLE;
@@ -147,7 +166,10 @@ int main(int argc, char *argv[])
 	}
 
 	printf("disconnecting\n");
-	len = MQTTSerialize_disconnect(buf, buflen);
+
+	MQTTProperties disconn_properties = MQTTProperties_initializer;
+	len = MQTTV5Serialize_disconnect(buf, buflen, NORMAL_DISCONNECTION, &disconn_properties);
+
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 exit:

@@ -203,7 +203,7 @@ int MQTTDeserialize_suback(unsigned short* packetid, int maxcount, int* count, i
 #else
 		  grantedQoSs[(*count)++]
 #endif
-                              = readChar(&curdata);
+                              = (unsigned char)readChar(&curdata);
 	  }
   }
 	rc = 1;

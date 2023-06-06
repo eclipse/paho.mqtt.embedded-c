@@ -39,7 +39,7 @@ void writeInt4(unsigned char** pptr, int anInt)
 
 
 /**
- * Calculates an integer from two bytes read from the input buffer
+ * Calculates an integer from 4 bytes read from the input buffer
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the integer value calculated
  */

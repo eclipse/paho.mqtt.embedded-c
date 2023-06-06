@@ -222,7 +222,7 @@ int main(int argc, char* argv[])
               
     MQTT::Client<IPStack, Countdown> client = MQTT::Client<IPStack, Countdown>(ipstack);
     
-    const char* hostname = "localhost"; //"m2m.eclipse.org";
+    const char* hostname = "test.mosquitto.org";
     int port = 1883;
     printf("Connecting to %s:%d\n", hostname, port);
     int rc = ipstack.connect(hostname, port);
