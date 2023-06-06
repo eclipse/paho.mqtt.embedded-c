@@ -55,6 +55,10 @@ enum PropertyTypes {
   UTF_8_STRING_PAIR
 };
 
+typedef struct {
+  MQTTLenString key;
+  MQTTLenString val;
+} MQTTStringPair;
 
 typedef struct
 {
@@ -64,7 +68,7 @@ typedef struct
     short integer2;
     int integer4;
     MQTTLenString data;
-    MQTTLenString value; /* for user properties */
+    MQTTStringPair string_pair; /* for user properties */
   } value;
 } MQTTProperty;
 
@@ -78,7 +82,7 @@ typedef struct MQTTProperties
 
 #define MQTTProperties_initializer {0, 0, 0, NULL}
 
-int MQTTProperties_len(MQTTProperties* props);
+DLLExport int MQTTProperties_len(MQTTProperties* props);
 
 /**
  * Add the property pointer to the property array, no allocation, just a reference
@@ -86,8 +90,15 @@ int MQTTProperties_len(MQTTProperties* props);
  * @param prop
  * @return whether the write succeeded or not, number of bytes written or < 0
  */
-int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
+DLLExport int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop);
 
-int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties);
+DLLExport int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties);
 
-int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsigned char* enddata);
+DLLExport int MQTTProperties_read(MQTTProperties* properties, unsigned char** pptr, unsigned char* enddata);
+
+/**
+ * @brief MQTTProperty_getType returns the type of the property based on the identifier (key).
+ * @param identifier the `PropertyNames` property identifier.
+ * @return the `PropertyTypes` type of the property
+ */
+DLLExport int MQTTProperty_getType(int identifier);

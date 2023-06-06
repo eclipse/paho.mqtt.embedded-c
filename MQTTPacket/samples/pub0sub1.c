@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 	char* payload = "mypayload";
 	int payloadlen = strlen(payload);
 	int len = 0;
-	char *host = "m2m.eclipse.org";
-	int port = 1883;
+	char *host = "test.mosquitto.org";
+	int port = 1884;
 
 	stop_init();
 	if (argc > 1)
@@ -71,11 +71,11 @@ int main(int argc, char *argv[])
 
 	printf("Sending to hostname %s port %d\n", host, port);
 
-	data.clientID.cstring = "me";
+	data.clientID.cstring = "paho-emb-pub0sub1";
 	data.keepAliveInterval = 20;
 	data.cleansession = 1;
-	data.username.cstring = "testuser";
-	data.password.cstring = "testpassword";
+	data.username.cstring = "rw";
+	data.password.cstring = "readwrite";
 
 	len = MQTTSerialize_connect(buf, buflen, &data);
 	rc = transport_sendPacketBuffer(mysock, buf, len);

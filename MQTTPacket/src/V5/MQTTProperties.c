@@ -81,7 +81,7 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
 {
   int rc = 0, type;
 
-  if (props->count == props->max_count)
+  if (props->count >= props->max_count)
     rc = -1;  /* max number of properties already in structure */
   else if ((type = MQTTProperty_getType(prop->identifier)) < 0)
     rc = -2;
@@ -117,8 +117,8 @@ int MQTTProperties_add(MQTTProperties* props, MQTTProperty* prop)
         len = 2 + prop->value.data.len;
         break;
       case UTF_8_STRING_PAIR:
-        len = 2 + prop->value.data.len;
-        len += 2 + prop->value.value.len;
+        len = 2 + prop->value.string_pair.key.len;
+        len += 2 + prop->value.string_pair.val.len;
         break;
     }
     props->length += len + 1; /* add identifier byte */
@@ -160,9 +160,9 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
         rc = prop->value.data.len + 2; /* include length field */
         break;
       case UTF_8_STRING_PAIR:
-        writeMQTTLenString(pptr, prop->value.data);
-        writeMQTTLenString(pptr, prop->value.value);
-        rc = prop->value.data.len + prop->value.value.len + 4; /* include length fields */
+        writeMQTTLenString(pptr, prop->value.string_pair.key);
+        writeMQTTLenString(pptr, prop->value.string_pair.val);
+        rc = prop->value.string_pair.key.len + prop->value.string_pair.val.len + 4; /* include length fields */
         break;
     }
   }
@@ -204,7 +204,7 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
   int type = -1,
     len = 0;
 
-  prop->identifier = readChar(pptr);
+  prop->identifier = (unsigned char)readChar(pptr);
   type = MQTTProperty_getType(prop->identifier);
   if (type >= BYTE && type <= UTF_8_STRING_PAIR)
   {
@@ -231,8 +231,8 @@ int MQTTProperty_read(MQTTProperty* prop, unsigned char** pptr, unsigned char* e
         len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
         break;
       case UTF_8_STRING_PAIR:
-        len = MQTTLenStringRead(&prop->value.data, pptr, enddata);
-        len += MQTTLenStringRead(&prop->value.value, pptr, enddata);
+        len = MQTTLenStringRead(&prop->value.string_pair.key, pptr, enddata);
+        len += MQTTLenStringRead(&prop->value.string_pair.val, pptr, enddata);
         break;
     }
   }

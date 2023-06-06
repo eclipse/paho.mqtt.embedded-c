@@ -14,6 +14,9 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+#ifndef MQTTV5PACKET_H_
+#define MQTTV5PACKET_H_
+
 #include "MQTTPacket.h"
 
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
@@ -42,3 +45,5 @@ int MQTTLenStringRead(MQTTLenString* lenstring, unsigned char** pptr, unsigned c
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 }
 #endif
+
+#endif /* MQTTV5PACKET_H_ */

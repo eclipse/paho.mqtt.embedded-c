@@ -48,7 +48,7 @@ struct Options
 	int test_no;
 } options =
 {
-	"tcp://m2m.eclipse.org:1883",
+	"tcp://localhost:1883",
 	NULL,
 	0,
 	0,

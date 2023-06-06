@@ -6,3 +6,6 @@
 /doc/MQTTClient/
 /doc/MQTTPacket/
 /doc/MQTTClient-C/
+.vscode
+**/html
+**/latex
