@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2018 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -152,14 +152,14 @@ public:
     template<class T> int setMessageHandler(const char* topicFilter, T *item, void (T::*method)(MessageData&) );
 
     /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
-     *  The nework object must be connected to the network endpoint before calling this
+     *  The network object must be connected to the network endpoint before calling this
      *  Default connect options are used
      *  @return success code -
      */
     int connect();
 
     /** MQTT Connect - send an MQTT connect packet down the network and wait for a Connack
-     *  The nework object must be connected to the network endpoint before calling this
+     *  The network object must be connected to the network endpoint before calling this
      *  @param options - connect options
      *  @return success code -
      */
