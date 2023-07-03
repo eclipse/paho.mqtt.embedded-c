@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -48,15 +48,15 @@ int main(int argc, char *argv[])
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
-	int buflen = sizeof(buf);
+	size_t buflen = sizeof(buf);
 	int msgid = 1;
 	MQTTString topicString = MQTTString_initializer;
-	int req_qos = 0;
+	unsigned char req_qos = 0;
 	char* payload = "mypayload";
-	int payloadlen = strlen(payload);
-	int len = 0;
-	char *host = "test.mosquitto.org";
-	int port = 1884;
+	size_t payloadlen = strlen(payload);
+	int32_t len = 0;
+	char *host = "mqtt.eclipseprojects.io";
+	int port = 1883;
 	MQTTTransport mytransport;
 
 	stop_init();
@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
 		{
 			unsigned short submsgid;
 			int subcount;
-			int granted_qos;
+			unsigned char granted_qos;
 
 			rc = MQTTDeserialize_suback(&submsgid, 1, &subcount, &granted_qos, buf, buflen);
 			if (granted_qos != 0)
@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
 		if (MQTTPacket_readnb(buf, buflen, &mytransport) == PUBLISH)
 		{
 			unsigned char dup;
-			int qos;
+			unsigned char qos;
 			unsigned char retained;
 			unsigned short msgid;
 			int payloadlen_in;

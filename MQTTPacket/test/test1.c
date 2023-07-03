@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -365,7 +365,7 @@ int test1(struct Options options)
 
 int test2(struct Options options)
 {
-	int rc = 0;
+	int32_t rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
 
@@ -378,7 +378,7 @@ int test2(struct Options options)
 	int payloadlen = strlen((char*)payload);
 
 	unsigned char dup2 = 1;
-	int qos2 = 1;
+	unsigned char qos2 = 1;
 	unsigned char retained2 = 1;
 	unsigned short msgid2 = 3243;
 	MQTTString topicString2 = MQTTString_initializer;
@@ -435,13 +435,13 @@ int test3(struct Options options)
 	unsigned short msgid = 23;
 	int count = TOPIC_COUNT;
 	MQTTString topicStrings[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
-	int req_qoss[TOPIC_COUNT] = {2, 1};
+	unsigned char req_qoss[TOPIC_COUNT] = {2, 1};
 
 	unsigned char dup2 = 1;
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
-	int req_qoss2[TOPIC_COUNT] = {0, 0};
+	unsigned char req_qoss2[TOPIC_COUNT] = {0, 0};
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();
@@ -488,11 +488,11 @@ int test4(struct Options options)
 
 	int msgid = 23;
 	int count = TOPIC_COUNT;
-	int granted_qoss[TOPIC_COUNT] = {2, 1};
+	unsigned char granted_qoss[TOPIC_COUNT] = {2, 1};
 
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
-	int granted_qoss2[TOPIC_COUNT] = {0, 0};
+	unsigned char granted_qoss2[TOPIC_COUNT] = {0, 0};
 
 	fprintf(xml, "<testcase classname=\"test1\" name=\"de/serialization\"");
 	global_start_time = start_clock();

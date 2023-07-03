@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -429,7 +429,7 @@ int test2(struct Options options)
 	int buflen = sizeof(buf);
 
 	unsigned char dup = 0;
-	int qos = 2;
+	unsigned char qos = 2;
 	unsigned char retained = 0;
 	unsigned short msgid = 23;
 	MQTTString topicString = MQTTString_initializer;
@@ -437,7 +437,7 @@ int test2(struct Options options)
 	int payloadlen = strlen((char*)payload);
 
 	unsigned char dup2 = 1;
-	int qos2 = 1;
+	unsigned char qos2 = 1;
 	unsigned char retained2 = 1;
 	unsigned short msgid2 = 3243;
 	MQTTString topicString2 = MQTTString_initializer;
@@ -510,13 +510,13 @@ int test3(struct Options options)
 	unsigned short msgid = 23;
 	int count = TOPIC_COUNT;
 	MQTTString topicStrings[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
-	int req_qoss[TOPIC_COUNT] = {2, 1};
+	unsigned char req_qoss[TOPIC_COUNT] = {2, 1};
 
 	unsigned char dup2 = 1;
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
-	int req_qoss2[TOPIC_COUNT] = {0, 0};
+	unsigned char req_qoss2[TOPIC_COUNT] = {0, 0};
 
 	struct subscribeOptions subscribeOptions[2] = {{1, 1, 1}, {1, 0, 2}},
 	    outSubscribeOptions[2] = {{0, 0, 0}, {0, 0, 0}};
@@ -599,11 +599,11 @@ int test4(struct Options options)
 
 	int msgid = 23;
 	int count = TOPIC_COUNT;
-	int reasonCodes[TOPIC_COUNT] = {2, 1};
+	unsigned char reasonCodes[TOPIC_COUNT] = {2, 1};
 
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
-	int reasonCodes2[TOPIC_COUNT] = {0, 0};
+	unsigned char reasonCodes2[TOPIC_COUNT] = {0, 0};
 
 	MQTTProperties properties = MQTTProperties_initializer;
 	MQTTProperties outProperties = MQTTProperties_initializer;
@@ -780,7 +780,7 @@ int test7(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	int reasonCode = -1, outReasonCode = -1;
+	unsigned char reasonCode = -1, outReasonCode = -1;
 	MQTTProperties disconnectProperties = MQTTProperties_initializer,
 	               outdisconnectProperties = MQTTProperties_initializer;
 	MQTTProperty disconnect_props[10], out_disconnect_props[10];
@@ -832,14 +832,14 @@ int test8(struct Options options)
 
 	int msgid = 23;
 	int count = TOPIC_COUNT;
-	int reasonCodes[TOPIC_COUNT] = {
+	unsigned char reasonCodes[TOPIC_COUNT] = {
 		2, 
 		QOS_NOT_SUPPORTED // (155) test signed char to unsigned char conversion.
 	};
 
 	unsigned short msgid2 = 2223;
 	int count2 = 0;
-	int reasonCodes2[TOPIC_COUNT] = {0, 0};
+	unsigned char reasonCodes2[TOPIC_COUNT] = {0, 0};
 
 	MQTTProperties properties = MQTTProperties_initializer;
 	MQTTProperties outProperties = MQTTProperties_initializer;
@@ -893,8 +893,8 @@ int test9(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	int reasonCode = BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
-	int reasonCode2 = 44;
+	unsigned char reasonCode = BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
+	unsigned char reasonCode2 = 44;
 
 	MQTTProperties properties = MQTTProperties_initializer;
 	MQTTProperties outProperties = MQTTProperties_initializer;

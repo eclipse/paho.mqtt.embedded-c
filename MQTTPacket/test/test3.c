@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -249,7 +249,7 @@ int test1(struct Options options)
 	MQTTProperties properties = MQTTProperties_initializer;
 	MQTTProperty props[10];
 	MQTTProperty one;
-  int msgid = 0;
+	int msgid = 0;
 	char* test_topic = "MQTTV5/test/test3_topic";
 	int i = 0;
 
@@ -312,7 +312,7 @@ int test1(struct Options options)
 	opts.noLocal = 0;
 	opts.retainAsPublished = 1;
 	opts.retainHandling = 2;
-	int req_qos = 2;
+	unsigned char req_qos = 2;
 
 	len = MQTTV5Serialize_subscribe(buf, buflen, 0, ++msgid, &properties, 1, &topicString, &req_qos, &opts);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
@@ -324,9 +324,9 @@ int test1(struct Options options)
 	{
 		unsigned short submsgid = -1;
 		int subcount = 0;
-		int reasonCode = -1;
+		unsigned char reasonCode = -1;
 
-	  properties.length = properties.count = 0; /* remove existing properties */
+		properties.length = properties.count = 0; /* remove existing properties */
 		rc = MQTTV5Deserialize_suback(&submsgid, &properties, 1, &subcount, &reasonCode, buf, buflen);
 
 		assert("rc should be 1", rc == 1, "rc was not 1 %d\n", rc);
@@ -335,7 +335,7 @@ int test1(struct Options options)
 		assert("reasonCode should be req_qos", reasonCode == req_qos, "reasonCode was %d\n", reasonCode);
 	}
 
-  properties.length = properties.count = 0; /* remove existing properties */
+	properties.length = properties.count = 0; /* remove existing properties */
 	one.identifier = PAYLOAD_FORMAT_INDICATOR;
 	one.value.byte = 3;
 	rc = MQTTProperties_add(&properties, &one);
@@ -351,7 +351,8 @@ int test1(struct Options options)
 	{
 		unsigned char* payload2;
 		MQTTString topicString2;
-		int payloadlen2 = 0, qos2 = -1;
+		int payloadlen2 = 0;
+		unsigned char qos2 = -1;
 		unsigned char retained2 = 0, dup2 = 0;
 		unsigned short msgid2 = 999;
 
@@ -381,7 +382,8 @@ int test1(struct Options options)
 	  {
 			unsigned char* payload2;
 			MQTTString topicString2;
-			int payloadlen2 = 0, qos2 = -1;
+			int payloadlen2 = 0;
+			unsigned char qos2 = -1;
 			unsigned char retained2 = 0, dup2 = 0;
 			unsigned short msgid2 = 999;
 			static int pubcount = 0;
@@ -404,7 +406,7 @@ int test1(struct Options options)
 			static int ackcount = 0;
 			unsigned short msgid2 = 999;
 			unsigned char packettype = 99, dup = 8;
-			int reasonCode;
+			unsigned char reasonCode;
 
 			ackcount++;
 			assert("should get only 1 puback", ackcount == 1, "ackcount %d\n", ackcount);
@@ -435,7 +437,8 @@ int test1(struct Options options)
 		{
 			unsigned char* payload2;
 			MQTTString topicString2;
-			int payloadlen2 = 0, qos2 = -1;
+			int payloadlen2 = 0;
+			unsigned char qos2 = -1;
 			unsigned char retained2 = 0, dup2 = 0;
 			static int pubcount = 0;
 
@@ -455,7 +458,7 @@ int test1(struct Options options)
 		{
 			unsigned char* payload2;
 			MQTTString topicString2;
-			int reasonCode = -1;
+			unsigned char reasonCode = -1;
 			unsigned char dup2 = 0;
 			unsigned char packettype = 99;
 			unsigned short msgid2 = 999;
@@ -478,7 +481,7 @@ int test1(struct Options options)
 		{
 			unsigned char* payload2;
 			MQTTString topicString2;
-			int reasonCode = -1;
+			unsigned char reasonCode = -1;
 			unsigned char dup2 = 0;
 			unsigned short msgid2 = 999;
 			unsigned char packettype = 99;
@@ -502,7 +505,7 @@ int test1(struct Options options)
 			static int pubcompcount = 0;
 			unsigned short msgid2 = 999;
 			unsigned char packettype = 99, dup = 8;
-			int reasonCode;
+			unsigned char reasonCode;
 
 			pubcompcount++;
 			assert("should get only 1 puback", pubcompcount == 1, "pubcompcount %d\n", pubcompcount);
@@ -528,9 +531,9 @@ int test1(struct Options options)
 	{
 		unsigned short unsubmsgid = 9999;
 		int unsubcount = 0;
-		int reasonCode = -1;
+		unsigned char reasonCode = -1;
 
-	  properties.length = properties.count = 0; /* remove existing properties */
+		properties.length = properties.count = 0; /* remove existing properties */
 		rc = MQTTV5Deserialize_unsuback(&unsubmsgid, &properties, 1, &unsubcount, &reasonCode, buf, buflen);
 
 		assert("rc should be 1", rc == 1, "rc was not 1 %d\n", rc);

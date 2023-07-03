@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 IBM Corp.
+ * Copyright (c) 2017, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,28 +19,28 @@
 
 #include "MQTTConnect.h"
 
-DLLExport int MQTTV5Serialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options,
+DLLExport int32_t MQTTV5Serialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options,
   MQTTProperties* connectProperties, MQTTProperties* willProperties);
 
-DLLExport int MQTTV5Deserialize_connect(MQTTProperties* willProperties,
-  MQTTProperties* connectProperties, MQTTPacket_connectData* data, unsigned char* buf, int len);
+DLLExport int32_t MQTTV5Deserialize_connect(MQTTProperties* willProperties,
+  MQTTProperties* connectProperties, MQTTPacket_connectData* data, unsigned char* buf, int32_t len);
 
-DLLExport int MQTTV5Serialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc,
+DLLExport int32_t MQTTV5Serialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc,
   unsigned char sessionPresent, MQTTProperties* connackProperties);
 
-DLLExport int MQTTV5Deserialize_connack(MQTTProperties* connackProperties,
-  unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
+DLLExport int32_t MQTTV5Deserialize_connack(MQTTProperties* connackProperties,
+  unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int32_t buflen);
 
-DLLExport int MQTTV5Serialize_disconnect(unsigned char* buf, int buflen, int reasonCode,
+DLLExport int32_t MQTTV5Serialize_disconnect(unsigned char* buf, int32_t buflen, unsigned char reasonCode,
   MQTTProperties* properties);
 
-DLLExport int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
-  unsigned char* buf, int buflen);
+DLLExport int32_t MQTTV5Deserialize_disconnect(MQTTProperties* properties, unsigned char* reasonCode,
+  unsigned char* buf, int32_t buflen);
 
-DLLExport int MQTTV5Serialize_auth(unsigned char* buf, int buflen, int reasonCode,
+DLLExport int32_t MQTTV5Serialize_auth(unsigned char* buf, int32_t buflen, unsigned char reasonCode,
   MQTTProperties* properties);
 
-DLLExport int MQTTV5Deserialize_auth(MQTTProperties* properties, int* reasonCode,
-  unsigned char* buf, int buflen);
+DLLExport int32_t MQTTV5Deserialize_auth(MQTTProperties* properties, unsigned char* reasonCode,
+  unsigned char* buf, int32_t buflen);
 
 #endif /* MQTTV5CONNECT_H_ */

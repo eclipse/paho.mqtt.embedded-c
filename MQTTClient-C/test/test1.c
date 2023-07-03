@@ -655,14 +655,15 @@ int test3(struct Options options)
 
   rc = MQTTSubscribeWithResults(&c, test_topic, subsqos, messageArrived, &suback);
   assert("Good rc from subscribe", rc == SUCCESS, "rc was %d", rc);
-  assert("Granted QoS rc from subscribe", suback.grantedQoS == QOS2,
+  printf("*** Granted QoS was %d\n", suback.grantedQoS);
+  assert("Granted QoS rc from subscribe", suback.grantedQoS == (unsigned char)QOS2,
          "rc was %d", suback.grantedQoS);
 
   check_subs_exist(&c, test_topic, 1);
 
   rc = MQTTSubscribeWithResults(&c, test_topic, subsqos, messageArrived2, &suback);
   assert("Good rc from subscribe", rc == SUCCESS, "rc was %d", rc);
-  assert("Granted QoS rc from subscribe", suback.grantedQoS == QOS2,
+  assert("Granted QoS rc from subscribe", suback.grantedQoS == (unsigned char)QOS2,
                   "rc was %d", suback.grantedQoS);
 
   check_subs_exist(&c, test_topic, 2);

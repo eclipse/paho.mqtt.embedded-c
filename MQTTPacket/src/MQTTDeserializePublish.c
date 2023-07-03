@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -39,23 +39,23 @@
   * @return error code.  1 is success
   */
 #if defined(MQTTV5)
-int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
-		unsigned char** payload, int* payloadlen, unsigned char* buf, int buflen)
+int32_t MQTTDeserialize_publish(unsigned char* dup, unsigned char* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
+		unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t buflen)
 {
 	return MQTTV5Deserialize_publish(dup, qos, retained, packetid, topicName, NULL, payload, payloadlen, buf, buflen);
 }
 
-int MQTTV5Deserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
-		MQTTProperties* properties, unsigned char** payload, int* payloadlen, unsigned char* buf, int buflen)
+int32_t MQTTV5Deserialize_publish(unsigned char* dup, unsigned char* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
+		MQTTProperties* properties, unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t buflen)
 #else
-int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
-		unsigned char** payload, int* payloadlen, unsigned char* buf, int buflen)
+int32_t MQTTDeserialize_publish(unsigned char* dup, unsigned char* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
+		unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t buflen)
 #endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
 	unsigned char* enddata = NULL;
-	int rc = 0;
+	int32_t rc = 0;
 	int mylen = 0;
 
 	FUNC_ENTRY;
@@ -86,7 +86,7 @@ int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retaine
 	rc = 1;
 exit:
 	FUNC_EXIT_RC(rc);
-	return rc;
+	return (int) rc;
 }
 
 
@@ -101,25 +101,25 @@ exit:
   * @return error code.  1 is success, 0 is failure
   */
 #if defined(MQTTV5)
-int MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
-	int* reasonCode, MQTTProperties* properties, unsigned char* buf, int buflen);
+int32_t MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
+	unsigned char* reasonCode, MQTTProperties* properties, unsigned char* buf, int32_t buflen);
 
-int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen)
+int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen)
 {
 	return MQTTV5Deserialize_ack(packettype, dup, packetid, NULL, NULL, buf, buflen);
 }
 
-int MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
-	int *reasonCode, MQTTProperties* properties, unsigned char* buf, int buflen)
+int32_t MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
+	unsigned char *reasonCode, MQTTProperties* properties, unsigned char* buf, int32_t buflen)
 #else
-int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen)
+int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen)
 #endif
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
 	unsigned char* enddata = NULL;
-	int rc = 0;
-	int mylen;
+	int32_t rc = 0;
+	int32_t mylen;
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
@@ -134,25 +134,25 @@ int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned 
 	*packetid = readInt(&curdata);
 
 #if defined(MQTTV5)
-  if (reasonCode)
+	if (reasonCode)
 	{
-	  if (enddata == curdata) /* no reason code, or properties */
-		  *reasonCode = 0;
+		if (enddata == curdata) /* no reason code, or properties */
+			*reasonCode = 0;
 		else
-	    *reasonCode = (unsigned char)readChar(&curdata);
+			*reasonCode = (unsigned char)readChar(&curdata);
   }
 
 	if (properties)
 	{
 		if (enddata == curdata)
-		  properties->length = properties->count = 0; /* signal that no properties were received */
+			properties->length = properties->count = 0; /* signal that no properties were received */
 		else if (!MQTTProperties_read(properties, &curdata, enddata))
-		  goto exit;
+			goto exit;
 	}
 #endif
 
 	rc = 1;
 exit:
 	FUNC_EXIT_RC(rc);
-	return rc;
+	return (int) rc;
 }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -28,14 +28,14 @@ int main(int argc, char *argv[])
 	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
 	char buf[200];
-	int buflen = sizeof(buf);
+	size_t buflen = sizeof(buf);
 	int mysock = 0;
 	MQTTString topicString = MQTTString_initializer;
 	char* payload = "mypayload";
-	int payloadlen = strlen(payload);
-	int len = 0;
-	char *host = "test.mosquitto.org";
-	int port = 1884;
+	size_t payloadlen = strlen(payload);
+	int32_t len = 0;
+	char *host = "mqtt.eclipseprojects.io";
+	int port = 1883;
 
 	if (argc > 1)
 		host = argv[1];

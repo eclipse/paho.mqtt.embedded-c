@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,8 @@
 
 #ifndef MQTTCONNECT_H_
 #define MQTTCONNECT_H_
+
+#include <stdint.h>
 
 enum connack_return_codes
 {
@@ -136,14 +138,14 @@ typedef union
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
-DLLExport int MQTTSerialize_connect(unsigned char* buf, int buflen, MQTTPacket_connectData* options);
-DLLExport int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len);
+DLLExport int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options);
+DLLExport int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len);
 
-DLLExport int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent);
-DLLExport int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int buflen);
+DLLExport int MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent);
+DLLExport int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned char* connack_rc, unsigned char* buf, int32_t buflen);
 
-DLLExport int MQTTSerialize_disconnect(unsigned char* buf, int buflen);
-DLLExport int MQTTDeserialize_disconnect(unsigned char* buf, int buflen);
-DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int buflen);
+DLLExport int MQTTSerialize_disconnect(unsigned char* buf, int32_t buflen);
+DLLExport int MQTTDeserialize_disconnect(unsigned char* buf, int32_t buflen);
+DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int32_t buflen);
 
 #endif /* MQTTCONNECT_H_ */

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -53,7 +53,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 
 
 #if defined(MQTTV5)
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
 {
 	return MQTTV5Deserialize_connect(NULL, NULL, data, buf, len);
 }
@@ -67,8 +67,8 @@ int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, in
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
-	MQTTPacket_connectData* data, unsigned char* buf, int len)
+int32_t MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
+	MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
 #else
 /**
   * Deserializes the supplied (wire) buffer into connect data structure
@@ -77,16 +77,16 @@ int MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* co
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int len)
+int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
 #endif
 {
 	MQTTHeader header = {0};
 	MQTTConnectFlags flags = {0};
 	unsigned char* curdata = buf;
 	unsigned char* enddata = &buf[len];
-	int rc = 0;
+	int32_t rc = 0;
 	MQTTString Protocol;
-	int mylen = 0;
+	int32_t mylen = 0;
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
@@ -161,22 +161,22 @@ exit:
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+int32_t MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent)
 {
 	return MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, NULL);
 }
 
-int MQTTV5Serialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent,
+int32_t MQTTV5Serialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent,
   MQTTProperties* connackProperties)
 #else
-int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_rc, unsigned char sessionPresent)
+int32_t MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent)
 #endif
 {
 	MQTTHeader header = {0};
-	int rc = 0;
+	int32_t rc = 0;
 	unsigned char *ptr = buf;
 	MQTTConnackFlags flags = {0};
-	int len = 0;
+	int32_t len = 0;
 
 	FUNC_ENTRY;
 
@@ -203,7 +203,7 @@ int MQTTSerialize_connack(unsigned char* buf, int buflen, unsigned char connack_
 	writeChar(&ptr, connack_rc);
 
 #if defined(MQTTV5)
-  if (connackProperties && MQTTProperties_write(&ptr, connackProperties) < 0)
+	if (connackProperties && MQTTProperties_write(&ptr, connackProperties) < 0)
 		goto exit;
 #endif
 
@@ -215,14 +215,14 @@ exit:
 
 
 #if defined(MQTTV5)
-int MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties, int* reasonCode,
-	    unsigned char* buf, int buflen)
+int32_t MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties, unsigned char* reasonCode,
+	    unsigned char* buf, int32_t buflen)
 {
 	MQTTHeader header = {0};
 	unsigned char* curdata = buf;
 	unsigned char* enddata = NULL;
-	int rc = 0;
-	int mylen;
+	int32_t rc = 0;
+	int32_t mylen;
 
 	FUNC_ENTRY;
 	header.byte = readChar(&curdata);
@@ -232,11 +232,11 @@ int MQTTV5Deserialize_zero(unsigned char packettype, MQTTProperties* properties,
 	curdata += (rc = MQTTPacket_decodeBuf(curdata, &mylen)); /* read remaining length */
 	enddata = curdata + mylen;
 
-  if (mylen > 0)
+	if (mylen > 0)
 	{
-	  *reasonCode = (unsigned char)readChar(&curdata);
+		*reasonCode = (unsigned char)readChar(&curdata);
 		if (mylen > 1 && !MQTTProperties_read(properties, &curdata, enddata))
-	    goto exit;
+			goto exit;
 	}
 
 	rc = 1;
@@ -255,25 +255,25 @@ exit:
   * @return error code.  1 is success, 0 is failure
   */
 #if defined(MQTTV5)
-int MQTTV5Deserialize_disconnect(MQTTProperties* properties, int* reasonCode,
-	    unsigned char* buf, int buflen)
+int32_t MQTTV5Deserialize_disconnect(MQTTProperties* properties, unsigned char* reasonCode,
+	    unsigned char* buf, int32_t buflen)
 {
 	return MQTTV5Deserialize_zero(DISCONNECT, properties, reasonCode, buf, buflen);
 }
 
-int MQTTV5Deserialize_auth(MQTTProperties* properties, int* reasonCode,
-	    unsigned char* buf, int buflen)
+int32_t MQTTV5Deserialize_auth(MQTTProperties* properties, unsigned char* reasonCode,
+	    unsigned char* buf, int32_t buflen)
 {
 	return MQTTV5Deserialize_zero(AUTH, properties, reasonCode, buf, buflen);
 }
 #endif
 
-int MQTTDeserialize_disconnect(unsigned char* buf, int buflen)
+int32_t MQTTDeserialize_disconnect(unsigned char* buf, int32_t buflen)
 {
 	unsigned char type = 0;
 	unsigned char dup = 0;
 	unsigned short packetid = 0;
-	int rc = 0;
+	int32_t rc = 0;
 
 	FUNC_ENTRY;
 	rc = MQTTDeserialize_ack(&type, &dup, &packetid, buf, buflen);
