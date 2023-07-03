@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
 
 #ifndef MQTTPACKET_H_
 #define MQTTPACKET_H_
+
+#include <stdint.h>
 
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 extern "C" {
@@ -77,7 +79,7 @@ typedef union
 
 typedef struct
 {
-	int len;
+	int32_t len;
 	char* data;
 } MQTTLenString;
 
@@ -97,16 +99,16 @@ int MQTTstrlen(MQTTString mqttstring);
 #include "MQTTUnsubscribe.h"
 #include "MQTTFormat.h"
 
-DLLExport int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char type, unsigned char dup, unsigned short packetid);
-DLLExport int MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int buflen);
+DLLExport int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char type, unsigned char dup, unsigned short packetid);
+DLLExport int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen);
 
-int MQTTPacket_VBIlen(int rem_len);
-int MQTTPacket_len(int rem_len);
+int32_t MQTTPacket_VBIlen(int32_t rem_len);
+int32_t MQTTPacket_len(int32_t rem_len);
 DLLExport int MQTTPacket_equals(MQTTString* a, char* b);
 
-DLLExport int MQTTPacket_encode(unsigned char* buf, int length);
-int MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int* value);
-int MQTTPacket_decodeBuf(unsigned char* buf, int* value);
+DLLExport int32_t MQTTPacket_encode(unsigned char* buf, int32_t length);
+int32_t MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int32_t* value);
+int32_t MQTTPacket_decodeBuf(unsigned char* buf, int32_t* value);
 
 int readInt(unsigned char** pptr);
 char readChar(unsigned char** pptr);
@@ -116,18 +118,18 @@ int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned cha
 void writeCString(unsigned char** pptr, const char* string);
 void writeMQTTString(unsigned char** pptr, MQTTString mqttstring);
 
-DLLExport int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int));
+DLLExport int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int));
 
 typedef struct {
 	int (*getfn)(void *, unsigned char*, int); /* must return -1 for error, 0 for call again, or the number of bytes read */
 	void *sck;	/* pointer to whatever the system may use to identify the transport */
 	int multiplier;
 	int rem_len;
-	int len;
+	int32_t len;
 	char state;
 }MQTTTransport;
 
-int MQTTPacket_readnb(unsigned char* buf, int buflen, MQTTTransport *trp);
+int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp);
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }

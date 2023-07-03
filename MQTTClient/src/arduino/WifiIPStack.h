@@ -19,15 +19,15 @@
 
 #include <WiFi.h>
 
-class WifiIPStack 
+class WifiIPStack
 {
-public:    
+public:
     WifiIPStack()
     {
         //WiFi.begin();              // Use DHCP
-        iface.setTimeout(1000);    // 1 second Timeout 
+        iface.setTimeout(1000);    // 1 second Timeout
     }
-    
+
     int connect(char* hostname, int port)
     {
         return iface.connect(hostname, port);

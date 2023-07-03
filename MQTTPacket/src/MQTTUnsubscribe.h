@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,20 +19,20 @@
 #define MQTTUNSUBSCRIBE_H_
 
 #if !defined(DLLImport)
-  #define DLLImport 
+  #define DLLImport
 #endif
 #if !defined(DLLExport)
   #define DLLExport
 #endif
 
-DLLExport int MQTTSerialize_unsubscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
+DLLExport int32_t MQTTSerialize_unsubscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
 		int count, MQTTString topicFilters[]);
 
-DLLExport int MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int max_count, int* count, MQTTString topicFilters[],
-		unsigned char* buf, int len);
+DLLExport int32_t MQTTDeserialize_unsubscribe(unsigned char* dup, unsigned short* packetid, int max_count, int* count, MQTTString topicFilters[],
+		unsigned char* buf, int32_t len);
 
-DLLExport int MQTTSerialize_unsuback(unsigned char* buf, int buflen, unsigned short packetid);
+DLLExport int32_t MQTTSerialize_unsuback(unsigned char* buf, int32_t buflen, unsigned short packetid);
 
-DLLExport int MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int len);
+DLLExport int32_t MQTTDeserialize_unsuback(unsigned short* packetid, unsigned char* buf, int32_t len);
 
 #endif /* MQTTUNSUBSCRIBE_H_ */

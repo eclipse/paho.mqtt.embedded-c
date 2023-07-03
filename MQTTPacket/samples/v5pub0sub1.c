@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 	int buflen = sizeof(buf);
 	int msgid = 1;
 	MQTTString topicString = MQTTString_initializer;
-	int req_qos = 0;
+	unsigned char req_qos = 0;
 	char* payload = "mypayload";
 	int payloadlen = strlen(payload);
 	int len = 0;
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
 	{
 		unsigned short submsgid;
 		int subcount;
-		int reason_code;
+		unsigned char reason_code;
 
 		rc = MQTTV5Deserialize_suback(&submsgid, &recv_properties, 1, &subcount, &reason_code, buf, buflen);
 		if (reason_code != 0)
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 
 			case PUBLISH:
 			{
-				int qos;
+				unsigned char qos;
 				unsigned char retained;
 				int payloadlen_in;
 				unsigned char* payload_in;
@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 
 			case DISCONNECT:
 			{
-				int reason_code;
+				unsigned char reason_code;
 				toStop = 1;
 				printf("disconnect received\n");
 				rc = MQTTV5Deserialize_disconnect(&recv_properties, &reason_code, buf, buflen);

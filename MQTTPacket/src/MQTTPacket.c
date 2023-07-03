@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -20,15 +20,22 @@
 
 #include <string.h>
 
+/* According to https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901011 */
+#define NUM_OF_DIGITS_1 (128)
+#define NUM_OF_DIGITS_2 (16384)
+#define NUM_OF_DIGITS_3 (2097152)
+
 /**
  * Encodes the message length according to the MQTT algorithm
+ *
+ * @note See also https://docs.oasis-open.org/mqtt/mqtt/v5.0/os/mqtt-v5.0-os.html#_Toc3901011
  * @param buf the buffer into which the encoded data is written
  * @param length the length to be encoded
  * @return the number of bytes written to buffer
  */
-int MQTTPacket_encode(unsigned char* buf, int length)
+int32_t MQTTPacket_encode(unsigned char* buf, int32_t length)
 {
-	int rc = 0;
+	int32_t rc = 0;
 
 	FUNC_ENTRY;
 	do
@@ -51,11 +58,11 @@ int MQTTPacket_encode(unsigned char* buf, int length)
  * @param value the decoded length returned
  * @return the number of bytes read from the socket
  */
-int MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int* value)
+int32_t MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int32_t* value)
 {
 	unsigned char c;
 	int multiplier = 1;
-	int len = 0;
+	int32_t len = 0;
 #define MAX_NO_OF_REMAINING_LENGTH_BYTES 4
 
 	FUNC_ENTRY;
@@ -81,15 +88,15 @@ exit:
 }
 
 
-int MQTTPacket_VBIlen(int rem_len)
+int32_t MQTTPacket_VBIlen(int32_t rem_len)
 {
-	int rc = 0;
+	int32_t rc = 0;
 
-	if (rem_len < 128)
+	if (rem_len < NUM_OF_DIGITS_1)
 		rc = 1;
-	else if (rem_len < 16384)
+	else if (rem_len < NUM_OF_DIGITS_2)
 		rc = 2;
-	else if (rem_len < 2097152)
+	else if (rem_len <  NUM_OF_DIGITS_3)
 		rc = 3;
 	else
 		rc = 4;
@@ -97,9 +104,9 @@ int MQTTPacket_VBIlen(int rem_len)
 }
 
 
-int MQTTPacket_len(int rem_len)
+int32_t MQTTPacket_len(int32_t rem_len)
 {
-  /* header byte + remaining length */
+	/* header byte + remaining length */
 	return rem_len + 1  + MQTTPacket_VBIlen(rem_len);
 }
 
@@ -115,7 +122,7 @@ int bufchar(unsigned char* c, int count)
 }
 
 
-int MQTTPacket_decodeBuf(unsigned char* buf, int* value)
+int32_t MQTTPacket_decodeBuf(unsigned char* buf, int32_t* value)
 {
 	bufptr = buf;
 	return MQTTPacket_decode(bufchar, value);
@@ -127,10 +134,10 @@ int MQTTPacket_decodeBuf(unsigned char* buf, int* value)
  * @param pptr pointer to the input buffer - incremented by the number of bytes used & returned
  * @return the integer value calculated
  */
-int readInt(unsigned char** pptr)
+int32_t readInt(unsigned char** pptr)
 {
 	unsigned char* ptr = *pptr;
-	int len = 256*(*ptr) + (*(ptr+1));
+	int32_t len = 256*(*ptr) + (*(ptr+1));
 	*pptr += 2;
 	return len;
 }
@@ -182,19 +189,11 @@ void writeInt(unsigned char** pptr, int anInt)
  */
 void writeCString(unsigned char** pptr, const char* string)
 {
-	int len = strlen(string);
+	int32_t len = strlen(string);
 	writeInt(pptr, len);
 	memcpy(*pptr, string, len);
 	*pptr += len;
 }
-
-
-int getLenStringLen(char* ptr)
-{
-	int len = 256*((unsigned char)(*ptr)) + (unsigned char)(*(ptr+1));
-	return len;
-}
-
 
 void writeMQTTString(unsigned char** pptr, MQTTString mqttstring)
 {
@@ -292,11 +291,11 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
  * @return integer MQTT packet type, or -1 on error
  * @note  the whole message must fit into the caller's buffer
  */
-int MQTTPacket_read(unsigned char* buf, int buflen, int (*getfn)(unsigned char*, int))
+int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int))
 {
 	int rc = -1;
 	MQTTHeader header = {0};
-	int len = 0;
+	int32_t len = 0;
 	int rem_len = 0;
 
 	/* 1. read the header byte.  This has the packet type in it */
@@ -364,7 +363,7 @@ exit:
  * @return integer MQTT packet type, 0 for call again, or -1 on error
  * @note  the whole message must fit into the caller's buffer
  */
-int MQTTPacket_readnb(unsigned char* buf, int buflen, MQTTTransport *trp)
+int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp)
 {
 	int rc = -1, frc;
 	MQTTHeader header = {0};

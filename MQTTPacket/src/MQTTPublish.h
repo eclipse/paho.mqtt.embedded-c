@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,20 +19,20 @@
 #define MQTTPUBLISH_H_
 
 #if !defined(DLLImport)
-  #define DLLImport 
+  #define DLLImport
 #endif
 #if !defined(DLLExport)
   #define DLLExport
 #endif
 
-DLLExport int MQTTSerialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
-		MQTTString topicName, unsigned char* payload, int payloadlen);
+DLLExport int32_t MQTTSerialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained, unsigned short packetid,
+		MQTTString topicName, unsigned char* payload, int32_t payloadlen);
 
-DLLExport int MQTTDeserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
-		unsigned char** payload, int* payloadlen, unsigned char* buf, int len);
+DLLExport int32_t MQTTDeserialize_publish(unsigned char* dup, unsigned char* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
+		unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t len);
 
-DLLExport int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid);
-DLLExport int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid);
-DLLExport int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid);
+DLLExport int32_t MQTTSerialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid);
+DLLExport int32_t MQTTSerialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid);
+DLLExport int32_t MQTTSerialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid);
 
 #endif /* MQTTPUBLISH_H_ */

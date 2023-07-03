@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 IBM Corp.
+ * Copyright (c) 2017, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -27,22 +27,22 @@
 struct subscribeOptions
 {
 	unsigned char noLocal; /* 0 or 1 */
-  unsigned char retainAsPublished; /* 0 or 1 */
+	unsigned char retainAsPublished; /* 0 or 1 */
 	unsigned char retainHandling; /* 0, 1 or 2 */
 };
 
-DLLExport int MQTTV5Serialize_subscribe(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-	MQTTProperties* properties, int count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[]);
+DLLExport int32_t MQTTV5Serialize_subscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
+	MQTTProperties* properties, int count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[]);
 
-DLLExport int MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-	int maxcount, int* count, MQTTString topicFilters[], int requestedQoSs[], struct subscribeOptions options[],
+DLLExport int32_t MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
+	int maxcount, int* count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[],
   unsigned char* buf, int len);
 
-DLLExport int MQTTV5Serialize_suback(unsigned char* buf, int buflen, unsigned short packetid,
-  MQTTProperties* properties, int count, int* reasonCodes);
+DLLExport int32_t MQTTV5Serialize_suback(unsigned char* buf, int32_t buflen, unsigned short packetid,
+  MQTTProperties* properties, int count, unsigned char* reasonCodes);
 
-DLLExport int MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
-  int maxcount, int* count, int* reasonCodes, unsigned char* buf, int len);
+DLLExport int32_t MQTTV5Deserialize_suback(unsigned short* packetid, MQTTProperties* properties,
+  int maxcount, int* count, unsigned char* reasonCodes, unsigned char* buf, int32_t len);
 
 
 #endif /* MQTTV5SUBSCRIBE_H_ */

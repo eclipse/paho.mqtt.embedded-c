@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -35,19 +35,19 @@
   * @return the length of buffer needed to contain the serialized version of the packet
   */
 #if defined(MQTTV5)
-int MQTTV5Serialize_publishLength(int qos, MQTTString topicName, int payloadlen, MQTTProperties* properties)
+int32_t MQTTV5Serialize_publishLength(int qos, MQTTString topicName, int payloadlen, MQTTProperties* properties)
 #else
-int MQTTSerialize_publishLength(int qos, MQTTString topicName, int payloadlen)
+int32_t MQTTSerialize_publishLength(int qos, MQTTString topicName, int payloadlen)
 #endif
 {
-	int len = 0;
+	int32_t len = 0;
 
 	len += 2 + MQTTstrlen(topicName) + payloadlen;
 	if (qos > 0)
 		len += 2; /* packetid */
 #if defined(MQTTV5)
-  if (properties)
-	  len += MQTTProperties_len(properties);
+	if (properties)
+		len += MQTTProperties_len(properties);
 #endif
 	return len;
 }
@@ -67,23 +67,23 @@ int MQTTSerialize_publishLength(int qos, MQTTString topicName, int payloadlen)
   * @return the length of the serialized data.  <= 0 indicates error
   */
 #if defined(MQTTV5)
-int MQTTSerialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
-		MQTTString topicName, unsigned char* payload, int payloadlen)
+int32_t MQTTSerialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained, unsigned short packetid,
+		MQTTString topicName, unsigned char* payload, int32_t payloadlen)
 {
   return MQTTV5Serialize_publish(buf, buflen, dup, qos, retained, packetid, topicName, NULL, payload, payloadlen);
 }
 
-int MQTTV5Serialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
+int32_t MQTTV5Serialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained, unsigned short packetid,
 		MQTTString topicName, MQTTProperties* properties, unsigned char* payload, int payloadlen)
 #else
-int MQTTSerialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained, unsigned short packetid,
-		MQTTString topicName, unsigned char* payload, int payloadlen)
+int32_t MQTTSerialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained, unsigned short packetid,
+		MQTTString topicName, unsigned char* payload, int32_t payloadlen)
 #endif
 {
 	unsigned char *ptr = buf;
 	MQTTHeader header = {0};
-	int rem_len = 0;
-	int rc = 0;
+	int32_t rem_len = 0;
+	int32_t rc = 0;
 
 	FUNC_ENTRY;
 #if defined(MQTTV5)
@@ -136,24 +136,24 @@ exit:
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTV5Serialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
-	int reasonCode, MQTTProperties* properties);
+int32_t MQTTV5Serialize_ack(unsigned char* buf, int32_t buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
+	unsigned char reasonCode, MQTTProperties* properties);
 
-int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
+int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
 {
 	return MQTTV5Serialize_ack(buf, buflen, packettype, dup, packetid, -1, NULL);
 }
 
-int MQTTV5Serialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
-	int reasonCode, MQTTProperties* properties)
+int32_t MQTTV5Serialize_ack(unsigned char* buf, int32_t buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
+	unsigned char reasonCode, MQTTProperties* properties)
 #else
-int MQTTSerialize_ack(unsigned char* buf, int buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
+int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
 #endif
 {
 	MQTTHeader header = {0};
-	int rc = 0;
+	int32_t rc = 0;
 	unsigned char *ptr = buf;
-	int len = 2;
+	int32_t len = 2;
 
 	FUNC_ENTRY;
 #if defined(MQTTV5)
@@ -201,15 +201,15 @@ exit:
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid)
 {
 	return MQTTV5Serialize_puback(buf, buflen, packetid, -1, NULL);
 }
 
-int MQTTV5Serialize_puback(unsigned char* buf, int buflen, unsigned short packetid,
-	  int reasonCode, MQTTProperties* properties)
+int32_t MQTTV5Serialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid,
+	  unsigned char reasonCode, MQTTProperties* properties)
 #else
-int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid)
 #endif
 {
 #if defined(MQTTV5)
@@ -228,15 +228,15 @@ int MQTTSerialize_puback(unsigned char* buf, int buflen, unsigned short packetid
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTSerialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_pubrec(unsigned char* buf, int32_t buflen, unsigned short packetid)
 {
 	return MQTTV5Serialize_pubrec(buf, buflen, packetid, -1, NULL);
 }
 
-int MQTTV5Serialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid,
-	  int reasonCode, MQTTProperties* properties)
+int32_t MQTTV5Serialize_pubrec(unsigned char* buf, int32_t buflen, unsigned short packetid,
+	  unsigned char reasonCode, MQTTProperties* properties)
 #else
-int MQTTSerialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_pubrec(unsigned char* buf, int32_t buflen, unsigned short packetid)
 #endif
 {
 #if defined(MQTTV5)
@@ -256,15 +256,15 @@ int MQTTSerialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid)
+int32_t MQTTSerialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid)
 {
 	return MQTTV5Serialize_pubrel(buf, buflen, dup, packetid, -1, NULL);
 }
 
-int MQTTV5Serialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-	  int reasonCode, MQTTProperties* properties)
+int32_t MQTTV5Serialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
+	  unsigned char reasonCode, MQTTProperties* properties)
 #else
-int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid)
+int32_t MQTTSerialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid)
 #endif
 {
 #if defined(MQTTV5)
@@ -283,15 +283,15 @@ int MQTTSerialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsi
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid)
 {
 	return MQTTV5Serialize_pubcomp(buf, buflen, packetid, -1, NULL);
 }
 
-int MQTTV5Serialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid,
-	  int reasonCode, MQTTProperties* properties)
+int32_t MQTTV5Serialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid,
+	  unsigned char reasonCode, MQTTProperties* properties)
 #else
-int MQTTSerialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid)
+int32_t MQTTSerialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid)
 #endif
 {
 #if defined(MQTTV5)

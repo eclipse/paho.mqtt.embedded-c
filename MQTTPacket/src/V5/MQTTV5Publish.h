@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2017 IBM Corp.
+ * Copyright (c) 2017, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -26,25 +26,25 @@
 
 #include "MQTTPublish.h"
 
-DLLExport int MQTTV5Serialize_publish(unsigned char* buf, int buflen, unsigned char dup, int qos, unsigned char retained,
-  unsigned short packetid, MQTTString topicName, MQTTProperties* props, unsigned char* payload, int payloadlen);
+DLLExport int32_t MQTTV5Serialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained,
+  unsigned short packetid, MQTTString topicName, MQTTProperties* props, unsigned char* payload, int32_t payloadlen);
 
-DLLExport int MQTTV5Deserialize_publish(unsigned char* dup, int* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
-		MQTTProperties* props, unsigned char** payload, int* payloadlen, unsigned char* buf, int len);
+DLLExport int32_t MQTTV5Deserialize_publish(unsigned char* dup, unsigned char* qos, unsigned char* retained, unsigned short* packetid, MQTTString* topicName,
+		MQTTProperties* props, unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t len);
 
-DLLExport int MQTTV5Serialize_puback(unsigned char* buf, int buflen, unsigned short packetid,
-  int reasonCode, MQTTProperties* properties);
+DLLExport int MQTTV5Serialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid,
+  unsigned char reasonCode, MQTTProperties* properties);
 
-DLLExport int MQTTV5Serialize_pubrec(unsigned char* buf, int buflen, unsigned short packetid,
-  int reasonCode, MQTTProperties* properties);
+DLLExport int32_t MQTTV5Serialize_pubrec(unsigned char* buf, int32_t buflen, unsigned short packetid,
+  unsigned char reasonCode, MQTTProperties* properties);
 
-DLLExport int MQTTV5Serialize_pubrel(unsigned char* buf, int buflen, unsigned char dup, unsigned short packetid,
-  int reasonCode, MQTTProperties* properties);
+DLLExport int32_t MQTTV5Serialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
+  unsigned char reasonCode, MQTTProperties* properties);
 
-DLLExport int MQTTV5Serialize_pubcomp(unsigned char* buf, int buflen, unsigned short packetid,
-  int reasonCode, MQTTProperties* properties);
+DLLExport int32_t MQTTV5Serialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid,
+  unsigned char reasonCode, MQTTProperties* properties);
 
-int MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
-	int *reasonCode, MQTTProperties* properties, unsigned char* buf, int buflen);
+int32_t MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
+	unsigned char *reasonCode, MQTTProperties* properties, unsigned char* buf, int32_t buflen);
 
 #endif /* MQTTV5PUBLISH_H_ */
