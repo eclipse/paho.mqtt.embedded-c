@@ -538,7 +538,7 @@ bool MQTT::Client<Network, Timer, a, b>::isTopicMatched(char* topicFilter, MQTTS
         curn++;
     };
 
-    return (curn == curn_end) && (*curf == '\0');
+    return (curn == curn_end) && (*curf == '\0' || *curf == '#');
 }
 
 
