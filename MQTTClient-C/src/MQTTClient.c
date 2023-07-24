@@ -15,7 +15,11 @@
  *   Ian Craggs - fix for #96 - check rem_len in readPacket
  *   Ian Craggs - add ability to set message handler separately #6
  *******************************************************************************/
+#if defined(MQTTV5)
+#include "V5/MQTTV5Client.h"
+#else
 #include "MQTTClient.h"
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -70,7 +74,11 @@ void MQTTClientInit(MQTTClient* c, Network* network, unsigned int command_timeou
     c->readbuf = readbuf;
     c->readbuf_size = readbuf_size;
     c->isconnected = 0;
+#if defined(MQTTV5)
+    c->cleanstart = 0;
+#else
     c->cleansession = 0;
+#endif
     c->ping_outstanding = 0;
     c->defaultMessageHandler = NULL;
 	  c->next_packetid = 1;
@@ -264,10 +272,14 @@ void MQTTCloseSession(MQTTClient* c)
 {
     c->ping_outstanding = 0;
     c->isconnected = 0;
+
+#if defined(MQTTV5)
+    //TODO: Session cleanup happens only if Clean Start = 1 and Session Expiry is 0.
+#else
     if (c->cleansession)
         MQTTCleanSession(c);
+#endif
 }
-
 
 int cycle(MQTTClient* c, Timer* timer)
 {
@@ -337,6 +349,11 @@ int cycle(MQTTClient* c, Timer* timer)
         case PINGRESP:
             c->ping_outstanding = 0;
             break;
+#if defined(MQTTV5)
+        case DISCONNECT:
+            // TODO: implement DISCONNECTv5 and callback to expose reason code and properties.
+            break;
+#endif
     }
 
     if (keepalive(c) != MQTTCLIENT_SUCCESS) {
@@ -445,7 +462,11 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
         options = &default_options; /* set default options if none were supplied */
 
     c->keepAliveInterval = options->keepAliveInterval;
+#if defined(MQTTV5)
+    c->cleanstart = options->cleanstart;
+#else
     c->cleansession = options->cleansession;
+#endif
     TimerCountdown(&c->last_received, c->keepAliveInterval);
     if ((len = MQTTSerialize_connect(c->buf, c->buf_size, options)) <= 0)
         goto exit;
@@ -559,6 +580,10 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum MQTTQo
         int count = 0;
         unsigned short mypacketid;
         unsigned char grantedQoS = MQTTQOS_0;
+
+#if defined(MQTTV5)
+// TODO: V5 deserialization and QoS adapter.
+#else
         int retval = MQTTDeserialize_suback(&mypacketid, 1, &count, &grantedQoS, c->readbuf, c->readbuf_size);
         data->grantedQoS = grantedQoS;
         if (retval == 1)
@@ -566,6 +591,7 @@ int MQTTSubscribeWithResults(MQTTClient* c, const char* topicFilter, enum MQTTQo
             if (data->grantedQoS != 0x80)
                 rc = MQTTSetMessageHandler(c, topicFilter, messageHandler);
         }
+#endif /* MQTTV5 */
     }
     else
         rc = MQTTCLIENT_FAILURE;

@@ -118,7 +118,12 @@ int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connect
 	writeChar(&ptr, (char)options->MQTTVersion);
 
 	flags.all = 0;
+#if defined(MQTTV5)
+	flags.bits.cleansession = options->cleanstart;
+#else
 	flags.bits.cleansession = options->cleansession;
+#endif
+
 	flags.bits.will = (options->willFlag) ? 1 : 0;
 	if (flags.bits.will)
 	{

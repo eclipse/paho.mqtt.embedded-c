@@ -24,6 +24,13 @@
   #define DLLExport
 #endif
 
+enum MQTTRetainedHandling 
+{
+  MQTTRETAINED_SEND_ON_SUBSCRIBE = 0,
+  MQTTRETAINED_SEND_IF_NO_SUBSCRIPTION = 1,
+  MQTTRETAINED_DO_NOT_SEND = 2,
+};
+
 typedef struct MQTTSubscribe_options
 {
 	unsigned char noLocal; /* 0 or 1 */

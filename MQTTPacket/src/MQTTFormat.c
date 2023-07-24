@@ -41,7 +41,13 @@ int MQTTStringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectData
 	strindex = snprintf(strbuf, strbuflen,
 			"CONNECT MQTT version %d, client id %.*s, clean session %d, keep alive %d",
 			(int)data->MQTTVersion, (int) data->clientID.lenstring.len, data->clientID.lenstring.data,
-			(int)data->cleansession, data->keepAliveInterval);
+#if defined(MQTTV5)
+			(int)data->cleanstart, 
+#else
+			(int)data->cleansession, 
+#endif
+			data->keepAliveInterval);
+
 	if (data->willFlag)
 		strindex += snprintf(&strbuf[strindex], strbuflen - strindex,
 				", will QoS %d, will retain %d, will topic %.*s, will message %.*s",
