@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	len += MQTTV5Serialize_publish((unsigned char *)(buf + len), buflen - len, 0, 1, 0, 123, topicString, &pub_properties, (unsigned char *)payload, payloadlen);
 
 	MQTTProperties disconnect_properties = MQTTProperties_initializer;
-	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, NORMAL_DISCONNECTION, &disconnect_properties);
+	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, MQTTV5_NORMAL_DISCONNECTION, &disconnect_properties);
 
 	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)

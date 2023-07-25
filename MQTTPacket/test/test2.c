@@ -800,7 +800,7 @@ int test7(struct Options options)
 	one.identifier = SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&disconnectProperties, &one);
-	reasonCode = TOPIC_ALIAS_INVALID; // (148) test signed char to unsigned char conversion.
+	reasonCode = MQTTV5_TOPIC_ALIAS_INVALID; // (148) test signed char to unsigned char conversion.
 
 	rc = MQTTV5Serialize_disconnect(buf, buflen, reasonCode, &disconnectProperties);
 	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);
@@ -834,7 +834,7 @@ int test8(struct Options options)
 	int count = TOPIC_COUNT;
 	unsigned char reasonCodes[TOPIC_COUNT] = {
 		2, 
-		QOS_NOT_SUPPORTED // (155) test signed char to unsigned char conversion.
+		MQTTV5_QOS_NOT_SUPPORTED // (155) test signed char to unsigned char conversion.
 	};
 
 	unsigned short msgid2 = 2223;
@@ -893,7 +893,7 @@ int test9(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	unsigned char reasonCode = BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
+	unsigned char reasonCode = MQTTV5_BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
 	unsigned char reasonCode2 = 44;
 
 	MQTTProperties properties = MQTTProperties_initializer;

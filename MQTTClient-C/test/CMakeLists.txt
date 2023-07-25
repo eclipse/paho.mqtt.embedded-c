@@ -18,3 +18,7 @@ ADD_TEST(
 	NAME testc1
 	COMMAND "testc1" "--host" ${MQTT_TEST_BROKER_HOST}
 )
+
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(testc1 PRIVATE -Wno-deprecated-declarations)

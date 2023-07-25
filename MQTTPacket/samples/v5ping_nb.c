@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 	printf("disconnecting\n");
 
 	MQTTProperties disconn_properties = MQTTProperties_initializer;
-	len = MQTTV5Serialize_disconnect(buf, buflen, NORMAL_DISCONNECTION, &disconn_properties);
+	len = MQTTV5Serialize_disconnect(buf, buflen, MQTTV5_NORMAL_DISCONNECTION, &disconn_properties);
 
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
