@@ -238,11 +238,8 @@ int keepalive(MQTTClient* c)
             int32_t len = MQTTSerialize_pingreq(c->buf, c->buf_size);
             if (len > 0 && (rc = sendPacket(c, len, &timer)) == SUCCESS)
             {
-                // send the ping packet
-                // Expect the PINGRESP within 2 seconds of the PINGREQ
-                // being sent
-                TimerCountdownMS(&c->pingresp_timer, 2000 );
                 c->ping_outstanding = 1;
+                TimerCountdownMS(&c->pingresp_timer, c->keepAliveInterval);
             }
         }
     }
