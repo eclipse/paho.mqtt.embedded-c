@@ -51,10 +51,17 @@
 #define MAX_MESSAGE_HANDLERS 5 /* redefinable - how many subscriptions do you want? */
 #endif
 
-enum QoS { QOS0, QOS1, QOS2, SUBFAIL=0x80 };
+enum MQTTQoS { 
+  MQTTQOS_0, 
+  MQTTQOS_1, 
+  MQTTQOS_2, 
+  MQTTQOS_SUBFAIL=0x80 };
 
 /* all failure return codes must be negative */
-enum returnCode { BUFFER_OVERFLOW = -2, FAILURE = -1, SUCCESS = 0 };
+enum MQTTClientReturnCode { 
+  MQTTCLIENT_BUFFER_OVERFLOW = -2, 
+  MQTTCLIENT_FAILURE = -1, 
+  MQTTCLIENT_SUCCESS = 0 };
 
 /* The Platform specific header must define the Network and Timer structures and functions
  * which operate on them.
@@ -75,7 +82,7 @@ extern int TimerLeftMS(Timer*);
 
 typedef struct MQTTMessage
 {
-    enum QoS qos;
+    enum MQTTQoS qos;
     unsigned char retained;
     unsigned char dup;
     unsigned short id;
@@ -97,7 +104,7 @@ typedef struct MQTTConnackData
 
 typedef struct MQTTSubackData
 {
-    enum QoS grantedQoS;
+    enum MQTTQoS grantedQoS;
 } MQTTSubackData;
 
 typedef void (*messageHandler)(MessageData*);
@@ -181,7 +188,7 @@ DLLExport int MQTTSetMessageHandler(MQTTClient* c, const char* topicFilter, mess
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler);
+DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum MQTTQoS, messageHandler);
 
 /** MQTT Subscribe - send an MQTT subscribe packet and wait for suback before returning.
  *  @param client - the client object to use
@@ -190,7 +197,7 @@ DLLExport int MQTTSubscribe(MQTTClient* client, const char* topicFilter, enum Qo
  *  @param data - suback granted QoS returned
  *  @return success code
  */
-DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum QoS, messageHandler, MQTTSubackData* data);
+DLLExport int MQTTSubscribeWithResults(MQTTClient* client, const char* topicFilter, enum MQTTQoS, messageHandler, MQTTSubackData* data);
 
 /** MQTT Subscribe - send an MQTT unsubscribe packet and wait for unsuback before returning.
  *  @param client - the client object to use

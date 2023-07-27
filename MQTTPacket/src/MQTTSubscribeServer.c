@@ -47,7 +47,7 @@ int32_t MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid,
 }
 
 int32_t MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-		int maxcount, int* count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[],
+		int maxcount, int* count, MQTTString topicFilters[], unsigned char requestedQoSs[], MQTTSubscribe_options options[],
 	  unsigned char* buf, int32_t buflen)
 #else
 int32_t MQTTDeserialize_subscribe(unsigned char* dup, unsigned short* packetid, int maxcount, int* count, MQTTString topicFilters[],
