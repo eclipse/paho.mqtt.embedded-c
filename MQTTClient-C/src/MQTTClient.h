@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2017 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -165,7 +165,7 @@ DLLExport int MQTTConnect(MQTTClient* client, MQTTPacket_connectData* options);
  *  @param message - the message to send
  *  @return success code
  */
-DLLExport int MQTTPublish(MQTTClient* client, const char*, MQTTMessage*);
+DLLExport int MQTTPublish(MQTTClient* client, const char* topicName, MQTTMessage*);
 
 /** MQTT SetMessageHandler - set or remove a per topic message handler
  *  @param client - the client object to use
