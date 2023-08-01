@@ -71,7 +71,7 @@ struct MessageData
 
 struct connackData
 {
-    int rc;
+    unsigned char rc;
     bool sessionPresent;
 };
 
@@ -773,7 +773,7 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::connect(MQTTPacket_co
         data.rc = 0;
         data.sessionPresent = false;
         if (MQTTDeserialize_connack((unsigned char*)&data.sessionPresent,
-                            (unsigned char*)&data.rc, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
+                            &data.rc, readbuf, MAX_MQTT_PACKET_SIZE) == 1)
             rc = data.rc;
         else
             rc = FAILURE;
