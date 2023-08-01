@@ -1,3 +1,17 @@
+/*******************************************************************************
+ * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
+ *
+ * All rights reserved. This program and the accompanying materials
+ * are made available under the terms of the Eclipse Public License v1.0
+ * and Eclipse Distribution License v1.0 which accompany this distribution.
+ *
+ * The Eclipse Public License is available at
+ *    http://www.eclipse.org/legal/epl-v10.html
+ * and the Eclipse Distribution License is available at
+ *   http://www.eclipse.org/org/documents/edl-v10.php.
+ *
+ *******************************************************************************/
+
 #define MQTTCLIENT_QOS2 1
 
 #include <memory.h>
@@ -61,7 +75,7 @@ int main(int argc, char* argv[])
 
     // QoS 0
     char buf[100];
-    sprintf(buf, "Hello World!  QoS 0 message from app version %f", version);
+    snprintf(buf, sizeof(buf), "Hello World!  QoS 0 message from app version %f", version);
     message.qos = MQTT::QOS0;
     message.retained = false;
     message.dup = false;
@@ -75,7 +89,7 @@ int main(int argc, char* argv[])
         
     // QoS 1
 	printf("Now QoS 1\n");
-    sprintf(buf, "Hello World!  QoS 1 message from app version %f", version);
+    snprintf(buf, sizeof(buf), "Hello World!  QoS 1 message from app version %f", version);
     message.qos = MQTT::QOS1;
     message.payloadlen = strlen(buf)+1;
     rc = client.publish(topic, message);
@@ -85,7 +99,7 @@ int main(int argc, char* argv[])
         client.yield(100);
         
     // QoS 2
-    sprintf(buf, "Hello World!  QoS 2 message from app version %f", version);
+    snprintf(buf, sizeof(buf), "Hello World!  QoS 2 message from app version %f", version);
     message.qos = MQTT::QOS2;
     message.payloadlen = strlen(buf)+1;
     rc = client.publish(topic, message);
