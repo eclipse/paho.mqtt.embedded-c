@@ -1021,7 +1021,7 @@ exit:
 int main(int argc, char** argv)
 {
 	int rc = 0;
- 	int (*tests[])() = {NULL, test1, test2, test3};
+ 	int (*tests[])(struct Options) = {NULL, test1, test2, test3};
 	int i;
 
 	xml = fopen("TEST-test1.xml", "w");
