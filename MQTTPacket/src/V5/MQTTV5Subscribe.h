@@ -24,18 +24,18 @@
   #define DLLExport
 #endif
 
-struct subscribeOptions
+typedef struct MQTTSubscribe_options
 {
 	unsigned char noLocal; /* 0 or 1 */
 	unsigned char retainAsPublished; /* 0 or 1 */
 	unsigned char retainHandling; /* 0, 1 or 2 */
-};
+} MQTTSubscribe_options;
 
 DLLExport int32_t MQTTV5Serialize_subscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
-	MQTTProperties* properties, int count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[]);
+	MQTTProperties* properties, int count, MQTTString topicFilters[], unsigned char requestedQoSs[], MQTTSubscribe_options options[]);
 
 DLLExport int32_t MQTTV5Deserialize_subscribe(unsigned char* dup, unsigned short* packetid, MQTTProperties* properties,
-	int maxcount, int* count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[],
+	int maxcount, int* count, MQTTString topicFilters[], unsigned char requestedQoSs[], MQTTSubscribe_options options[],
   unsigned char* buf, int len);
 
 DLLExport int32_t MQTTV5Serialize_suback(unsigned char* buf, int32_t buflen, unsigned short packetid,

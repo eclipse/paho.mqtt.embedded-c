@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2016 IBM Corp.
+ * Copyright (c) 2012, 2023 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -82,7 +82,7 @@ struct opts_struct
 	char* clientid;
 	int nodelimiter;
 	char* delimiter;
-	enum QoS qos;
+	enum MQTTQoS qos;
 	char* username;
 	char* password;
 	char* host;
@@ -90,7 +90,7 @@ struct opts_struct
 	int showtopics;
 } opts =
 {
-	(char*)"stdout-subscriber", 0, (char*)"\n", QOS2, NULL, NULL, (char*)"localhost", 1883, 0
+	(char*)"stdout-subscriber", 0, (char*)"\n", MQTTQOS_2, NULL, NULL, (char*)"localhost", 1883, 0
 };
 
 
@@ -105,11 +105,11 @@ void getopts(int argc, char** argv)
 			if (++count < argc)
 			{
 				if (strcmp(argv[count], "0") == 0)
-					opts.qos = QOS0;
+					opts.qos = MQTTQOS_0;
 				else if (strcmp(argv[count], "1") == 0)
-					opts.qos = QOS1;
+					opts.qos = MQTTQOS_1;
 				else if (strcmp(argv[count], "2") == 0)
-					opts.qos = QOS2;
+					opts.qos = MQTTQOS_2;
 				else
 					usage();
 			}

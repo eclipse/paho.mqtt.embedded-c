@@ -70,7 +70,7 @@ int32_t MQTTSerialize_subscribe(unsigned char* buf, int32_t buflen, unsigned cha
 }
 
 int32_t MQTTV5Serialize_subscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid,
-		MQTTProperties* properties, int count, MQTTString topicFilters[], unsigned char requestedQoSs[], struct subscribeOptions options[])
+		MQTTProperties* properties, int count, MQTTString topicFilters[], unsigned char requestedQoSs[], MQTTSubscribe_options options[])
 #else
 int32_t MQTTSerialize_subscribe(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid, int count,
 		MQTTString topicFilters[], unsigned char requestedQoSs[])

@@ -375,7 +375,7 @@ int test1(struct Options options)
 	connectProperties.array = connect_props;
 
 	MQTTProperty one;
-	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&connectProperties, &one);
 
@@ -455,7 +455,7 @@ int test2(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&properties, &one);
 
@@ -518,7 +518,7 @@ int test3(struct Options options)
 	MQTTString topicStrings2[TOPIC_COUNT] = { MQTTString_initializer, MQTTString_initializer };
 	unsigned char req_qoss2[TOPIC_COUNT] = {0, 0};
 
-	struct subscribeOptions subscribeOptions[2] = {{1, 1, 1}, {1, 0, 2}},
+	MQTTSubscribe_options subscribeOptions[2] = {{1, 1, 1}, {1, 0, 2}},
 	    outSubscribeOptions[2] = {{0, 0, 0}, {0, 0, 0}};
 
 	MQTTProperties properties = MQTTProperties_initializer;
@@ -532,7 +532,7 @@ int test3(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
@@ -616,7 +616,7 @@ int test4(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
@@ -681,7 +681,7 @@ int test5(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
@@ -750,7 +750,7 @@ int test6(struct Options options)
 	outConnackProperties.array = out_connack_props;
 
   MQTTProperty one;
-	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&connackProperties, &one);
 
@@ -797,10 +797,10 @@ int test7(struct Options options)
 	outdisconnectProperties.max_count = 10;
 	outdisconnectProperties.array = out_disconnect_props;
 
-	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&disconnectProperties, &one);
-	reasonCode = TOPIC_ALIAS_INVALID; // (148) test signed char to unsigned char conversion.
+	reasonCode = MQTTREASONCODE_TOPIC_ALIAS_INVALID; // (148) test signed char to unsigned char conversion.
 
 	rc = MQTTV5Serialize_disconnect(buf, buflen, reasonCode, &disconnectProperties);
 	assert("good rc from serialize disconnect", rc > 0, "rc was %d\n", rc);
@@ -834,7 +834,7 @@ int test8(struct Options options)
 	int count = TOPIC_COUNT;
 	unsigned char reasonCodes[TOPIC_COUNT] = {
 		2, 
-		QOS_NOT_SUPPORTED // (155) test signed char to unsigned char conversion.
+		MQTTREASONCODE_QOS_NOT_SUPPORTED // (155) test signed char to unsigned char conversion.
 	};
 
 	unsigned short msgid2 = 2223;
@@ -852,7 +852,7 @@ int test8(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
@@ -893,7 +893,7 @@ int test9(struct Options options)
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);
-	unsigned char reasonCode = BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
+	unsigned char reasonCode = MQTTREASONCODE_BAD_AUTHENTICATION_METHOD; // (140) test signed char to unsigned char conversion.
 	unsigned char reasonCode2 = 44;
 
 	MQTTProperties properties = MQTTProperties_initializer;
@@ -907,7 +907,7 @@ int test9(struct Options options)
 	outProperties.array = out_props;
 
 	MQTTProperty one;
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";

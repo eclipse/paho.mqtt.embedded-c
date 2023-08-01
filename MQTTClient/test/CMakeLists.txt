@@ -14,7 +14,12 @@ target_compile_definitions(testcpp1 PRIVATE MQTTCLIENT_QOS1=1 MQTTCLIENT_QOS2=1)
 target_include_directories(testcpp1 PRIVATE "../src" "../src/linux")
 target_link_libraries(testcpp1 MQTTPacketClient  MQTTPacketServer)
 
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(testcpp1 PRIVATE -Wno-deprecated-declarations)
+
 ADD_TEST(
 	NAME testcpp1
 	COMMAND "testcpp1" "--host" ${MQTT_TEST_BROKER_HOST}
 )
+

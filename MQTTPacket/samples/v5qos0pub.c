@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	pub_properties.max_count = 1;
 
 	MQTTProperty v5property;
-	v5property.identifier = USER_PROPERTY;
+	v5property.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	v5property.value.string_pair.key.data = "user key";
 	v5property.value.string_pair.key.len = strlen(v5property.value.string_pair.key.data);
 	v5property.value.string_pair.val.data = "user value";
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	len += MQTTV5Serialize_publish((unsigned char *)(buf + len), buflen - len, 0, 1, 0, 123, topicString, &pub_properties, (unsigned char *)payload, payloadlen);
 
 	MQTTProperties disconnect_properties = MQTTProperties_initializer;
-	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, NORMAL_DISCONNECTION, &disconnect_properties);
+	len += MQTTV5Serialize_disconnect((unsigned char *)(buf + len), buflen - len, MQTTREASONCODE_NORMAL_DISCONNECTION, &disconnect_properties);
 
 	rc = transport_sendPacketBuffer(mysock, (unsigned char*)buf, len);
 	if (rc == len)

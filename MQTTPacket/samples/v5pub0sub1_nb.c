@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 	printf("MQTTv5 connected: (%d properties)\n", recv_properties.count);
 	for(int i = 0; i < recv_properties.count; i++)
 	{
-		if (recv_properties.array[i].identifier == TOPIC_ALIAS_MAXIMUM)
+		if (recv_properties.array[i].identifier == MQTTPROPERTY_CODE_TOPIC_ALIAS_MAXIMUM)
 		{
 			server_topic_alias_max = recv_properties.array[i].value.integer2;
 		}
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 	/* subscribe */
 	MQTTProperties sub_properties = MQTTProperties_initializer;
-	struct subscribeOptions sub_options = { 0 };
+	MQTTSubscribe_options sub_options = { 0 };
 	topicString.cstring = "substopic";
 	len = MQTTV5Serialize_subscribe(buf, buflen, 0, msgid, &sub_properties, 1, &topicString, &req_qos, &sub_options);
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 	printf("publishing reading\n");
 		
 	MQTTProperty property_topic_alias = {
-		.identifier = TOPIC_ALIAS,
+		.identifier = MQTTPROPERTY_CODE_TOPIC_ALIAS,
 		.value.integer2 = 1
 	};
 
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 	char* property_key = "user key";
 	char* property_value = "user value";
 	MQTTProperty user_property = {
-		.identifier = USER_PROPERTY,
+		.identifier = MQTTPROPERTY_CODE_USER_PROPERTY,
 		.value.string_pair.key.data = property_key,
 		.value.string_pair.key.len = strlen(property_key),
 		.value.string_pair.val.data = property_value,

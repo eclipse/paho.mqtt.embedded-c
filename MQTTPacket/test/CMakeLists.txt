@@ -19,6 +19,10 @@ ADD_EXECUTABLE(
 	test1.c
 )
 
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test1 PRIVATE -Wno-deprecated-declarations)
+
 TARGET_LINK_LIBRARIES(
 	test1
 	paho-embed-mqtt3c
@@ -38,6 +42,10 @@ ADD_EXECUTABLE(
 	test15
 	test1.c
 )
+
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test15 PRIVATE -Wno-deprecated-declarations)
 
 TARGET_LINK_LIBRARIES(
 	test15
@@ -64,6 +72,10 @@ TARGET_LINK_LIBRARIES(
 	paho-embed-mqtt5c
 )
 
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test2 PRIVATE -Wno-deprecated-declarations)
+
 ADD_TEST(
 	NAME test2
 	COMMAND "test2" "--connection" ${MQTT_TEST_BROKER}
@@ -79,6 +91,10 @@ ADD_EXECUTABLE(
 	test3
 	test3.c
 )
+
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test3 PRIVATE -Wno-deprecated-declarations)
 
 TARGET_LINK_LIBRARIES(
 	test3

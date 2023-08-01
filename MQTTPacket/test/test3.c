@@ -274,12 +274,12 @@ int test1(struct Options options)
 	properties.max_count = 10;
 	properties.array = props;
 
-	one.identifier = SESSION_EXPIRY_INTERVAL;
+	one.identifier = MQTTPROPERTY_CODE_SESSION_EXPIRY_INTERVAL;
 	one.value.integer4 = 45;
 	rc = MQTTProperties_add(&properties, &one);
 	assert("add properties rc should be 0",  rc == 0, "rc was different %d\n", rc);
 
-	one.identifier = USER_PROPERTY;
+	one.identifier = MQTTPROPERTY_CODE_USER_PROPERTY;
 	one.value.string_pair.key.data = "user property name";
 	one.value.string_pair.key.len = strlen(one.value.string_pair.key.data);
 	one.value.string_pair.val.data = "user property value";
@@ -308,7 +308,7 @@ int test1(struct Options options)
 	/* subscribe */
 	properties.length = properties.count = 0; /* remove existing properties */
 	topicString.cstring = test_topic;
-	struct subscribeOptions opts = {0, 0, 0};
+	MQTTSubscribe_options opts = {0, 0, 0};
 	opts.noLocal = 0;
 	opts.retainAsPublished = 1;
 	opts.retainHandling = 2;
@@ -336,7 +336,7 @@ int test1(struct Options options)
 	}
 
 	properties.length = properties.count = 0; /* remove existing properties */
-	one.identifier = PAYLOAD_FORMAT_INDICATOR;
+	one.identifier = MQTTPROPERTY_CODE_PAYLOAD_FORMAT_INDICATOR;
 	one.value.byte = 3;
 	rc = MQTTProperties_add(&properties, &one);
 
