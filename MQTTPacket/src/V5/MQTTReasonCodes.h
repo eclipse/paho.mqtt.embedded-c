@@ -14,6 +14,10 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+/**
+ * @brief MQTTv5 Reason Codes
+ * 
+ */
 enum MQTTReasonCodes {
   MQTTREASONCODE_SUCCESS = 0,
   MQTTREASONCODE_NORMAL_DISCONNECTION = 0,

@@ -476,12 +476,28 @@ int MQTTConnectWithResults(MQTTClient* c, MQTTPacket_connectData* options, MQTTC
     // this will be a blocking call, wait for the connack
     if (waitfor(c, CONNACK, &connect_timer) == CONNACK)
     {
+#if defined(MQTTV5)
+        data->reasonCode = MQTTREASONCODE_SUCCESS;
+#else
         data->rc = 0;
+#endif
+
         data->sessionPresent = 0;
-        if (MQTTDeserialize_connack(&data->sessionPresent, &data->rc, c->readbuf, c->readbuf_size) == 1)
+
+#if defined(MQTTV5)
+        if (MQTTV5Deserialize_connack(c->recvProperties, &data->sessionPresent, (unsigned char*)(&data->reasonCode), 
+                c->readbuf, c->readbuf_size) == 1) {
+            rc = (int)data->reasonCode;
+        }
+#else
+        if (MQTTDeserialize_connack(&data->sessionPresent, &data->rc, c->readbuf, c->readbuf_size) == 1) {
             rc = data->rc;
+        }
+#endif
         else
+        {
             rc = MQTTCLIENT_FAILURE;
+        }
     }
     else
         rc = MQTTCLIENT_FAILURE;
