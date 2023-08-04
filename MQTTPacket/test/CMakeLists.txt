@@ -47,6 +47,9 @@ ADD_EXECUTABLE(
 #  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
 target_compile_options(test15 PRIVATE -Wno-deprecated-declarations)
 
+# To allow existing MQTTv3 applications using the MQTTv5 library, MQTTV5 structures must be used.
+target_compile_definitions(test15 PRIVATE MQTTV5)
+
 TARGET_LINK_LIBRARIES(
 	test15
 	paho-embed-mqtt5c
