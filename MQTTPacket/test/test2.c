@@ -400,11 +400,13 @@ int test1(struct Options options)
 	data.will.qos = 1;
 	data.will.retained = 0;
 	data.will.topicName.cstring = "will topic";
+	data.will.properties = &willProperties;
 
-	rc = MQTTV5Serialize_connect(buf, buflen, &data, &connectProperties, &willProperties);
+	rc = MQTTV5Serialize_connect(buf, buflen, &data, &connectProperties);
 	assert("good rc from serialize connect", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTV5Deserialize_connect(&outWillProperties, &outConnectProperties, &data_after, buf, buflen);
+	data_after.will.properties = &outWillProperties;
+	rc = MQTTV5Deserialize_connect(&outConnectProperties, &data_after, buf, buflen);
 	assert("good rc from deserialize connect", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */

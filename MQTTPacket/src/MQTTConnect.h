@@ -21,6 +21,9 @@
 #define MQTTCONNECT_H_
 
 #include <stdint.h>
+#if defined(MQTTV5)
+#include "V5/MQTTProperties.h"
+#endif
 
 enum MQTTConnackReturnCodes
 {
@@ -93,11 +96,19 @@ typedef struct
       * MQTTAsync_message.qos and @ref qos).
       */
 	char qos;
+#if defined(MQTTV5)
+	/**
+	  * LWT properties.
+	  */
+	MQTTProperties* properties;
+#endif
 } MQTTPacket_willOptions;
 
-
+#if defined(MQTTV5)
+#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0, NULL }
+#else
 #define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0 }
-
+#endif
 
 typedef struct
 {

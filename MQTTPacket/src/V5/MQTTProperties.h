@@ -14,6 +14,8 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+#ifndef MQTTPROPERTIES_H_
+#define MQTTPROPERTIES_H_
 
 enum MQTTPropertyNames {
   MQTTPROPERTY_CODE_PAYLOAD_FORMAT_INDICATOR = 1,
@@ -102,3 +104,5 @@ DLLExport int MQTTProperties_read(MQTTProperties* properties, unsigned char** pp
  * @return the `PropertyTypes` type of the property
  */
 DLLExport int MQTTProperty_getType(int identifier);
+
+#endif // MQTTPROPERTIES_H_

@@ -17,6 +17,10 @@
 #ifndef MQTTV5PACKET_H_
 #define MQTTV5PACKET_H_
 
+#ifndef MQTTV5
+#define MQTTV5
+#endif
+
 #include "MQTTPacket.h"
 
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */

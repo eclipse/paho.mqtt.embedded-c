@@ -105,9 +105,8 @@ int main(int argc, char *argv[])
 	data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
 
-	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	printf("Sent MQTT connect\n");

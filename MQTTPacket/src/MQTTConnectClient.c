@@ -29,8 +29,7 @@
   * @return the length of buffer needed to contain the serialized version of the packet
   */
 #if defined(MQTTV5)
-int MQTTSerialize_connectLength(MQTTPacket_connectData* options, MQTTProperties* connectProperties,
-  MQTTProperties* willProperties)
+int MQTTSerialize_connectLength(MQTTPacket_connectData* options, MQTTProperties* connectProperties)
 #else
 int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 #endif
@@ -56,15 +55,14 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 	{
     if (connectProperties)
 	    len += MQTTProperties_len(connectProperties);
-	  if (options->willFlag && willProperties)
-		  len += MQTTProperties_len(willProperties);
+	  if (options->willFlag && options->will.properties)
+		  len += MQTTProperties_len(options->will.properties);
 	}
 #endif
 
 	FUNC_EXIT_RC(len);
 	return len;
 }
-
 
 /**
   * Serializes the connect options into the buffer.
@@ -76,11 +74,11 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 #if defined(MQTTV5)
 int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options)
 {
-  return MQTTV5Serialize_connect(buf, buflen, options, NULL, NULL);
+  return MQTTV5Serialize_connect(buf, buflen, options, NULL);
 }
 
 int MQTTV5Serialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options,
-  MQTTProperties* connectProperties, MQTTProperties* willProperties)
+  MQTTProperties* connectProperties)
 #else
 int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options)
 #endif
@@ -93,8 +91,7 @@ int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connect
 
 	FUNC_ENTRY;
 	#if defined(MQTTV5)
-	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options,
-		         connectProperties, willProperties)) > buflen)
+	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options, connectProperties)) > buflen)
 	#else
 	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options)) > buflen)
 	#endif
@@ -147,8 +144,8 @@ int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connect
 	{
 #if defined(MQTTV5)
 		/* write will properties */
-		if (options->MQTTVersion == 5 && willProperties)
-		  MQTTProperties_write(&ptr, willProperties);
+		if (options->MQTTVersion == 5 && options->will.properties)
+		  MQTTProperties_write(&ptr, options->will.properties);
 #endif
 		writeMQTTString(&ptr, options->will.topicName);
 		writeMQTTString(&ptr, options->will.message);

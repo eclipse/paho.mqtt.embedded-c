@@ -13,6 +13,8 @@
  * Contributors:
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
+#ifndef MQTTREASONCODES_H_
+#define MQTTREASONCODES_H_
 
 /**
  * @brief MQTTv5 Reason Codes
@@ -65,3 +67,5 @@ enum MQTTReasonCodes {
   MQTTREASONCODE_SUBSCRIPTION_IDENTIFIERS_NOT_SUPPORTED = 161,
   MQTTREASONCODE_WILDCARD_SUBSCRIPTION_NOT_SUPPORTED = 162
 };
+
+#endif // MQTTREASONCODES_H_

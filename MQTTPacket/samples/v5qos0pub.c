@@ -54,9 +54,7 @@ int main(int argc, char *argv[])
 	conn_data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
-	
-	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &conn_data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &conn_data, &conn_properties);
 
 	MQTTProperty pub_properties_array[1];
 	MQTTProperties pub_properties = MQTTProperties_initializer;
