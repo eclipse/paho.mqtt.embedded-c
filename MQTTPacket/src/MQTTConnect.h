@@ -146,8 +146,13 @@ typedef union
 #endif
 } MQTTConnackFlags;	/**< connack flags byte */
 
+#if defined(MQTTV5)
+#define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 5, {NULL, {0, NULL}}, 60, 1, 0, \
+		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
+#else
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
+#endif
 
 DLLExport int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options);
 DLLExport int MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len);
