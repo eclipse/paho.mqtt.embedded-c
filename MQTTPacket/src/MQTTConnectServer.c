@@ -106,7 +106,12 @@ int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf
 	if (MQTTPacket_checkVersion(&Protocol, data->MQTTVersion))
 	{
 		flags.all = readChar(&curdata);
+#if defined(MQTTV5)
+		data->cleanstart = flags.bits.cleansession;
+#else
 		data->cleansession = flags.bits.cleansession;
+#endif
+
 		data->keepAliveInterval = readInt(&curdata);
 		#if defined(MQTTV5)
 		if (data->MQTTVersion == 5)

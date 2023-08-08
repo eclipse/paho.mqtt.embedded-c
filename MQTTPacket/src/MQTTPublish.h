@@ -32,6 +32,7 @@ DLLExport int32_t MQTTDeserialize_publish(unsigned char* dup, unsigned char* qos
 		unsigned char** payload, int32_t* payloadlen, unsigned char* buf, int32_t len);
 
 DLLExport int32_t MQTTSerialize_puback(unsigned char* buf, int32_t buflen, unsigned short packetid);
+DLLExport int32_t MQTTSerialize_pubrec(unsigned char* buf, int32_t buflen, unsigned short packetid);
 DLLExport int32_t MQTTSerialize_pubrel(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned short packetid);
 DLLExport int32_t MQTTSerialize_pubcomp(unsigned char* buf, int32_t buflen, unsigned short packetid);
 

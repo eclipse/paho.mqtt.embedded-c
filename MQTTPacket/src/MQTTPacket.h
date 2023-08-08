@@ -49,7 +49,7 @@ enum msgTypes
 	PINGREQ, PINGRESP, DISCONNECT
 #if defined(MQTTV5)
   , AUTH
-#endif
+#endif /* MQTTV5 */
 };
 
 /**
