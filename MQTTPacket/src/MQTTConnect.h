@@ -51,14 +51,14 @@ typedef union
 		unsigned int willRetain : 1;		/**< will retain setting */
 		unsigned int willQoS : 2;				/**< will QoS value */
 		unsigned int will : 1;			    /**< will flag */
-		unsigned int cleansession : 1;	  /**< clean session flag */
+		unsigned int cleansession : 1;	  /**< V3 clean session or V5 clean start flag */
 		unsigned int : 1;	  	          /**< unused */
 	} bits;
 #else
 	struct
 	{
 		unsigned int : 1;	     					/**< unused */
-		unsigned int cleansession : 1;	  /**< cleansession flag */
+		unsigned int cleansession : 1;	  /**< V3 clean session or V5 cleanstart flag */
 		unsigned int will : 1;			    /**< will flag */
 		unsigned int willQoS : 2;				/**< will QoS value */
 		unsigned int willRetain : 1;		/**< will retain setting */
@@ -110,7 +110,11 @@ typedef struct
 	unsigned char MQTTVersion;
 	MQTTString clientID;
 	unsigned short keepAliveInterval;
+#if defined(MQTTV5)
+	unsigned char cleanstart;
+#else
 	unsigned char cleansession;
+#endif /* MQTTV5 */
 	unsigned char willFlag;
 	MQTTPacket_willOptions will;
 	MQTTString username;
