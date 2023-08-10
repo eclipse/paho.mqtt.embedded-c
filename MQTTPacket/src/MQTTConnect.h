@@ -81,8 +81,6 @@ typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTW. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
-	int struct_version;
 	/** The LWT topic to which the LWT message will be published. */
 	MQTTString topicName;
 	/** The LWT payload. */
@@ -105,18 +103,16 @@ typedef struct
 } MQTTPacket_willOptions;
 
 #if defined(MQTTV5)
-#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0, NULL }
+#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0, NULL }
 #else
-#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, 0, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0 }
+#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0 }
 #endif
 
 typedef struct
 {
 	/** The eyecatcher for this structure.  must be MQTC. */
 	char struct_id[4];
-	/** The version number of this structure.  Must be 0 */
-	int struct_version;
-	/** Version of MQTT to be used.  3 = 3.1 4 = 3.1.1
+	/** Version of MQTT to be used.  3 = 3.1 4 = 3.1.1, 5 = 5.0
 	  */
 	unsigned char MQTTVersion;
 	MQTTString clientID;
@@ -150,7 +146,7 @@ typedef union
 #endif
 } MQTTConnackFlags;	/**< connack flags byte */
 
-#define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 0, 4, {NULL, {0, NULL}}, 60, 1, 0, \
+#define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 
 DLLExport int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options);

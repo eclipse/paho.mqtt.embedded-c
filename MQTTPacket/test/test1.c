@@ -273,9 +273,6 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	assert("struct_ids should be the same",
 			memcmp(before->struct_id, after->struct_id, 4) == 0, "struct_ids were different %.4s\n", after->struct_id);
 
-	assert("struct_versions should be the same",
-			before->struct_version == after->struct_version, "struct_versions were different\n", rc);
-
 	assert("MQTT versions should be the same",
 			before->MQTTVersion == after->MQTTVersion, "MQTT versions were different\n", rc);
 
@@ -295,9 +292,6 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	{
 		assert("will struct_ids should be the same",
 				memcmp(before->will.struct_id, after->will.struct_id, 4) == 0, "will struct_ids were different %.4s\n", after->struct_id);
-
-		assert("will struct_versions should be the same",
-				before->will.struct_version == after->will.struct_version, "will struct_versions were different\n", rc);
 
 		assert("topic names should be the same",
 				checkMQTTStrings(before->will.topicName, after->will.topicName), "topic names were different\n", rc);
