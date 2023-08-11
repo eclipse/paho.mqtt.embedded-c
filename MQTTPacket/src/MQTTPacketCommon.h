@@ -93,12 +93,6 @@ typedef struct
 
 int MQTTstrlen(MQTTString mqttstring);
 
-#include "V3/MQTTConnect.h"
-#include "V3/MQTTPublish.h"
-#include "V3/MQTTSubscribe.h"
-#include "V3/MQTTUnsubscribe.h"
-#include "V3/MQTTFormat.h"
-
 DLLExport int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char type, unsigned char dup, unsigned short packetid);
 DLLExport int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen);
 

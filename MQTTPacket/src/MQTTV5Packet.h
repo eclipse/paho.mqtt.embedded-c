@@ -25,6 +25,7 @@
 extern "C" {
 #endif
 
+#include "MQTTPacketCommon.h"
 #include "V5/MQTTReasonCodes.h"
 #include "V5/MQTTProperties.h"
 #include "V5/MQTTV5Connect.h"
