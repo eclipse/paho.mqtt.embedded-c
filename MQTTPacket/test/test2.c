@@ -18,7 +18,7 @@
   Tests for MQTTV5 serialization and deserialization
 ***/
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>

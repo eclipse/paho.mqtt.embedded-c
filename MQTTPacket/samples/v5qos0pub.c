@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include "transport.h"
 #include "v5log.h"
 

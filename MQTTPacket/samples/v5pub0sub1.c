@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include "transport.h"
 #include "v5log.h"
 
@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("disconnecting\n");
-	len = MQTTSerialize_disconnect(buf, buflen);
+	len = MQTTV5Serialize_disconnect(buf, buflen, MQTTREASONCODE_NORMAL_DISCONNECTION, NULL);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 exit:

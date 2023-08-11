@@ -15,8 +15,8 @@
  *    Xiang Rong - 442039 Add makefile to Embedded C client
  *******************************************************************************/
 
-#ifndef MQTTPACKET_H_
-#define MQTTPACKET_H_
+#ifndef MQTTPACKETCOMMON_H_
+#define MQTTPACKETCOMMON_H_
 
 #include <stdint.h>
 
@@ -49,7 +49,7 @@ enum msgTypes
 	PINGREQ, PINGRESP, DISCONNECT
 #if defined(MQTTV5)
   , AUTH
-#endif /* MQTTV5 */
+#endif
 };
 
 /**
@@ -136,4 +136,4 @@ int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp);
 #endif
 
 
-#endif /* MQTTPACKET_H_ */
+#endif /* MQTTPACKETCOMMON_H_ */

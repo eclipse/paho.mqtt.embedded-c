@@ -21,23 +21,16 @@
 #define MQTTV5
 #endif
 
-#include "MQTTPacket.h"
-
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 extern "C" {
 #endif
 
-#include "MQTTReasonCodes.h"
-
-#include "MQTTProperties.h"
-
-#include "MQTTV5Connect.h"
-
-#include "MQTTV5Publish.h"
-
-#include "MQTTV5Subscribe.h"
-
-#include "MQTTV5Unsubscribe.h"
+#include "V5/MQTTReasonCodes.h"
+#include "V5/MQTTProperties.h"
+#include "V5/MQTTV5Connect.h"
+#include "V5/MQTTV5Publish.h"
+#include "V5/MQTTV5Subscribe.h"
+#include "V5/MQTTV5Unsubscribe.h"
 
 void writeInt4(unsigned char** pptr, int anInt);
 int readInt4(unsigned char** pptr);

@@ -39,33 +39,6 @@ SET_TESTS_PROPERTIES(
 )
 
 ADD_EXECUTABLE(
-	test15
-	test1.c
-)
-
-# Disabling deprecation warnings:
-#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
-target_compile_options(test15 PRIVATE -Wno-deprecated-declarations)
-
-# To allow existing MQTTv3 applications using the MQTTv5 library, MQTTV5 structures must be used.
-target_compile_definitions(test15 PRIVATE MQTTV5)
-
-TARGET_LINK_LIBRARIES(
-	test15
-	paho-embed-mqtt5c
-)
-
-ADD_TEST(
-	NAME test15
-	COMMAND "test15" "--connection" ${MQTT_TEST_BROKER}
-)
-
-SET_TESTS_PROPERTIES(
-	test15
-	PROPERTIES TIMEOUT 540
-)
-
-ADD_EXECUTABLE(
 	test2
 	test2.c
 )

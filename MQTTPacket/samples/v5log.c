@@ -12,7 +12,8 @@
  *
  *******************************************************************************/
 
-#include "V5/MQTTV5Packet.h"
+#include <stdio.h>
+#include "MQTTV5Packet.h"
 
 static const char* v5property_identifier_to_string(int identifier)
 {
