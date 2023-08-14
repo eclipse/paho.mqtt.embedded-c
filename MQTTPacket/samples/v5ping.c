@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 
 	data.clientID.cstring = "paho-emb-ping";
 	data.keepAliveInterval = KEEPALIVE_INTERVAL;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;

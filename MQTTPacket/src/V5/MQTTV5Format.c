@@ -14,6 +14,7 @@
  *    Ian Craggs - initial API and implementation and/or initial documentation
  *******************************************************************************/
 
+// TODO: Add MQTTv5 properties implementation (some of the code exists in v5log.h), application must provide memory.
 #include "StackTrace.h"
 #include "MQTTV5Packet.h"
 
@@ -40,9 +41,9 @@ int MQTTV5StringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectDa
 	int strindex = 0;
 
 	strindex = snprintf(strbuf, strbuflen,
-			"CONNECT MQTT version %d, client id %.*s, clean session %d, keep alive %d",
+			"CONNECT MQTT version %d, client id %.*s, clean start %d, keep alive %d",
 			(int)data->MQTTVersion, (int) data->clientID.lenstring.len, data->clientID.lenstring.data,
-			(int)data->cleansession, data->keepAliveInterval);
+			(int)data->cleanstart, data->keepAliveInterval);
 	if (data->willFlag)
 		strindex += snprintf(&strbuf[strindex], strbuflen - strindex,
 				", will QoS %d, will retain %d, will topic %.*s, will message %.*s",
@@ -244,8 +245,10 @@ char* MQTTV5Format_toServerString(char* strbuf, int strbuflen, unsigned char* bu
 		int maxcount = 1, count = 0;
 		MQTTString topicFilters[1];
 		unsigned char requestedQoSs[1];
-		if (MQTTDeserialize_subscribe(&dup, &packetid, maxcount, &count,
-				topicFilters, requestedQoSs, buf, buflen) == 1)
+		MQTTSubscribe_options sub_options[1];
+
+		if (MQTTV5Deserialize_subscribe(&dup, &packetid, NULL, maxcount, &count,
+				topicFilters, requestedQoSs, sub_options, buf, buflen) == 1)
 			strindex = MQTTV5StringFormat_subscribe(strbuf, strbuflen, dup, packetid, count, topicFilters, requestedQoSs);;
 	}
 	break;
@@ -255,7 +258,7 @@ char* MQTTV5Format_toServerString(char* strbuf, int strbuflen, unsigned char* bu
 		unsigned short packetid;
 		int maxcount = 1, count = 0;
 		MQTTString topicFilters[1];
-		if (MQTTDeserialize_unsubscribe(&dup, &packetid, maxcount, &count, topicFilters, buf, buflen) == 1)
+		if (MQTTV5Deserialize_unsubscribe(&dup, &packetid, NULL, maxcount, &count, topicFilters, buf, buflen) == 1)
 			strindex =  MQTTV5StringFormat_unsubscribe(strbuf, strbuflen, dup, packetid, count, topicFilters);
 	}
 	break;

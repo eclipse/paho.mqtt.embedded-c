@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
 
 	conn_data.clientID.cstring = "paho-emb-v5qos0pub";
 	conn_data.keepAliveInterval = 20;
-	conn_data.cleansession = 1;
+	conn_data.cleanstart = 1;
 	conn_data.username.cstring = "rw";
 	conn_data.password.cstring = "readwrite";
 	conn_data.MQTTVersion = 5;

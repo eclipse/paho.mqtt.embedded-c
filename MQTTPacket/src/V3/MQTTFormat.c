@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp.
+ * Copyright (c) 2014, 2023 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -15,11 +15,7 @@
  *******************************************************************************/
 
 #include "StackTrace.h"
-#if defined(MQTTV5)
-#include "MQTTV5Packet.h"
-#else
 #include "MQTTPacket.h"
-#endif
 
 #include <string.h>
 
@@ -29,9 +25,6 @@ const char* MQTTPacket_names[] =
 	"RESERVED", "CONNECT", "CONNACK", "PUBLISH", "PUBACK", "PUBREC", "PUBREL",
 	"PUBCOMP", "SUBSCRIBE", "SUBACK", "UNSUBSCRIBE", "UNSUBACK",
 	"PINGREQ", "PINGRESP", "DISCONNECT"
-#if defined(MQTTV5)
-	, "AUTH"
-#endif
 };
 
 
@@ -40,22 +33,14 @@ const char* MQTTPacket_getName(unsigned short packetid)
 	return MQTTPacket_names[packetid];
 }
 
-#if defined(MQTTV5)
-int MQTTV5StringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectData* data)
-#else
 int MQTTStringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectData* data)
-#endif
 {
 	int strindex = 0;
 
 	strindex = snprintf(strbuf, strbuflen,
 			"CONNECT MQTT version %d, client id %.*s, clean session %d, keep alive %d",
 			(int)data->MQTTVersion, (int) data->clientID.lenstring.len, data->clientID.lenstring.data,
-#if defined(MQTTV5)
-			(int)data->cleanstart, 
-#else
 			(int)data->cleansession, 
-#endif
 			data->keepAliveInterval);
 
 	if (data->willFlag)
@@ -73,29 +58,16 @@ int MQTTStringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectData
 	return strindex;
 }
 
-#if defined(MQTTV5)
-int MQTTV5StringFormat_connack(char* strbuf, int strbuflen, enum MQTTReasonCodes reason_code, unsigned char sessionPresent)
-#else
 int MQTTStringFormat_connack(char* strbuf, int strbuflen, unsigned char connack_rc, unsigned char sessionPresent)
-#endif
 {
 	int strindex = snprintf(strbuf, strbuflen, "CONNACK session present %d, rc %d", sessionPresent, 
-#if defined(MQTTV5)
-	reason_code);
-#else	
 	connack_rc);
-#endif
 
 	return strindex;
 }
 
-#if defined(MQTTV5)
-int MQTTV5StringFormat_publish(char* strbuf, int strbuflen, unsigned char dup, int qos, unsigned char retained,
-		unsigned short packetid, MQTTString topicName, unsigned char* payload, int payloadlen)
-#else
 int MQTTStringFormat_publish(char* strbuf, int strbuflen, unsigned char dup, int qos, unsigned char retained,
 		unsigned short packetid, MQTTString topicName, unsigned char* payload, int payloadlen)
-#endif
 {
 	int strindex = snprintf(strbuf, strbuflen,
 				"PUBLISH dup %d, QoS %d, retained %d, packet id %d, topic %.*s, payload length %d, payload %.*s",
@@ -106,15 +78,6 @@ int MQTTStringFormat_publish(char* strbuf, int strbuflen, unsigned char dup, int
 }
 
 
-#if defined(MQTTV5)
-int MQTTV5StringFormat_ack(char* strbuf, int strbuflen, unsigned char packettype, unsigned char dup, unsigned char reason, unsigned short packetid)
-{
-	int strindex = snprintf(strbuf, strbuflen, "%s, packet id %d reason %d", MQTTV5Packet_names[packettype], packetid, reason);
-	if (dup)
-		strindex += snprintf(strbuf + strindex, strbuflen - strindex, ", dup %d", dup);
-	return strindex;
-}
-#else
 int MQTTStringFormat_ack(char* strbuf, int strbuflen, unsigned char packettype, unsigned char dup, unsigned short packetid)
 {
 	int strindex = snprintf(strbuf, strbuflen, "%s, packet id %d", MQTTPacket_names[packettype], packetid);
@@ -122,7 +85,6 @@ int MQTTStringFormat_ack(char* strbuf, int strbuflen, unsigned char packettype, 
 		strindex += snprintf(strbuf + strindex, strbuflen - strindex, ", dup %d", dup);
 	return strindex;
 }
-#endif
 
 int MQTTStringFormat_subscribe(char* strbuf, int strbuflen, unsigned char dup, unsigned short packetid, int count,
 		MQTTString topicFilters[], unsigned char requestedQoSs[])

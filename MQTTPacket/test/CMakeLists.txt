@@ -12,6 +12,7 @@ ELSE ()
   SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl)
 ENDIF ()
 
+# transport.h/c are reused from ../samples:
 include_directories(../src ../src/V5 ../samples)
 
 ADD_EXECUTABLE(
@@ -66,6 +67,7 @@ SET_TESTS_PROPERTIES(
 ADD_EXECUTABLE(
 	test3
 	test3.c
+	../samples/transport.c
 )
 
 # Disabling deprecation warnings:

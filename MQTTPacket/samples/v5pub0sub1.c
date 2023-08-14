@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
 	data.clientID.cstring = "paho-emb-v5pub0sub1";
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;

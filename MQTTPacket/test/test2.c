@@ -285,8 +285,8 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	assert("keepAliveIntervals should be the same",
 			before->keepAliveInterval == after->keepAliveInterval, "keepAliveIntervals were different %d\n", after->keepAliveInterval);
 
-	assert("cleansessions should be the same",
-			before->cleansession == after->cleansession, "cleansessions were different\n", rc);
+	assert("cleanstarts should be the same",
+			before->cleanstart == after->cleanstart, "cleanstarts were different\n", rc);
 
 	assert("willFlags should be the same",
 				before->willFlag == after->willFlag, "willFlags were different\n", rc);
@@ -385,7 +385,7 @@ int test1(struct Options options)
 	data.clientID.cstring = "my clientid";
 
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "testuser";
 	data.password.cstring = "testpassword";
 

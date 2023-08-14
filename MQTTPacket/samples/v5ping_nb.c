@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	mytransport.state = 0;
 	data.clientID.cstring = "paho-emb-ping_nb";
 	data.keepAliveInterval = KEEPALIVE_INTERVAL;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;

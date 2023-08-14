@@ -150,4 +150,6 @@ typedef union
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
 #endif
 
+DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int32_t buflen);
+
 #endif /* MQTTCONNECT_COMMON_H_ */

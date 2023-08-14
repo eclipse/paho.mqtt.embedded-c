@@ -266,7 +266,7 @@ int test1(struct Options options)
 
 	data.clientID.cstring = "mqtt5_test3_test1";
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "testuser";
 	data.password.cstring = "testpassword";
 	data.MQTTVersion = 5;
