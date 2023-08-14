@@ -165,7 +165,6 @@ START_TIME_TYPE start_clock(void)
 #else
 #define mqsleep sleep
 #define START_TIME_TYPE struct timeval
-/* TODO - unused - remove? static struct timeval start_time; */
 START_TIME_TYPE start_clock(void)
 {
 	struct timeval start_time;
@@ -268,7 +267,7 @@ int checkMQTTStrings(MQTTString a, MQTTString b)
 }
 
 
-int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* after)
+int checkConnectPackets(MQTTV5Packet_connectData* before, MQTTV5Packet_connectData* after)
 {
 	int rc = 0;
 	int start_failures = failures;
@@ -347,8 +346,8 @@ int checkMQTTProperties(MQTTProperties* before, MQTTProperties* after)
 
 int test1(struct Options options)
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
-	MQTTPacket_connectData data_after = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData data = MQTTV5Packet_connectData_initializer;
+	MQTTV5Packet_connectData data_after = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
 	unsigned char buf[100];
 	int buflen = sizeof(buf);

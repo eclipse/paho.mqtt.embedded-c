@@ -42,7 +42,7 @@ void stop_init(void)
 
 int main(int argc, char *argv[])
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData data = MQTTPacket_connectData_initializer;
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "test.mosquitto.org";
 	int port = 1884;
-	MQTTTransport mytransport;
+	MQTTV5Transport mytransport;
 	MQTTProperty recv_properties_array[5];
 	MQTTProperties recv_properties = MQTTProperties_initializer;
 	recv_properties.array = recv_properties_array;
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
 	mytransport.state = 0;
 	data.clientID.cstring = "paho-emb-v5pub0sub1_nb";
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;
@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	/* wait for connack */
-	if (MQTTPacket_read(buf, buflen, transport_getdata) == CONNACK)
+	if (MQTTV5Packet_read(buf, buflen, transport_getdata) == CONNACK)
 	{
 		unsigned char sessionPresent, connack_rc;
 
@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	do {
 		int frc;
-		if ((frc=MQTTPacket_readnb(buf, buflen, &mytransport)) == SUBACK) /* wait for suback */
+		if ((frc=MQTTV5Packet_readnb(buf, buflen, &mytransport)) == SUBACK) /* wait for suback */
 		{
 			unsigned short submsgid;
 			int subcount;
@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 	while (!toStop)
 	{
 		/* handle timeouts */
-		rc = MQTTPacket_readnb(buf, buflen, &mytransport); 
+		rc = MQTTV5Packet_readnb(buf, buflen, &mytransport); 
 		unsigned char dup;
 		unsigned short msgid;
 

@@ -191,7 +191,6 @@ START_TIME_TYPE start_clock(void)
 #else
 #define mqsleep sleep
 #define START_TIME_TYPE struct timeval
-/* TODO - unused - remove? static struct timeval start_time; */
 START_TIME_TYPE start_clock(void)
 {
 	struct timeval start_time;

@@ -34,7 +34,7 @@ const char* MQTTV5Packet_getName(unsigned short packetid)
 }
 
 
-int MQTTV5StringFormat_connect(char* strbuf, int strbuflen, MQTTPacket_connectData* data)
+int MQTTV5StringFormat_connect(char* strbuf, int strbuflen, MQTTV5Packet_connectData* data)
 {
 	int strindex = 0;
 
@@ -207,7 +207,7 @@ char* MQTTV5Format_toServerString(char* strbuf, int strbuflen, unsigned char* bu
 	{
 	case CONNECT:
 	{
-		MQTTPacket_connectData data;
+		MQTTV5Packet_connectData data;
 		int rc;
 		if ((rc = MQTTV5Deserialize_connect(NULL, &data, buf, buflen)) == 1)
 			strindex = MQTTV5StringFormat_connect(strbuf, strbuflen, &data);

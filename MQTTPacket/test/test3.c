@@ -150,7 +150,6 @@ START_TIME_TYPE start_clock(void)
 #else
 #define mqsleep sleep
 #define START_TIME_TYPE struct timeval
-/* TODO - unused - remove? static struct timeval start_time; */
 START_TIME_TYPE start_clock(void)
 {
 	struct timeval start_time;
@@ -237,7 +236,7 @@ void myassert(char* filename, int lineno, char* description, int value, char* fo
 
 int test1(struct Options options)
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData data = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
 	unsigned char buf[200];
 	int buflen = sizeof(buf);
@@ -292,7 +291,7 @@ int test1(struct Options options)
 	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
 
 	/* wait for connack */
-	rc = MQTTPacket_read(buf, buflen, transport_getdata);
+	rc = MQTTV5Packet_read(buf, buflen, transport_getdata);
 	assert("Should receive connack", rc == CONNACK, "did not get connack %d\n", rc);
 	if (rc == CONNACK)
 	{
@@ -318,7 +317,7 @@ int test1(struct Options options)
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
 
-	rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for suback */
+	rc = MQTTV5Packet_read(buf, buflen, transport_getdata); /* wait for suback */
 	assert("Should receive suback", rc == SUBACK, "did not get suback %d\n", rc);
 	if (rc == SUBACK)
 	{
@@ -345,7 +344,7 @@ int test1(struct Options options)
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
 
-	rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for publish */
+	rc = MQTTV5Packet_read(buf, buflen, transport_getdata); /* wait for publish */
 	assert("Should receive publish", rc == PUBLISH, "did not get publish %d\n", rc);
 	if (rc == PUBLISH)
 	{
@@ -376,7 +375,7 @@ int test1(struct Options options)
   i = 0;
 	while (i < 2)
 	{
-	  rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for publish and puback */
+	  rc = MQTTV5Packet_read(buf, buflen, transport_getdata); /* wait for publish and puback */
 		assert("Should receive publish or puback", rc == PUBACK || rc == PUBLISH, "did not get puback or publish %d\n", rc);
 	  if (rc == PUBLISH)
 	  {
@@ -430,7 +429,7 @@ int test1(struct Options options)
 	{
 		static unsigned short pubmsgid = 999;
 
-		rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for publish, pubrel and pubcomp */
+		rc = MQTTV5Packet_read(buf, buflen, transport_getdata); /* wait for publish, pubrel and pubcomp */
 		assert("Should receive publish, pubrec, pubrel or pubcomp", rc == PUBREC || rc == PUBREL || rc == PUBLISH || rc == PUBCOMP,
 		       "did not get pubrec, pubrel, pubcomp or publish %d\n", rc);
 		if (rc == PUBLISH)
@@ -525,7 +524,7 @@ int test1(struct Options options)
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
 
-	rc = MQTTPacket_read(buf, buflen, transport_getdata); /* wait for unsuback */
+	rc = MQTTV5Packet_read(buf, buflen, transport_getdata); /* wait for unsuback */
 	assert("Should receive unsuback", rc == UNSUBACK, "did not get unsuback %d\n", rc);
 	if (rc == UNSUBACK)
 	{

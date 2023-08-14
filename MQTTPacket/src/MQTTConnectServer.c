@@ -53,11 +53,6 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 
 
 #if defined(MQTTV5)
-int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
-{
-	return MQTTV5Deserialize_connect(NULL, data, buf, len);
-}
-
 /**
   * Deserializes the supplied (wire) buffer into connect data structure
   * @param willProperties the V5 properties to be applied to the will message, if it exists
@@ -67,7 +62,7 @@ int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int32_t MQTTV5Deserialize_connect(MQTTProperties* connectProperties, MQTTPacket_connectData* data, 
+int32_t MQTTV5Deserialize_connect(MQTTProperties* connectProperties, MQTTV5Packet_connectData* data, 
 	unsigned char* buf, int32_t len)
 #else
 /**
@@ -166,11 +161,6 @@ exit:
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int32_t MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent)
-{
-	return MQTTV5Serialize_connack(buf, buflen, connack_rc, sessionPresent, NULL);
-}
-
 int32_t MQTTV5Serialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc, unsigned char sessionPresent,
   MQTTProperties* connackProperties)
 #else
@@ -200,7 +190,7 @@ int32_t MQTTSerialize_connack(unsigned char* buf, int32_t buflen, unsigned char 
 	header.bits.type = CONNACK;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
+	ptr += MQTTPacket_encode_internal(ptr, len); /* write remaining length */
 
 	flags.all = 0;
 	flags.bits.sessionpresent = sessionPresent;
@@ -271,8 +261,7 @@ int32_t MQTTV5Deserialize_auth(MQTTProperties* properties, unsigned char* reason
 {
 	return MQTTV5Deserialize_zero(AUTH, properties, reasonCode, buf, buflen);
 }
-#endif
-
+#else
 int32_t MQTTDeserialize_disconnect(unsigned char* buf, int32_t buflen)
 {
 	unsigned char type = 0;
@@ -287,3 +276,4 @@ int32_t MQTTDeserialize_disconnect(unsigned char* buf, int32_t buflen)
 	FUNC_EXIT_RC(rc);
 	return rc;
 }
+#endif

@@ -17,15 +17,11 @@
 #ifndef MQTTV5PACKET_H_
 #define MQTTV5PACKET_H_
 
-#ifndef MQTTV5
-#define MQTTV5
-#endif
-
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 extern "C" {
 #endif
 
-#include "MQTTPacketCommon.h"
+#include "MQTTPacketInternal.h"
 #include "V5/MQTTReasonCodes.h"
 #include "V5/MQTTProperties.h"
 #include "V5/MQTTV5Connect.h"
@@ -35,10 +31,27 @@ extern "C" {
 
 void writeInt4(unsigned char** pptr, int anInt);
 int readInt4(unsigned char** pptr);
-
 void writeMQTTLenString(unsigned char** pptr, MQTTLenString lenstring);
-
 int MQTTLenStringRead(MQTTLenString* lenstring, unsigned char** pptr, unsigned char* enddata);
+
+DLLExport int32_t MQTTV5Serialize_ack(unsigned char* buf, int32_t buflen, unsigned char packettype, unsigned char dup, unsigned short packetid,
+	unsigned char reasonCode, MQTTProperties* properties);
+DLLExport int32_t MQTTV5Deserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid,
+	unsigned char *reasonCode, MQTTProperties* properties, unsigned char* buf, int32_t buflen);
+
+DLLExport int MQTTV5Packet_equals(MQTTString* a, char* b);
+DLLExport int32_t MQTTV5Packet_encode(unsigned char* buf, int32_t length);
+DLLExport int MQTTV5Packet_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int));
+typedef struct {
+	int (*getfn)(void *, unsigned char*, int); /* must return -1 for error, 0 for call again, or the number of bytes read */
+	void *sck;	/* pointer to whatever the system may use to identify the transport */
+	int multiplier;
+	int rem_len;
+	int32_t len;
+	char state;
+} MQTTV5Transport;
+
+DLLExport int MQTTV5Packet_readnb(unsigned char* buf, int32_t buflen, MQTTV5Transport *trp);
 
 #if defined(__cplusplus) /* If this is a C++ compiler, use C linkage */
 }

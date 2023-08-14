@@ -22,7 +22,7 @@
 
 int main(int argc, char *argv[])
 {
-	MQTTPacket_connectData conn_data = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData conn_data = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
 	char buf[200];
 	int buflen = sizeof(buf);

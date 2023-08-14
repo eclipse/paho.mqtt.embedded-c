@@ -52,6 +52,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
+#include <signal.h>
 #endif
 
 #if defined(WIN32)
@@ -171,10 +172,12 @@ int* sock = &mysock;
 		{
 #if defined(NOSIGPIPE)
 			int opt = 1;
-
-			if (setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt)) != 0)
-				Log(TRACE_MIN, -1, "Could not set SO_NOSIGPIPE for socket %d", *sock);
-#endif
+#if defined(SO_NOSIGPIPE)
+			setsockopt(*sock, SOL_SOCKET, SO_NOSIGPIPE, (void*)&opt, sizeof(opt));
+#elif !defined(WIN32)
+			signal(SIGPIPE, SIG_IGN);
+#endif // defined(SO_NOSIGPIPE)
+#endif // defined(NOSIGPIPE)
 
 			if (family == AF_INET)
 				rc = connect(*sock, (struct sockaddr*)&address, sizeof(address));

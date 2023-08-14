@@ -29,7 +29,7 @@
   * @return the length of buffer needed to contain the serialized version of the packet
   */
 #if defined(MQTTV5)
-int MQTTSerialize_connectLength(MQTTPacket_connectData* options, MQTTProperties* connectProperties)
+int MQTTV5Serialize_connectLength(MQTTV5Packet_connectData* options, MQTTProperties* connectProperties)
 #else
 int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
 #endif
@@ -72,7 +72,7 @@ int MQTTSerialize_connectLength(MQTTPacket_connectData* options)
   * @return serialized length, or error if 0
   */
 #if defined(MQTTV5)
-int MQTTV5Serialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options,
+int MQTTV5Serialize_connect(unsigned char* buf, int32_t buflen, MQTTV5Packet_connectData* options,
   MQTTProperties* connectProperties)
 #else
 int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options)
@@ -86,7 +86,7 @@ int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connect
 
 	FUNC_ENTRY;
 	#if defined(MQTTV5)
-	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options, connectProperties)) > buflen)
+	if (MQTTPacket_len(len = MQTTV5Serialize_connectLength(options, connectProperties)) > buflen)
 	#else
 	if (MQTTPacket_len(len = MQTTSerialize_connectLength(options)) > buflen)
 	#endif
@@ -99,7 +99,7 @@ int MQTTSerialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connect
 	header.bits.type = CONNECT;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
+	ptr += MQTTPacket_encode_internal(ptr, len); /* write remaining length */
 
   if (options->MQTTVersion == 5 || options->MQTTVersion == 4)
 		writeCString(&ptr, "MQTT");
@@ -214,9 +214,6 @@ exit:
   */
 #if defined(MQTTV5)
 int MQTTV5Serialize_zero(unsigned char* buf, int32_t buflen, unsigned char packettype,
- unsigned char reasonCode, MQTTProperties* properties);
-
-int MQTTV5Serialize_zero(unsigned char* buf, int32_t buflen, unsigned char packettype,
  unsigned char reasonCode, MQTTProperties* properties)
 #else
 int MQTTSerialize_zero(unsigned char* buf, int32_t buflen, unsigned char packettype)
@@ -245,7 +242,7 @@ int MQTTSerialize_zero(unsigned char* buf, int32_t buflen, unsigned char packett
 	header.bits.type = packettype;
 	writeChar(&ptr, header.byte); /* write header */
 
-	ptr += MQTTPacket_encode(ptr, len); /* write remaining length */
+	ptr += MQTTPacket_encode_internal(ptr, len); /* write remaining length */
 #if defined(MQTTV5)
 	if (reasonCode >= 0 && reasonCode <= 162)
 	{
@@ -297,7 +294,11 @@ int MQTTV5Serialize_auth(unsigned char* buf, int32_t buflen,
   * @param buflen the length in bytes of the supplied buffer, to avoid overruns
   * @return serialized length, or error if 0
   */
+#if defined(MQTTV5)
+int MQTTV5Serialize_pingreq(unsigned char* buf, int32_t buflen)
+#else
 int MQTTSerialize_pingreq(unsigned char* buf, int32_t buflen)
+#endif
 {
 #if defined(MQTTV5)
 	return MQTTV5Serialize_zero(buf, buflen, PINGREQ, -1, NULL);

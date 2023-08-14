@@ -152,7 +152,7 @@ int MQTTProperty_write(unsigned char** pptr, MQTTProperty* prop)
         rc = 4;
         break;
       case MQTTPROPERTY_TYPE_VARIABLE_BYTE_INTEGER:
-        rc = MQTTPacket_encode(*pptr, prop->value.integer4);
+        rc = MQTTV5Packet_encode(*pptr, prop->value.integer4);
         break;
       case MQTTPROPERTY_TYPE_BINARY_DATA:
       case MQTTPROPERTY_TYPE_UTF_8_ENCODED_STRING:
@@ -182,7 +182,7 @@ int MQTTProperties_write(unsigned char** pptr, MQTTProperties* properties)
   int i = 0, len = 0;
 
   /* write the entire property list length first */
-  *pptr += MQTTPacket_encode(*pptr, properties->length);
+  *pptr += MQTTV5Packet_encode(*pptr, properties->length);
   len = rc = 1;
   for (i = 0; i < properties->count; ++i)
   {
