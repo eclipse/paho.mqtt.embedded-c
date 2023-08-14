@@ -15,6 +15,7 @@ ENDIF ()
 # transport.h/c are reused from ../samples:
 include_directories(../src ../src/V5 ../samples)
 
+# test1 - MQTTv3 serializer test
 ADD_EXECUTABLE(
 	test1
 	test1.c
@@ -39,6 +40,7 @@ SET_TESTS_PROPERTIES(
 	PROPERTIES TIMEOUT 540
 )
 
+# test2 - MQTTv5 serializer test
 ADD_EXECUTABLE(
 	test2
 	test2.c
@@ -63,28 +65,28 @@ SET_TESTS_PROPERTIES(
 	PROPERTIES TIMEOUT 540
 )
 
-
+# test4 - MQTTv5 broker test
 ADD_EXECUTABLE(
-	test3
-	test3.c
+	test4
+	test4.c
 	../samples/transport.c
 )
 
 # Disabling deprecation warnings:
 #  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
-target_compile_options(test3 PRIVATE -Wno-deprecated-declarations)
+target_compile_options(test4 PRIVATE -Wno-deprecated-declarations)
 
 TARGET_LINK_LIBRARIES(
-	test3
+	test4
 	paho-embed-mqtt5c
 )
 
 ADD_TEST(
-	NAME test3
-	COMMAND "test3" "--connection" ${MQTT_TEST_BROKER}
+	NAME test4
+	COMMAND "test4" "--connection" ${MQTT_TEST_BROKER}
 )
 
 SET_TESTS_PROPERTIES(
-	test3
+	test4
 	PROPERTIES TIMEOUT 540
 )
