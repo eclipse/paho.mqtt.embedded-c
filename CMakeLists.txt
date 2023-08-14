@@ -42,5 +42,5 @@ include_directories(MQTTPacket/src)
 
 enable_testing()
 ADD_SUBDIRECTORY(MQTTPacket)
-ADD_SUBDIRECTORY(MQTTClient)
 ADD_SUBDIRECTORY(MQTTClient-C)
+ADD_SUBDIRECTORY(MQTTClient-CPP)

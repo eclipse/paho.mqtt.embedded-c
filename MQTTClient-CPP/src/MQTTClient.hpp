@@ -25,7 +25,7 @@
 #if !defined(MQTTCLIENT_H)
 #define MQTTCLIENT_H
 
-#include "FP.h"
+#include "FP.hpp"
 #include "MQTTPacket.h"
 #include <stdio.h>
 #include <string.h>
