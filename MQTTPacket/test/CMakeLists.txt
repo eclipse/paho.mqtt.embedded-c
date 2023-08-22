@@ -65,6 +65,32 @@ SET_TESTS_PROPERTIES(
 	PROPERTIES TIMEOUT 540
 )
 
+# test3 - MQTTv3 broker test
+ADD_EXECUTABLE(
+	test3
+	test3.c
+	../samples/transport.c
+)
+
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test3 PRIVATE -Wno-deprecated-declarations)
+
+TARGET_LINK_LIBRARIES(
+	test3
+	paho-embed-mqtt3c
+)
+
+ADD_TEST(
+	NAME test3
+	COMMAND "test3" "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test3
+	PROPERTIES TIMEOUT 540
+)
+
 # test4 - MQTTv5 broker test
 ADD_EXECUTABLE(
 	test4
@@ -88,5 +114,33 @@ ADD_TEST(
 
 SET_TESTS_PROPERTIES(
 	test4
+	PROPERTIES TIMEOUT 540
+)
+
+# test5 - MQTTv3 side-by-side with MQTTv5 broker test
+ADD_EXECUTABLE(
+	test5
+	test5.c
+	../samples/transport.c
+)
+
+# Disabling deprecation warnings:
+#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
+target_compile_options(test5 PRIVATE -Wno-deprecated-declarations)
+target_compile_definitions(test5 PRIVATE NOSIGPIPE)
+
+TARGET_LINK_LIBRARIES(
+	test5
+	paho-embed-mqtt3c
+	paho-embed-mqtt5c
+)
+
+ADD_TEST(
+	NAME test5
+	COMMAND "test5" "--connection" ${MQTT_TEST_BROKER}
+)
+
+SET_TESTS_PROPERTIES(
+	test5
 	PROPERTIES TIMEOUT 540
 )
