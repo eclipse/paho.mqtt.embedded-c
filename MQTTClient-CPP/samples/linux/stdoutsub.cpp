@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2012, 2013 IBM Corp.
+ * Copyright (c) 2012, 2023 IBM Corp.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include <memory.h>
 #define MQTT_DEBUG 1
-#include "MQTTClient.h"
+#include "MQTTClient.hpp"
 
 #define DEFAULT_STACK_SIZE -1
 

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014 IBM Corp. and others
+ * Copyright (c) 2014, 2023 IBM Corp. and others
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -19,9 +19,9 @@
 
 #include <SPI.h>
 #include <Ethernet.h>
-#include <IPStack.h>
-#include <Countdown.h>
-#include <MQTTClient.h>
+#include <IPStack.hpp>
+#include <Countdown.hpp>
+#include <MQTTClient.hpp>
 
 char printbuf[100];
 
