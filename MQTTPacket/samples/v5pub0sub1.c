@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include "transport.h"
 #include "v5log.h"
 
@@ -80,15 +80,14 @@ int main(int argc, char *argv[])
 
 	data.clientID.cstring = "paho-emb-v5pub0sub1";
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
 
-	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	/* wait for connack */
@@ -259,7 +258,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("disconnecting\n");
-	len = MQTTSerialize_disconnect(buf, buflen);
+	len = MQTTV5Serialize_disconnect(buf, buflen, MQTTREASONCODE_NORMAL_DISCONNECTION, NULL);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 exit:

@@ -90,9 +90,8 @@ int main(int argc, char *argv[])
 	data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
 
-	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	/* wait for connack */
@@ -272,7 +271,7 @@ int main(int argc, char *argv[])
 	}
 
 	printf("disconnecting\n");
-	len = MQTTSerialize_disconnect(buf, buflen);
+	len = MQTTV5Serialize_disconnect(buf, buflen, MQTTREASONCODE_NORMAL_DISCONNECTION, NULL);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 exit:

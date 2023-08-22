@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include "transport.h"
 #include "v5log.h"
 
@@ -92,15 +92,14 @@ int main(int argc, char *argv[])
 
 	data.clientID.cstring = "paho-emb-ping";
 	data.keepAliveInterval = KEEPALIVE_INTERVAL;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "rw";
 	data.password.cstring = "readwrite";
 	data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
 
-	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect(buf, buflen, &data, &conn_properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	printf("Sent MQTTv5 connect\n");

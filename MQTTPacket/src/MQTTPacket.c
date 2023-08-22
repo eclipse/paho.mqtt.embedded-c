@@ -16,7 +16,12 @@
  *******************************************************************************/
 
 #include "StackTrace.h"
+
+#if defined(MQTTV5)
+#include "MQTTV5Packet.h"
+#else
 #include "MQTTPacket.h"
+#endif
 
 #include <string.h>
 

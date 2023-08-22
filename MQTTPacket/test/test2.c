@@ -18,7 +18,7 @@
   Tests for MQTTV5 serialization and deserialization
 ***/
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -276,9 +276,6 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	assert("struct_ids should be the same",
 			memcmp(before->struct_id, after->struct_id, 4) == 0, "struct_ids were different %.4s\n", after->struct_id);
 
-	assert("struct_versions should be the same",
-			before->struct_version == after->struct_version, "struct_versions were different\n", rc);
-
 	assert("MQTT versions should be the same",
 			before->MQTTVersion == after->MQTTVersion, "MQTT versions were different\n", rc);
 
@@ -288,8 +285,8 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	assert("keepAliveIntervals should be the same",
 			before->keepAliveInterval == after->keepAliveInterval, "keepAliveIntervals were different %d\n", after->keepAliveInterval);
 
-	assert("cleansessions should be the same",
-			before->cleansession == after->cleansession, "cleansessions were different\n", rc);
+	assert("cleanstarts should be the same",
+			before->cleanstart == after->cleanstart, "cleanstarts were different\n", rc);
 
 	assert("willFlags should be the same",
 				before->willFlag == after->willFlag, "willFlags were different\n", rc);
@@ -298,9 +295,6 @@ int checkConnectPackets(MQTTPacket_connectData* before, MQTTPacket_connectData* 
 	{
 		assert("will struct_ids should be the same",
 				memcmp(before->will.struct_id, after->will.struct_id, 4) == 0, "will struct_ids were different %.4s\n", after->struct_id);
-
-		assert("will struct_versions should be the same",
-				before->will.struct_version == after->will.struct_version, "will struct_versions were different\n", rc);
 
 		assert("topic names should be the same",
 				checkMQTTStrings(before->will.topicName, after->will.topicName), "topic names were different\n", rc);
@@ -391,7 +385,7 @@ int test1(struct Options options)
 	data.clientID.cstring = "my clientid";
 
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "testuser";
 	data.password.cstring = "testpassword";
 
@@ -400,11 +394,13 @@ int test1(struct Options options)
 	data.will.qos = 1;
 	data.will.retained = 0;
 	data.will.topicName.cstring = "will topic";
+	data.will.properties = &willProperties;
 
-	rc = MQTTV5Serialize_connect(buf, buflen, &data, &connectProperties, &willProperties);
+	rc = MQTTV5Serialize_connect(buf, buflen, &data, &connectProperties);
 	assert("good rc from serialize connect", rc > 0, "rc was %d\n", rc);
 
-	rc = MQTTV5Deserialize_connect(&outWillProperties, &outConnectProperties, &data_after, buf, buflen);
+	data_after.will.properties = &outWillProperties;
+	rc = MQTTV5Deserialize_connect(&outConnectProperties, &data_after, buf, buflen);
 	assert("good rc from deserialize connect", rc == 1, "rc was %d\n", rc);
 
 	/* data after should be the same as data before */

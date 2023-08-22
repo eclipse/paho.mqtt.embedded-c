@@ -17,7 +17,7 @@
  *******************************************************************************/
 
 #if defined(MQTTV5)
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #else
 #include "MQTTPacket.h"
 #endif
