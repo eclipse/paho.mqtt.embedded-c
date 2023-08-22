@@ -24,7 +24,7 @@
  #include <string.h>
  #include <memory.h>
  //#define MQTT_DEBUG
- #include "MQTTClient.h"
+ #include "MQTTClient.hpp"
 
  #define DEFAULT_STACK_SIZE -1
 

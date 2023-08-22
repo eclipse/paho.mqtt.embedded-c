@@ -2,7 +2,7 @@
 #if !defined(MQTTETHERNET_H)
 #define MQTTETHERNET_H
 
-#include "MQTTmbed.h"
+#include "MQTTmbed.hpp"
 #include "EthernetInterface.h"
 #include "MQTTSocket.h"
 

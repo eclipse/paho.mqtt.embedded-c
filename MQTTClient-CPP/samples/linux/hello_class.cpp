@@ -16,7 +16,7 @@
 
 #include <memory.h>
 
-#include "MQTTClient.h"
+#include "MQTTClient.hpp"
 
 #define DEFAULT_STACK_SIZE -1
 
@@ -24,14 +24,18 @@
 
 int arrivedcount = 0;
 
-void messageArrived(MQTT::MessageData& md)
+class class2
 {
-    MQTT::Message &message = md.message;
+public:
+	void messageArrived(MQTT::MessageData& md)
+	{
+		MQTT::Message &message = md.message;
 
-    printf("Message %d arrived: qos %d, retained %d, dup %d, packetid %d\n", 
-		++arrivedcount, message.qos, message.retained, message.dup, message.id);
-    printf("Payload %.*s\n", (int)message.payloadlen, (char*)message.payload);
-}
+		printf("Message %d arrived: qos %d, retained %d, dup %d, packetid %d\n",
+				++arrivedcount, message.qos, message.retained, message.dup, message.id);
+		printf("Payload %.*s\n", (int)message.payloadlen, (char*)message.payload);
+	}
+};
 
 
 int main(int argc, char* argv[])
@@ -39,11 +43,14 @@ int main(int argc, char* argv[])
     IPStack ipstack = IPStack();
     float version = 0.3;
     const char* topic = "mbed-sample";
-    
+    class2 object2;
+
     printf("Version is %f\n", version);
               
     MQTT::Client<IPStack, Countdown> client = MQTT::Client<IPStack, Countdown>(ipstack);
     
+    client.setDefaultMessageHandler(&object2, &class2::messageArrived);
+
     const char* hostname = "iot.eclipse.org";
     int port = 1883;
     printf("Connecting to %s:%d\n", hostname, port);
@@ -59,8 +66,8 @@ int main(int argc, char* argv[])
 	if (rc != 0)
 	    printf("rc from MQTT connect is %d\n", rc);
 	printf("MQTT connected\n");
-    
-    rc = client.subscribe(topic, MQTT::QOS2, messageArrived);   
+
+    rc = client.subscribe(topic, MQTT::QOS2, &object2, &class2::messageArrived);
     if (rc != 0)
         printf("rc from MQTT subscribe is %d\n", rc);
 
@@ -115,4 +122,5 @@ int main(int argc, char* argv[])
     
     return 0;
 }
+
 
