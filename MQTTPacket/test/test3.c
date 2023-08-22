@@ -266,7 +266,7 @@ int test1(struct Options options)
 
 	data.clientID.cstring = "mqtt5_test3_test1";
 	data.keepAliveInterval = 20;
-	data.cleansession = 1;
+	data.cleanstart = 1;
 	data.username.cstring = "testuser";
 	data.password.cstring = "testpassword";
 	data.MQTTVersion = 5;
@@ -287,7 +287,7 @@ int test1(struct Options options)
 	rc = MQTTProperties_add(&properties, &one);
 	assert("add properties rc should be 0",  rc == 0, "rc was different %d\n", rc);
 
-	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &data, &properties, NULL);
+	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &data, &properties);
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 	assert("rc and len should be the same",  rc == len, "rc was different %d\n", rc);
 

@@ -17,13 +17,13 @@
 #ifndef MQTT5CONNECT_H_
 #define MQTT5CONNECT_H_
 
-#include "MQTTConnect.h"
+#include "MQTTConnectCommon.h"
 
 DLLExport int32_t MQTTV5Serialize_connect(unsigned char* buf, int32_t buflen, MQTTPacket_connectData* options,
-  MQTTProperties* connectProperties, MQTTProperties* willProperties);
+  MQTTProperties* connectProperties);
 
-DLLExport int32_t MQTTV5Deserialize_connect(MQTTProperties* willProperties,
-  MQTTProperties* connectProperties, MQTTPacket_connectData* data, unsigned char* buf, int32_t len);
+DLLExport int32_t MQTTV5Deserialize_connect(MQTTProperties* connectProperties, MQTTPacket_connectData* data, 
+  unsigned char* buf, int32_t len);
 
 DLLExport int32_t MQTTV5Serialize_connack(unsigned char* buf, int32_t buflen, unsigned char connack_rc,
   unsigned char sessionPresent, MQTTProperties* connackProperties);

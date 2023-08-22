@@ -24,8 +24,6 @@
   #define DLLExport
 #endif
 
-#include "MQTTPublish.h"
-
 DLLExport int32_t MQTTV5Serialize_publish(unsigned char* buf, int32_t buflen, unsigned char dup, unsigned char qos, unsigned char retained,
   unsigned short packetid, MQTTString topicName, MQTTProperties* props, unsigned char* payload, int32_t payloadlen);
 

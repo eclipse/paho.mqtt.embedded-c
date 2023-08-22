@@ -17,7 +17,7 @@
 
 #include "StackTrace.h"
 #if defined(MQTTV5)
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #else
 #include "MQTTPacket.h"
 #endif
@@ -55,7 +55,7 @@ int MQTTPacket_checkVersion(MQTTString* protocol, int version)
 #if defined(MQTTV5)
 int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
 {
-	return MQTTV5Deserialize_connect(NULL, NULL, data, buf, len);
+	return MQTTV5Deserialize_connect(NULL, data, buf, len);
 }
 
 /**
@@ -67,8 +67,8 @@ int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf
   * @param len the length in bytes of the data in the supplied buffer
   * @return error code.  1 is success, 0 is failure
   */
-int32_t MQTTV5Deserialize_connect(MQTTProperties* willProperties, MQTTProperties* connectProperties,
-	MQTTPacket_connectData* data, unsigned char* buf, int32_t len)
+int32_t MQTTV5Deserialize_connect(MQTTProperties* connectProperties, MQTTPacket_connectData* data, 
+	unsigned char* buf, int32_t len)
 #else
 /**
   * Deserializes the supplied (wire) buffer into connect data structure
@@ -128,7 +128,7 @@ int32_t MQTTDeserialize_connect(MQTTPacket_connectData* data, unsigned char* buf
 			#if defined(MQTTV5)
 			if (data->MQTTVersion == 5)
 			{
-				if (!MQTTProperties_read(willProperties, &curdata, enddata))
+				if (!MQTTProperties_read(data->will.properties, &curdata, enddata))
 				  goto exit;
 			}
 			#endif

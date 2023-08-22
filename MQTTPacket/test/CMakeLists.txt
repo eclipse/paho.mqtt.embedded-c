@@ -12,6 +12,7 @@ ELSE ()
   SET(CERTDIR $ENV{TRAVIS_BUILD_DIR}/test/ssl)
 ENDIF ()
 
+# transport.h/c are reused from ../samples:
 include_directories(../src ../src/V5 ../samples)
 
 ADD_EXECUTABLE(
@@ -35,30 +36,6 @@ ADD_TEST(
 
 SET_TESTS_PROPERTIES(
 	test1
-	PROPERTIES TIMEOUT 540
-)
-
-ADD_EXECUTABLE(
-	test15
-	test1.c
-)
-
-# Disabling deprecation warnings:
-#  warning: ‘ftime’ is deprecated [-Wdeprecated-declarations]
-target_compile_options(test15 PRIVATE -Wno-deprecated-declarations)
-
-TARGET_LINK_LIBRARIES(
-	test15
-	paho-embed-mqtt5c
-)
-
-ADD_TEST(
-	NAME test15
-	COMMAND "test15" "--connection" ${MQTT_TEST_BROKER}
-)
-
-SET_TESTS_PROPERTIES(
-	test15
 	PROPERTIES TIMEOUT 540
 )
 
@@ -90,6 +67,7 @@ SET_TESTS_PROPERTIES(
 ADD_EXECUTABLE(
 	test3
 	test3.c
+	../samples/transport.c
 )
 
 # Disabling deprecation warnings:

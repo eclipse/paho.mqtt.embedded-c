@@ -16,7 +16,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "V5/MQTTV5Packet.h"
+#include "MQTTV5Packet.h"
 #include "transport.h"
 #include "v5log.h"
 
@@ -48,15 +48,13 @@ int main(int argc, char *argv[])
 
 	conn_data.clientID.cstring = "paho-emb-v5qos0pub";
 	conn_data.keepAliveInterval = 20;
-	conn_data.cleansession = 1;
+	conn_data.cleanstart = 1;
 	conn_data.username.cstring = "rw";
 	conn_data.password.cstring = "readwrite";
 	conn_data.MQTTVersion = 5;
 
 	MQTTProperties conn_properties = MQTTProperties_initializer;
-	MQTTProperties will_properties = MQTTProperties_initializer;
-	
-	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &conn_data, &conn_properties, &will_properties);
+	len = MQTTV5Serialize_connect((unsigned char *)buf, buflen, &conn_data, &conn_properties);
 
 	MQTTProperty pub_properties_array[1];
 	MQTTProperties pub_properties = MQTTProperties_initializer;

@@ -421,10 +421,16 @@ int MQTT::Client<Network, Timer, a, b>::sendPacket(int32_t length, Timer& timer)
         rc = FAILURE;
 
 #if defined(MQTT_DEBUG)
+
     char printbuf[150];
     DEBUG("Rc %d from sending packet %s\r\n", rc,
+#if defined(MQTTV5)
+        MQTTV5Format_toServerString(printbuf, sizeof(printbuf), sendbuf, length));
+#else
         MQTTFormat_toServerString(printbuf, sizeof(printbuf), sendbuf, length));
-#endif
+#endif // MQTTV5
+
+#endif // MQTT_DEBUG
     return rc;
 }
 
@@ -503,7 +509,12 @@ exit:
     {
         char printbuf[50];
         DEBUG("Rc %d receiving packet %s\r\n", rc,
-            MQTTFormat_toClientString(printbuf, sizeof(printbuf), readbuf, len));
+#if defined(MQTTV5)
+        MQTTV5Format_toClientString(printbuf, sizeof(printbuf), readbuf, len));
+#else
+        MQTTFormat_toClientString(printbuf, sizeof(printbuf), readbuf, len));
+#endif // MQTTV5
+
     }
 #endif
     return rc;
