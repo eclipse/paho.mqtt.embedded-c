@@ -24,12 +24,29 @@
 extern "C" {
 #endif
 
-#include "MQTTPacketCommon.h"
+#include "MQTTPacketInternal.h"
 #include "V3/MQTTConnect.h"
 #include "V3/MQTTPublish.h"
 #include "V3/MQTTSubscribe.h"
 #include "V3/MQTTUnsubscribe.h"
 #include "V3/MQTTFormat.h"
+
+DLLExport int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char type, unsigned char dup, unsigned short packetid);
+DLLExport int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen);
+
+DLLExport int MQTTPacket_equals(MQTTString* a, char* b);
+DLLExport int32_t MQTTPacket_encode(unsigned char* buf, int32_t length);
+DLLExport int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int));
+typedef struct {
+	int (*getfn)(void *, unsigned char*, int); /* must return -1 for error, 0 for call again, or the number of bytes read */
+	void *sck;	/* pointer to whatever the system may use to identify the transport */
+	int multiplier;
+	int rem_len;
+	int32_t len;
+	char state;
+} MQTTTransport;
+
+DLLExport int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp);
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }

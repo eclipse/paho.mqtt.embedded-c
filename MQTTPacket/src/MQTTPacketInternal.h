@@ -12,8 +12,8 @@
  *
  *******************************************************************************/
 
-#ifndef MQTTPACKETCOMMON_H_
-#define MQTTPACKETCOMMON_H_
+#ifndef MQTTPACKETINTERNAL_H_
+#define MQTTPACKETINTERNAL_H_
 
 #include <stdint.h>
 
@@ -43,10 +43,7 @@ enum msgTypes
 {
 	CONNECT = 1, CONNACK, PUBLISH, PUBACK, PUBREC, PUBREL,
 	PUBCOMP, SUBSCRIBE, SUBACK, UNSUBSCRIBE, UNSUBACK,
-	PINGREQ, PINGRESP, DISCONNECT
-#if defined(MQTTV5)
-  , AUTH
-#endif
+	PINGREQ, PINGRESP, DISCONNECT, AUTH
 };
 
 /**
@@ -90,14 +87,8 @@ typedef struct
 
 int MQTTstrlen(MQTTString mqttstring);
 
-DLLExport int32_t MQTTSerialize_ack(unsigned char* buf, int32_t buflen, unsigned char type, unsigned char dup, unsigned short packetid);
-DLLExport int32_t MQTTDeserialize_ack(unsigned char* packettype, unsigned char* dup, unsigned short* packetid, unsigned char* buf, int32_t buflen);
-
 int32_t MQTTPacket_VBIlen(int32_t rem_len);
 int32_t MQTTPacket_len(int32_t rem_len);
-DLLExport int MQTTPacket_equals(MQTTString* a, char* b);
-
-DLLExport int32_t MQTTPacket_encode(unsigned char* buf, int32_t length);
 int32_t MQTTPacket_decode(int (*getcharfn)(unsigned char*, int), int32_t* value);
 int32_t MQTTPacket_decodeBuf(unsigned char* buf, int32_t* value);
 
@@ -109,22 +100,15 @@ int readMQTTLenString(MQTTString* mqttstring, unsigned char** pptr, unsigned cha
 void writeCString(unsigned char** pptr, const char* string);
 void writeMQTTString(unsigned char** pptr, MQTTString mqttstring);
 
-DLLExport int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int));
-
-typedef struct {
-	int (*getfn)(void *, unsigned char*, int); /* must return -1 for error, 0 for call again, or the number of bytes read */
-	void *sck;	/* pointer to whatever the system may use to identify the transport */
-	int multiplier;
-	int rem_len;
-	int32_t len;
-	char state;
-}MQTTTransport;
-
-int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp);
+#if defined(MQTTV5)
+#define MQTTPacket_encode_internal MQTTV5Packet_encode
+#else
+#define MQTTPacket_encode_internal MQTTPacket_encode
+#endif
 
 #ifdef __cplusplus /* If this is a C++ compiler, use C linkage */
 }
 #endif
 
 
-#endif /* MQTTPACKETCOMMON_H_ */
+#endif /* MQTTPACKETINTERNAL_H_ */

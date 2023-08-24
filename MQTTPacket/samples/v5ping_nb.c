@@ -65,7 +65,7 @@ enum states { IDLE, GETPONG };
 
 int main(int argc, char *argv[])
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData data = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	int len = 0;
 	char *host = "test.mosquitto.org";
 	int port = 1884;
-	MQTTTransport mytransport;
+	MQTTV5Transport mytransport;
 	int state;
 	MQTTProperty connack_properties_array[5];
 	MQTTProperties connack_properties = MQTTProperties_initializer;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
 	/* wait for connack */
 	do {
 		int frc;
-		if ((frc=MQTTPacket_readnb(buf, buflen, &mytransport)) == CONNACK){
+		if ((frc=MQTTV5Packet_readnb(buf, buflen, &mytransport)) == CONNACK){
 			unsigned char sessionPresent, connack_rc;
 
 			if (MQTTV5Deserialize_connack(&connack_properties, &sessionPresent, &connack_rc, buf, buflen) != 1 
@@ -141,14 +141,14 @@ int main(int argc, char *argv[])
 		switch(state){
 		case IDLE:
 			if(time_to_ping()){
-				len = MQTTSerialize_pingreq(buf, buflen);
+				len = MQTTV5Serialize_pingreq(buf, buflen);
 				transport_sendPacketBuffer(mysock, buf, len);
 				printf("Ping...");
 				state = GETPONG;
 			}
 			break;
 		case GETPONG:
-			if((rc=MQTTPacket_readnb(buf, buflen, &mytransport)) == PINGRESP){
+			if((rc=MQTTV5Packet_readnb(buf, buflen, &mytransport)) == PINGRESP){
 				printf("Pong\n");
 				start_ping_timer();
 				state = IDLE;

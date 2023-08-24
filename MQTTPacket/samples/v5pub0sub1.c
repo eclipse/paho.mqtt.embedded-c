@@ -42,7 +42,7 @@ void stop_init(void)
 
 int main(int argc, char *argv[])
 {
-	MQTTPacket_connectData data = MQTTPacket_connectData_initializer;
+	MQTTV5Packet_connectData data = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
 	int mysock = 0;
 	unsigned char buf[200];
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
 	rc = transport_sendPacketBuffer(mysock, buf, len);
 
 	/* wait for connack */
-	if (MQTTPacket_read(buf, buflen, transport_getdata) == CONNACK)
+	if (MQTTV5Packet_read(buf, buflen, transport_getdata) == CONNACK)
 	{
 		unsigned char sessionPresent, connack_rc;
 
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 	len = MQTTV5Serialize_subscribe(buf, buflen, 0, msgid, &sub_properties, 1, &topicString, &req_qos, &sub_options);
 
 	rc = transport_sendPacketBuffer(mysock, buf, len);
-	if (MQTTPacket_read(buf, buflen, transport_getdata) == SUBACK) 	/* wait for suback */
+	if (MQTTV5Packet_read(buf, buflen, transport_getdata) == SUBACK) 	/* wait for suback */
 	{
 		unsigned short submsgid;
 		int subcount;
@@ -192,7 +192,7 @@ int main(int argc, char *argv[])
 	{
 		/* transport_getdata() has a built-in 1 second timeout,
 		your mileage will vary */
-		rc = MQTTPacket_read(buf, buflen, transport_getdata);
+		rc = MQTTV5Packet_read(buf, buflen, transport_getdata);
 
 		unsigned char dup;
 		unsigned short msgid;

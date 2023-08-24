@@ -21,7 +21,60 @@
 #define MQTTCONNECT_H_
 
 #include <stdint.h>
-#include "MQTTConnectCommon.h"
+#include "MQTTConnectInternal.h"
+
+enum MQTTConnackReturnCodes
+{
+    MQTTCONNACK_CONNECTION_ACCEPTED = 0,
+    MQTTCONNACK_UNNACCEPTABLE_PROTOCOL = 1,
+    MQTTCONNACK_CLIENTID_REJECTED = 2,
+    MQTTCONNACK_SERVER_UNAVAILABLE = 3,
+    MQTTCONNACK_BAD_USERNAME_OR_PASSWORD = 4,
+    MQTTCONNACK_NOT_AUTHORIZED = 5,
+};
+
+/**
+ * Defines the MQTT "Last Will and Testament" (LWT) settings for
+ * the connect packet.
+ */
+typedef struct
+{
+	/** The eyecatcher for this structure.  must be MQTW. */
+	char struct_id[4];
+	/** The LWT topic to which the LWT message will be published. */
+	MQTTString topicName;
+	/** The LWT payload. */
+	MQTTString message;
+	/**
+      * The retained flag for the LWT message (see MQTTAsync_message.retained).
+      */
+	unsigned char retained;
+	/**
+      * The quality of service setting for the LWT message (see
+      * MQTTAsync_message.qos and @ref qos).
+      */
+	char qos;
+} MQTTPacket_willOptions;
+
+#define MQTTPacket_willOptions_initializer { {'M', 'Q', 'T', 'W'}, {NULL, {0, NULL}}, {NULL, {0, NULL}}, 0, 0 }
+
+typedef struct
+{
+	/** The eyecatcher for this structure.  must be MQTC. */
+	char struct_id[4];
+	/** Version of MQTT to be used.  3 = 3.1 4 = 3.1.1
+	  */
+	unsigned char MQTTVersion;
+	MQTTString clientID;
+	unsigned short keepAliveInterval;
+	unsigned char cleansession;
+	unsigned char willFlag;
+
+	MQTTPacket_willOptions will;
+	MQTTString username;
+	MQTTString password;
+
+} MQTTPacket_connectData;
 
 #define MQTTPacket_connectData_initializer { {'M', 'Q', 'T', 'C'}, 4, {NULL, {0, NULL}}, 60, 1, 0, \
 		MQTTPacket_willOptions_initializer, {NULL, {0, NULL}}, {NULL, {0, NULL}} }
@@ -34,5 +87,7 @@ DLLExport int MQTTDeserialize_connack(unsigned char* sessionPresent, unsigned ch
 
 DLLExport int MQTTSerialize_disconnect(unsigned char* buf, int32_t buflen);
 DLLExport int MQTTDeserialize_disconnect(unsigned char* buf, int32_t buflen);
+
+DLLExport int MQTTSerialize_pingreq(unsigned char* buf, int32_t buflen);
 
 #endif /* MQTTCONNECT_H_ */

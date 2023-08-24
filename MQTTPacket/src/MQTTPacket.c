@@ -38,7 +38,11 @@
  * @param length the length to be encoded
  * @return the number of bytes written to buffer
  */
+#if defined(MQTTV5)
+int32_t MQTTV5Packet_encode(unsigned char* buf, int32_t length)
+#else
 int32_t MQTTPacket_encode(unsigned char* buf, int32_t length)
+#endif
 {
 	int32_t rc = 0;
 
@@ -266,7 +270,11 @@ int MQTTstrlen(MQTTString mqttstring)
  * @param bptr the C string to compare
  * @return boolean - equal or not
  */
+#if defined(MQTTV5)
+int MQTTV5Packet_equals(MQTTString* a, char* bptr)
+#else
 int MQTTPacket_equals(MQTTString* a, char* bptr)
+#endif
 {
 	int alen = 0,
 		blen = 0;
@@ -296,7 +304,11 @@ int MQTTPacket_equals(MQTTString* a, char* bptr)
  * @return integer MQTT packet type, or -1 on error
  * @note  the whole message must fit into the caller's buffer
  */
+#if defined(MQTTV5)
+int MQTTV5Packet_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int))
+#else
 int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned char*, int))
+#endif
 {
 	int rc = -1;
 	MQTTHeader header = {0};
@@ -310,7 +322,11 @@ int MQTTPacket_read(unsigned char* buf, int32_t buflen, int (*getfn)(unsigned ch
 	len = 1;
 	/* 2. read the remaining length.  This is variable in itself */
 	MQTTPacket_decode(getfn, &rem_len);
+#if defined(MQTTV5)
+	len += MQTTV5Packet_encode(buf + 1, rem_len); /* put the original remaining length back into the buffer */
+#else
 	len += MQTTPacket_encode(buf + 1, rem_len); /* put the original remaining length back into the buffer */
+#endif
 
 	/* 3. read the rest of the buffer using a callback to supply the rest of the data */
 	if((rem_len + len) > buflen)
@@ -330,7 +346,11 @@ exit:
  * @param value the decoded length returned
  * @return integer the number of bytes read from the socket, 0 for call again, or -1 on error
  */
+#if defined(MQTTV5)
+static int MQTTV5Packet_decodenb(MQTTV5Transport *trp)
+#else
 static int MQTTPacket_decodenb(MQTTTransport *trp)
+#endif
 {
 	unsigned char c;
 	int rc = MQTTPACKET_READ_ERROR;
@@ -368,7 +388,11 @@ exit:
  * @return integer MQTT packet type, 0 for call again, or -1 on error
  * @note  the whole message must fit into the caller's buffer
  */
+#if defined(MQTTV5)
+int MQTTV5Packet_readnb(unsigned char* buf, int32_t buflen, MQTTV5Transport *trp)
+#else
 int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp)
+#endif
 {
 	int rc = -1, frc;
 	MQTTHeader header = {0};
@@ -388,11 +412,20 @@ int MQTTPacket_readnb(unsigned char* buf, int32_t buflen, MQTTTransport *trp)
 		/*FALLTHROUGH*/
 		/* read the remaining length.  This is variable in itself */
 	case 1:
+
+#if defined(MQTTV5)
+		if((frc=MQTTV5Packet_decodenb(trp)) == MQTTPACKET_READ_ERROR)
+#else
 		if((frc=MQTTPacket_decodenb(trp)) == MQTTPACKET_READ_ERROR)
+#endif
 			goto exit;
 		if(frc == 0)
 			return 0;
+#if defined(MQTTV5)
+		trp->len = 1 + MQTTV5Packet_encode(buf + 1, trp->rem_len); /* put the original remaining length back into the buffer */
+#else
 		trp->len = 1 + MQTTPacket_encode(buf + 1, trp->rem_len); /* put the original remaining length back into the buffer */
+#endif
 		if((trp->rem_len + trp->len) > buflen)
 			goto exit;
 		++trp->state;
