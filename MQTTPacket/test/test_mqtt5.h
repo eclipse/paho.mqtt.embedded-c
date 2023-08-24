@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2014, 2023 IBM Corp., Ian Craggs and others
+ * Copyright (c) 2023 Microsoft Corporation. All rights reserved.
  *
  * All rights reserved. This program and the accompanying materials
  * are made available under the terms of the Eclipse Public License v1.0
@@ -10,231 +10,12 @@
  * and the Eclipse Distribution License is available at
  *   http://www.eclipse.org/org/documents/edl-v10.php.
  *
- * Contributors:
- *    Ian Craggs - initial API and implementation and/or initial documentation
- *    Sergio R. Caprile - clarifications and/or documentation extension
  *******************************************************************************/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-#include "MQTTV5Packet.h"
-#include "transport.h"
-
-#if !defined(_WINDOWS)
-	#include <sys/time.h>
-  	#include <sys/socket.h>
-	#include <unistd.h>
-  	#include <errno.h>
-#else
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define MAXHOSTNAMELEN 256
-#define EAGAIN WSAEWOULDBLOCK
-#define EINTR WSAEINTR
-#define EINPROGRESS WSAEINPROGRESS
-#define EWOULDBLOCK WSAEWOULDBLOCK
-#define ENOTCONN WSAENOTCONN
-#define ECONNRESET WSAECONNRESET
-#endif
-
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
-
-struct Options
-{
-	char* host;         /**< connection to system under test. */
-	int port;
-	int verbose;
-	int test_no;
-} options =
-{
-	"localhost",
-	1883,
-	0,
-	0,
-};
-
-void usage()
-{
-
-}
-
-void getopts(int argc, char** argv)
-{
-	int count = 1;
-
-	while (count < argc)
-	{
-		if (strcmp(argv[count], "--test_no") == 0)
-		{
-			if (++count < argc)
-				options.test_no = atoi(argv[count]);
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--host") == 0)
-		{
-			if (++count < argc)
-			{
-				options.host = argv[count];
-				printf("\nSetting host to %s\n", options.host);
-			}
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--port") == 0)
-		{
-			if (++count < argc)
-				options.port = atoi(argv[count]);
-			else
-				usage();
-		}
-		else if (strcmp(argv[count], "--verbose") == 0)
-		{
-			options.verbose = 1;
-			printf("\nSetting verbose on\n");
-		}
-		count++;
-	}
-}
-
-#define LOGA_DEBUG 0
-#define LOGA_INFO 1
-#include <stdarg.h>
-#include <time.h>
-#include <sys/timeb.h>
-void MyLog(int LOGA_level, char* format, ...)
-{
-	static char msg_buf[256];
-	va_list args;
-	struct timeb ts;
-
-	struct tm *timeinfo;
-
-	if (LOGA_level == LOGA_DEBUG && options.verbose == 0)
-	  return;
-
-	ftime(&ts);
-	timeinfo = localtime(&ts.time);
-	strftime(msg_buf, 80, "%Y%m%d %H%M%S", timeinfo);
-
-	sprintf(&msg_buf[strlen(msg_buf)], ".%.3hu ", ts.millitm);
-
-	va_start(args, format);
-	vsnprintf(&msg_buf[strlen(msg_buf)], sizeof(msg_buf) - strlen(msg_buf), format, args);
-	va_end(args);
-
-	printf("%s\n", msg_buf);
-	fflush(stdout);
-}
-
-
-#if defined(WIN32) || defined(_WINDOWS)
-#define mqsleep(A) Sleep(1000*A)
-#define START_TIME_TYPE DWORD
-static DWORD start_time = 0;
-START_TIME_TYPE start_clock(void)
-{
-	return GetTickCount();
-}
-#elif defined(AIX)
-#define mqsleep sleep
-#define START_TIME_TYPE struct timespec
-START_TIME_TYPE start_clock(void)
-{
-	static struct timespec start;
-	clock_gettime(CLOCK_REALTIME, &start);
-	return start;
-}
-#else
-#define mqsleep sleep
-#define START_TIME_TYPE struct timeval
-START_TIME_TYPE start_clock(void)
-{
-	struct timeval start_time;
-	gettimeofday(&start_time, NULL);
-	return start_time;
-}
-#endif
-
-
-#if defined(WIN32)
-long elapsed(START_TIME_TYPE start_time)
-{
-	return GetTickCount() - start_time;
-}
-#elif defined(AIX)
-#define assert(a)
-long elapsed(struct timespec start)
-{
-	struct timespec now, res;
-
-	clock_gettime(CLOCK_REALTIME, &now);
-	ntimersub(now, start, res);
-	return (res.tv_sec)*1000L + (res.tv_nsec)/1000000L;
-}
-#else
-long elapsed(START_TIME_TYPE start_time)
-{
-	struct timeval now, res;
-
-	gettimeofday(&now, NULL);
-	timersub(&now, &start_time, &res);
-	return (res.tv_sec)*1000 + (res.tv_usec)/1000;
-}
-#endif
-
-
-#define assert(a, b, c, d) myassert(__FILE__, __LINE__, a, b, c, d)
-#define assert1(a, b, c, d, e) myassert(__FILE__, __LINE__, a, b, c, d, e)
-
-int tests = 0;
-int failures = 0;
-FILE* xml;
-START_TIME_TYPE global_start_time;
-char output[3000];
-char* cur_output = output;
-
-
-void write_test_result()
-{
-	long duration = elapsed(global_start_time);
-
-	fprintf(xml, " time=\"%ld.%.3ld\" >\n", duration / 1000, duration % 1000);
-	if (cur_output != output)
-	{
-		fprintf(xml, "%s", output);
-		cur_output = output;
-	}
-	fprintf(xml, "</testcase>\n");
-}
-
-
-void myassert(char* filename, int lineno, char* description, int value, char* format, ...)
-{
-	++tests;
-	if (!value)
-	{
-		va_list args;
-
-		++failures;
-		printf("Assertion failed, file %s, line %d, description: %s\n", filename, lineno, description);
-
-		va_start(args, format);
-		vprintf(format, args);
-		va_end(args);
-
-		cur_output += sprintf(cur_output, "<failure type=\"%s\">file %s, line %d </failure>\n",
-                        description, filename, lineno);
-	}
-    else
-    	MyLog(LOGA_DEBUG, "Assertion succeeded, file %s, line %d, description: %s", filename, lineno, description);
-}
-
-
-
-int test1(struct Options options)
+/***
+  Test MQTTV5Packet against a broker.
+***/
+int test_v5(struct Options options) 
 {
 	MQTTV5Packet_connectData data = MQTTV5Packet_connectData_initializer;
 	int rc = 0;
@@ -249,21 +30,21 @@ int test1(struct Options options)
 	MQTTProperty props[10];
 	MQTTProperty one;
 	int msgid = 0;
-	char* test_topic = "MQTTV5/test/test3_topic";
+	char* test_topic = "MQTTV5/test/test35_topic";
 	int i = 0;
 
 	mysock = transport_open(options.host, options.port);
 	if(mysock < 0)
 		return mysock;
 
-	fprintf(xml, "<testcase classname=\"test1\" name=\"MQTTV5_scenario\"");
+	fprintf(xml, "<testcase classname=\"test_v5\" name=\"MQTTV5_scenario\"");
 	global_start_time = start_clock();
 	failures = 0;
-	MyLog(LOGA_INFO, "Starting test 1 - simple MQTT V5 scenario");
+	MyLog(LOGA_INFO, "Starting test 2 - simple MQTT V5 scenario");
 
 	MyLog(LOGA_INFO, "Sending to hostname %s port %d", options.host, options.port);
 
-	data.clientID.cstring = "mqtt5_test3_test1";
+	data.clientID.cstring = "mqtt5_test35_test1";
 	data.keepAliveInterval = 20;
 	data.cleanstart = 1;
 	data.username.cstring = "testuser";
@@ -548,37 +329,8 @@ int test1(struct Options options)
 exit:
 	transport_close(mysock);
 
-	MyLog(LOGA_INFO, "TEST1: test %s. %d tests run, %d failures.",
+	MyLog(LOGA_INFO, "TESTv5: test %s. %d tests run, %d failures.",
 			(failures == 0) ? "passed" : "failed", tests, failures);
 	write_test_result();
-	return failures;
-}
-
-
-int main(int argc, char** argv)
-{
-	int rc = 0;
- 	int (*tests[])(struct Options) = {NULL, test1};
-
-	xml = fopen("TEST-test3.xml", "w");
-	fprintf(xml, "<testsuite name=\"test1\" tests=\"%d\">\n", (int)(ARRAY_SIZE(tests) - 1));
-
-	getopts(argc, argv);
-
- 	if (options.test_no == 0)
-	{ /* run all the tests */
- 	   	for (options.test_no = 1; options.test_no < ARRAY_SIZE(tests); ++options.test_no)
-			rc += tests[options.test_no](options); /* return number of failures.  0 = test succeeded */
-	}
-	else
- 	   	rc = tests[options.test_no](options); /* run just the selected test */
-
- 	if (rc == 0)
-		MyLog(LOGA_INFO, "verdict pass");
-	else
-		MyLog(LOGA_INFO, "verdict fail");
-
-	fprintf(xml, "</testsuite>\n");
-	fclose(xml);
-	return rc;
+	return failures;    
 }
