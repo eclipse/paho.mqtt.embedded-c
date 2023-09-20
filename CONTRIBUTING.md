@@ -43,6 +43,8 @@ more steps are required. More details are provided in the [handbook](https://www
 Information regarding source code management, builds, coding standards, and more.
 
 - [https://projects.eclipse.org/projects/iot.paho/developer](https://projects.eclipse.org/projects/iot.paho/developer)
+- [Building the project](README.md)
+- [Running the tests](test/README.md)
 
 Contact:
 --------
