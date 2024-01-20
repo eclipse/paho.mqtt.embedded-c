@@ -469,8 +469,13 @@ int MQTT::Client<Network, Timer, MAX_MQTT_PACKET_SIZE, b>::readPacket(Timer& tim
     }
 
     /* 3. read the rest of the buffer using a callback to supply the rest of the data */
-    if (rem_len > 0 && (ipstack.read(readbuf + len, rem_len, timer.left_ms()) != rem_len))
-        goto exit;
+    while (rem_len > 0) {
+        int n = ipstack.read(readbuf + len, rem_len, timer.left_ms());
+        if (n < 0)
+            goto exit;
+        len += n;
+        rem_len -= n;
+    }
 
     header.byte = readbuf[0];
     rc = header.bits.type;
