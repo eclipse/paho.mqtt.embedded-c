@@ -241,7 +241,7 @@ int keepalive(MQTTClient* c)
             if (len > 0 && (rc = sendPacket(c, len, &timer)) == MQTTCLIENT_SUCCESS)
             {
                 c->ping_outstanding = 1;
-                TimerCountdownMS(&c->pingresp_timer, c->keepAliveInterval);
+                TimerCountdown(&c->pingresp_timer, c->keepAliveInterval);
             }
         }
     }
